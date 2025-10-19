@@ -58,7 +58,7 @@ const ChordProDisplay = ({
       clearTimeout(timeoutId);
       window.removeEventListener('resize', checkHeight);
     };
-  }, [transposedContent, fontSize]);
+  }, [content, fontSize]);
 
   const parseChordPro = (text) => {
     const lines = text.split('\n');
