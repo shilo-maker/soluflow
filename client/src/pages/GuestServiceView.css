@@ -1,0 +1,509 @@
+.guest-service-page {
+  min-height: 100vh;
+  background-color: #fafafa;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.guest-service-page * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.guest-service-header {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 15px;
+}
+
+.header-top h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-back {
+  background-color: white;
+  color: var(--color-primary);
+  border: 2px solid white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-back:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+  transform: translateX(-2px);
+}
+
+.btn-login-small {
+  background-color: white;
+  color: var(--color-primary);
+  border: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-login-small:hover {
+  background-color: #f8f9fa;
+}
+
+.service-info-banner h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+}
+
+.service-banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.service-title-section {
+  flex: 1;
+  min-width: 250px;
+}
+
+.service-meta {
+  display: flex;
+  gap: 15px;
+  font-size: 14px;
+  opacity: 0.95;
+  flex-wrap: wrap;
+}
+
+.service-meta span::after {
+  content: '•';
+  margin-left: 15px;
+}
+
+.service-meta span:last-child::after {
+  content: '';
+  margin-left: 0;
+}
+
+/* Follow mode toggle button */
+.btn-follow-mode {
+  background-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  border: 2px solid white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.btn-follow-mode:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-follow-mode.active {
+  background-color: white;
+  color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-follow-mode.active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.guest-service-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.add-service-section {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.already-added-section {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.already-added-notice {
+  display: inline-block;
+  background-color: #d4edda;
+  color: #155724;
+  border: 2px solid #c3e6cb;
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.btn-add-service {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-add-service:hover {
+  background-color: #218838;
+}
+
+.song-pills {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 15px 0;
+  margin-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.song-pills::-webkit-scrollbar {
+  height: 6px;
+}
+
+.song-pills::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.song-pills::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 3px;
+}
+
+.song-pill {
+  background-color: white;
+  border: 2px solid #333;
+  color: #333;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.song-pill:hover {
+  background-color: #f8f9fa;
+}
+
+.song-pill.active {
+  background-color: #333;
+  color: white;
+}
+
+.song-display {
+  background-color: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.song-display:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.song-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.song-info {
+  margin-bottom: 15px;
+}
+
+.song-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.song-authors {
+  font-size: 16px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.song-meta {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.transpose-controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.btn-transpose {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 40px;
+}
+
+.btn-transpose:hover {
+  background-color: #b8844e;
+}
+
+.transpose-display {
+  min-width: 70px;
+  text-align: center;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.transpose-display:hover {
+  background-color: #e9ecef;
+}
+
+.zoom-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-zoom {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 40px;
+}
+
+.btn-zoom:hover {
+  background-color: #5a6268;
+}
+
+.key-info, .bpm-info {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.song-content {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 20px;
+  line-height: 1.6;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  word-wrap: break-word;
+}
+
+.empty-service {
+  text-align: center;
+  color: #6c757d;
+  padding: 60px 20px;
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+}
+
+.loading-state, .error-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.error-state h2 {
+  color: #dc3545;
+  margin-bottom: 10px;
+}
+
+.error-state p {
+  margin-bottom: 20px;
+}
+
+.btn-login {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-login:hover {
+  background-color: #b8844e;
+}
+
+@media (max-width: 768px) {
+  .guest-service-header {
+    padding: 15px;
+  }
+
+  .header-top {
+    flex-direction: row;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .header-top h1 {
+    font-size: 20px;
+  }
+
+  .btn-back,
+  .btn-login-small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .service-info-banner h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .service-meta {
+    font-size: 12px;
+    gap: 10px;
+  }
+
+  .service-meta span::after {
+    margin-left: 10px;
+  }
+
+  .guest-service-content {
+    padding: 15px;
+  }
+
+  .song-pills {
+    padding: 10px 0;
+    gap: 8px;
+  }
+
+  .song-pill {
+    padding: 6px 15px;
+    font-size: 13px;
+  }
+
+  .song-display {
+    padding: 15px;
+  }
+
+  .song-header {
+    padding-bottom: 12px;
+    margin-bottom: 15px;
+  }
+
+  .song-title {
+    font-size: 20px;
+  }
+
+  .song-authors {
+    font-size: 14px;
+  }
+
+  .song-meta {
+    font-size: 12px;
+    gap: 8px;
+    justify-content: center;
+    max-width: 100%;
+  }
+
+  .btn-transpose,
+  .btn-zoom {
+    padding: 6px 12px;
+    font-size: 13px;
+    min-width: 35px;
+  }
+
+  .transpose-display {
+    min-width: 60px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .song-content {
+    padding: 15px;
+    font-size: 14px;
+  }
+
+  .btn-add-service,
+  .btn-login {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+
+  .already-added-notice {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+
+  .empty-service,
+  .loading-state,
+  .error-state {
+    padding: 40px 15px;
+    font-size: 16px;
+  }
+}

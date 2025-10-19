@@ -1,0 +1,372 @@
+.library-page {
+  padding: 80px 20px 80px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #fafafa;
+}
+
+.search-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.search-input-library {
+  flex: 1;
+  padding: 12px 20px;
+  border: 1px solid #dee2e6;
+  border-radius: 20px;
+  font-size: 16px;
+  background-color: white;
+}
+
+.search-input-library:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.btn-add {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-add:hover {
+  background-color: #b8844e;
+}
+
+.songs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.song-card {
+  background-color: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.song-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-primary);
+}
+
+.song-card.selected {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.song-card.selected .song-card-title,
+.song-card.selected .song-card-authors {
+  color: white;
+}
+
+.song-card.selected .song-key {
+  background-color: white;
+  color: var(--color-primary);
+}
+
+.song-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.song-card-left {
+  flex: 1;
+}
+
+.song-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 5px 0;
+}
+
+.song-card-authors {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.song-card-right {
+  display: flex;
+  align-items: center;
+}
+
+.song-key {
+  font-size: 14px;
+  color: #495057;
+  font-weight: 600;
+  background-color: #f8f9fa;
+  padding: 6px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.empty-state {
+  text-align: center;
+  color: #6c757d;
+  padding: 40px 20px;
+  font-size: 16px;
+}
+
+.loading-state {
+  text-align: center;
+  color: #6c757d;
+  padding: 60px 20px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.error-state {
+  text-align: center;
+  color: #dc3545;
+  padding: 40px 20px;
+  font-size: 16px;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+/* Inline Song Display */
+.song-display-inline {
+  background-color: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.song-header-inline {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.song-info-inline {
+  margin-bottom: 15px;
+}
+
+.song-title-inline {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 5px 0;
+}
+
+.song-authors-inline {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.song-meta-inline {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.transpose-controls-inline {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.btn-transpose-inline {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 40px;
+}
+
+.btn-transpose-inline:hover {
+  background-color: #b8844e;
+}
+
+.transpose-display-inline {
+  min-width: 70px;
+  text-align: center;
+  padding: 6px 12px;
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.transpose-display-inline:hover {
+  background-color: #e9ecef;
+}
+
+.zoom-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-zoom {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 40px;
+}
+
+.btn-zoom:hover {
+  background-color: #5a6268;
+}
+
+.key-info-inline,
+.bpm-info-inline {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.song-content-inline {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.song-content-inline.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.song-content-inline.clickable:hover {
+  background-color: #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chord-sheet-inline {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  color: #333;
+}
+
+.song-actions-inline {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn-edit-song {
+  flex: 1;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-edit-song:hover {
+  background-color: #b8844e;
+}
+
+.btn-delete-song {
+  flex: 1;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-delete-song:hover {
+  background-color: #c82333;
+}
+
+.btn-close-song {
+  flex: 1;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-close-song:hover {
+  background-color: #5a6268;
+}
+
+@media (max-width: 768px) {
+  .song-card-title {
+    font-size: 16px;
+  }
+
+  .song-card-authors {
+    font-size: 13px;
+  }
+
+  .song-key {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+
+  .song-card {
+    padding: 15px 18px;
+  }
+
+  .song-title-inline {
+    font-size: 20px;
+  }
+
+  .song-meta-inline {
+    font-size: 12px;
+  }
+
+  .chord-sheet-inline {
+    font-size: 13px;
+  }
+
+  .song-display-inline {
+    padding: 15px;
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-react-app:*)",
+      "Bash(npm init -y)",
+      "Bash(npm install:*)",
+      "Bash(npm start)",
+      "Bash(cmd.exe /c \"taskkill /F /PID 10636\")",
+      "Bash(timeout:*)",
+      "Bash(ping 127.0.0.1 -n 2)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

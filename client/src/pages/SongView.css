@@ -1,0 +1,360 @@
+.song-view-page {
+  padding: 80px 20px 20px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #fff;
+}
+
+.song-view-header {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.btn-back {
+  background-color: transparent;
+  border: 1px solid #6c757d;
+  color: #6c757d;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-delete-header {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-header:hover {
+  background-color: #c82333;
+}
+
+.song-view-title-section {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.song-view-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.song-view-subtitle {
+  font-size: 16px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.song-view-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.control-info {
+  font-size: 14px;
+  color: #495057;
+  font-weight: 600;
+  background-color: #f8f9fa;
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+.song-view-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.zoom-controls-view {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-zoom-view {
+  min-width: 50px;
+}
+
+.transpose-controls-view {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.btn-transpose-view {
+  min-width: 50px;
+}
+
+.transpose-display {
+  min-width: 80px;
+  text-align: center;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.transpose-display:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+}
+
+.btn-action {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-action:hover {
+  background-color: #b8844e;
+  transform: translateY(-2px);
+}
+
+.btn-action.active {
+  background-color: #333;
+}
+
+.btn-action.active:hover {
+  background-color: #444;
+}
+
+.btn-action.btn-delete {
+  background-color: #dc3545;
+}
+
+.btn-action.btn-delete:hover {
+  background-color: #c82333;
+}
+
+.song-view-content {
+  background-color: #fafafa;
+  border-radius: 8px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
+  touch-action: pan-y;
+}
+
+.chord-display {
+  font-family: 'Courier New', 'Arial Hebrew', monospace;
+  font-size: 16px;
+  line-height: 1.8;
+  margin: 0;
+  white-space: pre-wrap;
+  color: #333;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Hebrew text support */
+.chord-display[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+  font-family: 'Arial Hebrew', 'Courier New', monospace;
+}
+
+/* Chords styling */
+.chord-display {
+  /* This would be enhanced with proper ChordPro parsing later */
+}
+
+.error-message {
+  text-align: center;
+  color: #dc3545;
+  font-size: 18px;
+  padding: 40px 20px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .song-view-title {
+    font-size: 24px;
+  }
+
+  .song-view-subtitle {
+    font-size: 14px;
+  }
+
+  .song-view-controls {
+    gap: 10px;
+  }
+
+  .control-info {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .btn-action {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
+  .chord-display {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .song-view-content {
+    padding: 20px;
+  }
+}
+
+/* Navigation buttons for setlist */
+.btn-nav-song {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(201, 149, 110, 0.9);
+  color: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-nav-song:hover {
+  background-color: rgba(184, 132, 78, 1);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-prev-song {
+  left: 10px;
+}
+
+.btn-next-song {
+  right: 10px;
+}
+
+/* Next song indicator */
+.next-song-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 15px 20px;
+  background-color: #f0f0f0;
+  border-left: 4px solid var(--color-primary);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.next-label {
+  font-weight: 700;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.next-song-title {
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.next-song-key {
+  font-weight: 600;
+  color: #6c757d;
+  background-color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* Large display mode for stage use */
+@media (min-width: 1200px) {
+  .song-view-title {
+    font-size: 42px;
+  }
+
+  .chord-display {
+    font-size: 20px;
+    line-height: 2;
+  }
+
+  .btn-nav-song {
+    width: 60px;
+    height: 60px;
+    font-size: 40px;
+  }
+
+  .next-song-indicator {
+    font-size: 16px;
+    padding: 20px 25px;
+  }
+}
+
+/* Mobile optimizations for navigation */
+@media (max-width: 768px) {
+  .btn-nav-song {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+
+  .btn-prev-song {
+    left: 5px;
+  }
+
+  .btn-next-song {
+    right: 5px;
+  }
+
+  .next-song-indicator {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+}

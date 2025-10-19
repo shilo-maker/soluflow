@@ -1,0 +1,57 @@
+.fullscreen-button {
+  position: fixed;
+  bottom: 90px; /* Above bottom navigation */
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-base);
+  z-index: 999; /* Below modals but above content */
+  opacity: 0.9;
+}
+
+.fullscreen-button:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.5);
+}
+
+.fullscreen-button:active {
+  transform: translateY(0);
+}
+
+.fullscreen-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Hide on very small screens to avoid clutter */
+@media (max-width: 360px) {
+  .fullscreen-button {
+    width: 40px;
+    height: 40px;
+    bottom: 80px;
+    right: 15px;
+  }
+
+  .fullscreen-button svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* When in fullscreen, position differently since bottom nav is hidden */
+body:fullscreen .fullscreen-button,
+body:-webkit-full-screen .fullscreen-button,
+body:-moz-full-screen .fullscreen-button,
+body:-ms-fullscreen .fullscreen-button {
+  bottom: 20px;
+}

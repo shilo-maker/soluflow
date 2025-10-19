@@ -1,0 +1,461 @@
+.service-page {
+  padding: 80px 20px 80px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #fafafa;
+}
+
+.service-selector {
+  background-color: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.selector-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.btn-new, .btn-edit, .btn-share {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-new:hover, .btn-edit:hover, .btn-share:hover {
+  background-color: #b8844e;
+}
+
+.btn-delete {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+.service-option-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.service-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+
+.service-option:last-child {
+  border-bottom: none;
+}
+
+.service-option:hover {
+  background-color: #f8f9fa;
+}
+
+.service-option.selected {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.service-option.selected .service-option-title {
+  color: white;
+  font-weight: 600;
+}
+
+.service-option.selected .btn-edit {
+  background-color: white;
+  color: var(--color-primary);
+}
+
+.service-option.selected .btn-delete {
+  background-color: white;
+  color: #dc3545;
+}
+
+.service-option.selected .btn-delete:hover {
+  background-color: #f8f9fa;
+  color: #c82333;
+}
+
+.service-option-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.service-option-title {
+  color: #333;
+  font-size: 15px;
+}
+
+.shared-label {
+  display: inline-block;
+  background-color: #17a2b8;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.shared-label-header {
+  display: inline-block;
+  background-color: #17a2b8;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 15px;
+  vertical-align: middle;
+}
+
+.service-option.shared {
+  border-left: 4px solid #17a2b8;
+}
+
+.empty-service {
+  text-align: center;
+  color: #6c757d;
+  padding: 40px 20px;
+  font-size: 16px;
+}
+
+.current-service {
+  background-color: white;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.service-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #333;
+}
+
+.service-header-bar h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-edit-setlist {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-edit-setlist:hover {
+  background-color: #b8844e;
+}
+
+.song-pills {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 15px 0;
+  margin-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+  user-select: none;
+}
+
+.song-pills.dragging {
+  cursor: grabbing;
+}
+
+.song-pills::-webkit-scrollbar {
+  height: 6px;
+}
+
+.song-pills::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.song-pills::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 3px;
+}
+
+.song-pill {
+  background-color: white;
+  border: 2px solid #333;
+  color: #333;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.song-pill:hover {
+  background-color: #f8f9fa;
+}
+
+.song-pill.active {
+  background-color: #333;
+  color: white;
+}
+
+.song-display {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.song-display:hover {
+  transform: translateY(-2px);
+}
+
+.song-header {
+  margin-bottom: 20px;
+}
+
+.song-info {
+  margin-bottom: 10px;
+}
+
+.song-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 5px 0;
+}
+
+.song-authors {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.song-meta {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.transpose-controls-service {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.btn-transpose-service {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 40px;
+}
+
+.btn-transpose-service:hover {
+  background-color: #b8844e;
+}
+
+.transpose-display-service {
+  min-width: 70px;
+  text-align: center;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.transpose-display-service:hover {
+  background-color: #e9ecef;
+}
+
+.zoom-controls-service {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-zoom-service {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 40px;
+}
+
+.btn-zoom-service:hover {
+  background-color: #5a6268;
+}
+
+.key-info, .bpm-info {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.song-content-preview {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 15px;
+}
+
+.segment-display {
+  padding: 20px;
+  text-align: center;
+}
+
+.segment-display h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.segment-display p {
+  font-size: 16px;
+  color: #6c757d;
+}
+
+/* Leader badge */
+.leader-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 15px;
+  vertical-align: middle;
+  box-shadow: var(--shadow-primary);
+}
+
+/* Follow mode toggle button */
+.btn-follow-mode {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-follow-mode:hover {
+  background-color: #5a6268;
+}
+
+.btn-follow-mode.active {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-follow-mode.active:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-primary-hover);
+}
+
+@media (max-width: 768px) {
+  .song-title {
+    font-size: 20px;
+  }
+
+  .song-meta {
+    font-size: 12px;
+  }
+
+  .leader-badge {
+    margin-left: 8px;
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+
+  .btn-follow-mode {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+}

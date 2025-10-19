@@ -1,0 +1,221 @@
+.inline-note-marker {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.note-icon {
+  font-size: 16px;
+  opacity: 0.7;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.inline-note-marker:hover .note-icon {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.note-popup {
+  position: absolute;
+  left: 24px;
+  top: -8px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 200px;
+  max-width: 400px;
+  display: none;
+  white-space: normal;
+}
+
+.inline-note-marker:hover .note-popup,
+.inline-note-marker:active .note-popup {
+  display: block;
+}
+
+/* Backdrop for mobile popups */
+.note-popup-backdrop {
+  display: none;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .note-popup-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  .inline-note-marker {
+    margin-left: 4px;
+  }
+
+  .note-icon {
+    font-size: 14px;
+  }
+
+  /* On mobile, only show popup when clicked (has show-mobile class) */
+  .note-popup {
+    display: none;
+  }
+
+  .note-popup.show-mobile {
+    display: block !important;
+  }
+
+  .note-popup {
+    position: fixed;
+    left: 10px !important;
+    right: 10px;
+    top: auto;
+    bottom: 60px;
+    max-width: none;
+    width: auto;
+    min-width: auto;
+    padding: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+  }
+
+  .note-text {
+    font-size: 16px;
+  }
+
+  .note-edit-actions {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .btn-edit-note,
+  .btn-delete-note {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+.note-text {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.note-edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #ffc107;
+}
+
+.btn-edit-note,
+.btn-delete-note {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-edit-note {
+  background: #007bff;
+  color: white;
+}
+
+.btn-edit-note:hover {
+  background: #0056b3;
+}
+
+.btn-delete-note {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-delete-note:hover {
+  background: #c82333;
+}
+
+/* Edit mode */
+.inline-note-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff3cd;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ffc107;
+  margin-left: 8px;
+}
+
+.inline-note-edit input {
+  border: 1px solid #ddd;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 200px;
+}
+
+.inline-note-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-save-note,
+.btn-cancel-note {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+.btn-save-note:hover {
+  background: rgba(40, 167, 69, 0.2);
+}
+
+.btn-cancel-note:hover {
+  background: rgba(220, 53, 69, 0.2);
+}
+
+/* Add note button */
+.add-note-line {
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin: 2px 0;
+  padding: 2px 0;
+}
+
+.add-note-line:hover {
+  opacity: 1;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.btn-add-note-inline {
+  background: transparent;
+  border: 1px dashed #ffc107;
+  color: #ffc107;
+  padding: 2px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-note-inline:hover {
+  background: #fff3cd;
+  border-style: solid;
+}

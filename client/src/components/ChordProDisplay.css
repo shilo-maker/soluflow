@@ -1,0 +1,213 @@
+.chordpro-display {
+  font-family: 'Courier New', monospace;
+  line-height: 1.8;
+  color: #333;
+  /* Column properties are now set dynamically via inline styles */
+}
+
+.section-container {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 20px;
+}
+
+.section-header {
+  font-weight: 700;
+  font-size: 1.14em; /* Relative to parent font size (16/14 = 1.14) */
+  color: var(--color-primary);
+  margin-top: 0;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-container:first-child .section-header {
+  margin-top: 0;
+}
+
+.empty-line {
+  height: 1.2em;
+}
+
+.chord-lyric-pair {
+  position: relative;
+  margin-bottom: 0.3em;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.chord-line {
+  position: relative;
+  height: 1.4em;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 0.93em; /* Relative to parent font size (13/14 = 0.93) */
+}
+
+.chord {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.lyric-line {
+  color: #333;
+  min-height: 1.2em;
+  white-space: pre-wrap;
+}
+
+/* RTL support for Hebrew */
+[dir="rtl"] .chord {
+  right: auto;
+}
+
+[dir="rtl"] .lyric-line {
+  text-align: right;
+}
+
+[dir="rtl"] .section-header {
+  text-align: right;
+}
+
+/* Inline notes support */
+.line-with-notes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0.3em;
+}
+
+.btn-add-note-inline {
+  background: transparent;
+  border: 1px dashed #ffc107;
+  color: #ffc107;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  opacity: 0.5;
+  margin-left: 8px;
+}
+
+.line-with-notes:hover .btn-add-note-inline {
+  opacity: 1;
+}
+
+.btn-add-note-inline:hover {
+  background: #fff3cd;
+  border-style: solid;
+}
+
+/* Inline note edit form in ChordProDisplay */
+.line-with-notes .inline-note-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff3cd;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ffc107;
+  margin-left: 8px;
+}
+
+.line-with-notes .inline-note-edit input {
+  border: 1px solid #ddd;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 200px;
+  font-family: inherit;
+}
+
+.line-with-notes .inline-note-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.line-with-notes .btn-save-note,
+.line-with-notes .btn-cancel-note {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+.line-with-notes .btn-save-note:hover {
+  background: rgba(40, 167, 69, 0.2);
+}
+
+.line-with-notes .btn-cancel-note:hover {
+  background: rgba(220, 53, 69, 0.2);
+}
+
+/* Mobile responsive styles for inline notes */
+@media (max-width: 768px) {
+  .line-with-notes {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .btn-add-note-inline {
+    opacity: 0.8;
+    font-size: 10px;
+    padding: 3px 6px;
+    margin-left: 0;
+    margin-top: 2px;
+  }
+
+  .line-with-notes .inline-note-edit {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+
+  .line-with-notes .inline-note-edit input {
+    min-width: auto;
+    width: 100%;
+    font-size: 16px;
+    padding: 8px;
+  }
+
+  .line-with-notes .inline-note-actions {
+    justify-content: stretch;
+    gap: 8px;
+  }
+
+  .line-with-notes .btn-save-note,
+  .line-with-notes .btn-cancel-note {
+    flex: 1;
+    padding: 8px;
+    font-size: 18px;
+    border: 1px solid #ddd;
+  }
+
+  .line-with-notes .btn-save-note {
+    background: #28a745;
+    color: white;
+  }
+
+  .line-with-notes .btn-cancel-note {
+    background: #dc3545;
+    color: white;
+  }
+}
+
+@media (max-width: 768px) {
+  .chordpro-display {
+    column-count: 1 !important;
+    column-gap: 0 !important;
+    column-rule: none !important;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}

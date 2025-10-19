@@ -1,0 +1,271 @@
+.setlist-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.setlist-builder {
+  background-color: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.setlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.setlist-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #333;
+}
+
+.setlist-close {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.setlist-close:hover {
+  color: #333;
+}
+
+.setlist-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 400px;
+}
+
+@media (max-height: 700px) {
+  .setlist-content {
+    grid-template-columns: 1fr;
+    min-height: 300px;
+  }
+}
+
+.setlist-current h3,
+.setlist-available h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+.setlist-songs,
+.available-songs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.setlist-empty,
+.loading-songs,
+.no-songs {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.setlist-song-item,
+.available-song-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.setlist-song-item {
+  cursor: move;
+}
+
+.setlist-song-item:hover {
+  background-color: #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.setlist-song-item.dragging {
+  opacity: 0.5;
+}
+
+.drag-handle {
+  color: #6c757d;
+  cursor: grab;
+  user-select: none;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.song-number {
+  min-width: 24px;
+  height: 24px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.song-details {
+  flex: 1;
+}
+
+.song-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.song-meta {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.btn-remove-song,
+.btn-add-song {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.btn-remove-song {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-remove-song:hover {
+  background-color: #c82333;
+}
+
+.btn-add-song {
+  background-color: #28a745;
+  color: white;
+  font-size: 24px;
+}
+
+.btn-add-song:hover {
+  background-color: #218838;
+}
+
+.setlist-search {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.setlist-search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.setlist-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.btn-cancel,
+.btn-save-setlist {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #5a6268;
+}
+
+.btn-save-setlist {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-save-setlist:hover {
+  background-color: #b8844e;
+}
+
+@media (max-width: 768px) {
+  .setlist-builder {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .setlist-content {
+    grid-template-columns: 1fr;
+  }
+
+  .setlist-header h2 {
+    font-size: 18px;
+  }
+
+  .setlist-footer {
+    flex-direction: column-reverse;
+  }
+
+  .btn-cancel,
+  .btn-save-setlist {
+    width: 100%;
+  }
+}
