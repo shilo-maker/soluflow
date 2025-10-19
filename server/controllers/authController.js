@@ -1,4 +1,4 @@
-const { User, Service } = require('../models');
+const { User, Service, Workspace } = require('../models');
 const { generateAccessToken, generateGuestToken } = require('../utils/jwt');
 
 // POST /api/auth/register
@@ -7,7 +7,7 @@ const register = async (req, res) => {
     const { email, password, username, workspaceId, role } = req.body;
 
     // Validate required fields
-    if (!email || !password || !username || !workspaceId) {
+    if (!email || !password || !username) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -17,12 +17,35 @@ const register = async (req, res) => {
       return res.status(409).json({ error: 'Email already registered' });
     }
 
+    let finalWorkspaceId = workspaceId;
+
+    // If workspaceId is not provided or doesn't exist, create a new workspace
+    if (!finalWorkspaceId) {
+      // Generate workspace name and slug from email
+      const emailPrefix = email.split('@')[0];
+      const workspaceName = `${emailPrefix}'s Workspace`;
+      const workspaceSlug = `${emailPrefix}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+      const workspace = await Workspace.create({
+        name: workspaceName,
+        slug: workspaceSlug
+      });
+
+      finalWorkspaceId = workspace.id;
+    } else {
+      // Verify the workspace exists
+      const workspace = await Workspace.findByPk(finalWorkspaceId);
+      if (!workspace) {
+        return res.status(400).json({ error: 'Invalid workspace ID' });
+      }
+    }
+
     // Create user
     const user = await User.create({
       email,
       password_hash: password, // Will be hashed by model hook
       username,
-      workspace_id: workspaceId,
+      workspace_id: finalWorkspaceId,
       role: role || 'member'
     });
 
