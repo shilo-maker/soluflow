@@ -68,13 +68,12 @@ const Register = () => {
       // Auto-generate username from email (part before @)
       const username = formData.email.split('@')[0];
 
-      // For now, we'll use workspace_id = 1 (or create workspace first in future)
-      // The backend expects workspaceId, but we'll need to handle workspace creation
+      // Don't send workspaceId - backend will auto-create a workspace
       await register(
         formData.email,
         formData.password,
         username,
-        1 // TODO: Create workspace first and use its ID
+        null // Backend will auto-create workspace
       );
       navigate('/'); // Redirect to home/library after successful registration
     } catch (err) {
