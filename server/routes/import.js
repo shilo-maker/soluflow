@@ -15,53 +15,59 @@ router.post('/data', async (req, res) => {
     const songIdMap = {};
     const serviceIdMap = {};
 
-    // Import users
+    // Create personal workspaces first (since User requires workspace_id)
     for (const user of users || []) {
+      // Check if user already exists
       const existingUser = await User.findOne({ where: { email: user.email } });
 
       if (existingUser) {
-        console.log(`User ${user.email} already exists, skipping`);
+        console.log(`User ${user.email} already exists, using existing workspace`);
         userIdMap[user.id] = existingUser.id;
+        workspaceIdMap[user.id] = existingUser.workspace_id;
       } else {
-        const newUser = await User.create({
-          username: user.username,
-          email: user.email,
-          password: user.password, // Already hashed
-          role: user.role || 'user'
-        });
-        userIdMap[user.id] = newUser.id;
-        console.log(`Created user: ${user.email}`);
-      }
-    }
-
-    // Create personal workspaces
-    for (const user of users || []) {
-      const newUserId = userIdMap[user.id];
-
-      const existingWorkspace = await Workspace.findOne({
-        where: {
-          created_by: newUserId,
-          workspace_type: 'personal'
-        }
-      });
-
-      if (existingWorkspace) {
-        workspaceIdMap[user.id] = existingWorkspace.id;
-      } else {
+        // Create workspace first
         const workspace = await Workspace.create({
           name: `${user.username}'s Workspace`,
           workspace_type: 'personal',
-          created_by: newUserId
-        });
-
-        await WorkspaceMember.create({
-          workspace_id: workspace.id,
-          user_id: newUserId,
-          role: 'admin'
+          created_by: null // Will update after user is created
         });
 
         workspaceIdMap[user.id] = workspace.id;
         console.log(`Created workspace for ${user.username}`);
+      }
+    }
+
+    // Import users
+    for (const user of users || []) {
+      const existingUser = await User.findOne({ where: { email: user.email } });
+
+      if (!existingUser) {
+        const workspaceId = workspaceIdMap[user.id];
+
+        const newUser = await User.create({
+          username: user.username,
+          email: user.email,
+          password_hash: user.password_hash, // Already hashed
+          role: user.role || 'member',
+          workspace_id: workspaceId,
+          active_workspace_id: workspaceId,
+          is_active: user.is_active !== undefined ? user.is_active : true
+        });
+        userIdMap[user.id] = newUser.id;
+        console.log(`Created user: ${user.email}`);
+
+        // Update workspace created_by
+        await Workspace.update(
+          { created_by: newUser.id },
+          { where: { id: workspaceId } }
+        );
+
+        // Add user as admin of their personal workspace
+        await WorkspaceMember.create({
+          workspace_id: workspaceId,
+          user_id: newUser.id,
+          role: 'admin'
+        });
       }
     }
 
