@@ -4,7 +4,13 @@ const https = require('https');
 const http = require('http');
 
 // Your production API URL
-const PRODUCTION_API_URL = process.env.PRODUCTION_API_URL || 'https://your-api-url.onrender.com';
+const PRODUCTION_API_URL = process.argv[2] || process.env.PRODUCTION_API_URL || 'https://your-api-url.onrender.com';
+
+if (PRODUCTION_API_URL === 'https://your-api-url.onrender.com') {
+  console.error('❌ Please provide your production API URL');
+  console.log('Usage: node send-data-to-production.js https://your-api-url.onrender.com');
+  process.exit(1);
+}
 
 async function sendData() {
   try {

@@ -41,8 +41,8 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' })); // Increase limit for data import
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
 const authRoutes = require('./routes/auth');
