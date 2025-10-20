@@ -65,7 +65,7 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
 
     try {
       setLoadingSongs(true);
-      const songs = await songService.getAllSongs(user.workspace_id);
+      const songs = await songService.getAllSongs();  // Gets all public songs + user's private songs
       setAvailableSongs(songs);
     } catch (err) {
       console.error('Error fetching songs:', err);
@@ -265,7 +265,7 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
                           {searchQuery ? 'No songs found' : 'No songs available'}
                         </div>
                       ) : (
-                        filteredSongs.slice(0, 10).map(song => (
+                        filteredSongs.map(song => (
                           <div key={song.id} className="available-song-item-mini">
                             <div className="song-info-mini">
                               <div className="song-title-mini">{song.title}</div>

@@ -2,6 +2,35 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  /* Prevent text cursor on all elements by default */
+  cursor: default;
+  /* Prevent text selection on UI elements */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Allow text cursor and selection only on input elements and editable content */
+input,
+textarea,
+[contenteditable="true"],
+.chord-pro-display,
+.song-content-inline,
+.chord-sheet-inline {
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+/* Restore pointer cursor for clickable elements */
+button,
+a,
+[role="button"],
+select {
+  cursor: pointer;
 }
 
 body {

@@ -40,6 +40,14 @@ const User = sequelize.define('User', {
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  active_workspace_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'workspaces',
+      key: 'id'
+    }
   }
 }, {
   tableName: 'users',

@@ -10,10 +10,8 @@ const Register = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
-    workspaceName: ''
+    confirmPassword: ''
   });
-  const [isTeamRegistration, setIsTeamRegistration] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -45,10 +43,6 @@ const Register = () => {
     }
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
-      return false;
-    }
-    if (isTeamRegistration && !formData.workspaceName.trim()) {
-      setError('Workspace name is required when registering as part of a team');
       return false;
     }
     return true;
@@ -137,41 +131,6 @@ const Register = () => {
                 disabled={loading}
               />
             </div>
-
-            <div className="form-group-checkbox">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={isTeamRegistration}
-                  onChange={(e) => {
-                    setIsTeamRegistration(e.target.checked);
-                    if (!e.target.checked) {
-                      setFormData(prev => ({ ...prev, workspaceName: '' }));
-                    }
-                  }}
-                  disabled={loading}
-                />
-                Register as part of a team?
-              </label>
-            </div>
-
-            {isTeamRegistration && (
-              <div className="form-group">
-                <label htmlFor="workspaceName">Workspace Name *</label>
-                <input
-                  type="text"
-                  id="workspaceName"
-                  name="workspaceName"
-                  value={formData.workspaceName}
-                  onChange={handleChange}
-                  placeholder="e.g., Grace Community Church"
-                  disabled={loading}
-                />
-                <small className="form-help">
-                  Your workspace is where your team will manage services and songs together
-                </small>
-              </div>
-            )}
 
             <button
               type="submit"

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import SongEditModal from '../components/SongEditModal';
@@ -11,6 +12,7 @@ import './Library.css';
 const Library = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,11 +28,11 @@ const Library = () => {
   // Fetch songs on component mount
   useEffect(() => {
     const fetchSongs = async () => {
-      if (!user) return;
-
+      // Fetch songs even if user isn't loaded yet - public songs should be visible to everyone
       try {
         setLoading(true);
-        const data = await songService.getAllSongs(user.workspace_id);
+        // Don't pass workspace_id to show ALL public songs from all workspaces
+        const data = await songService.getAllSongs();
         setSongs(data);
         setError(null);
       } catch (err) {
@@ -42,7 +44,7 @@ const Library = () => {
     };
 
     fetchSongs();
-  }, [user]);
+  }, []); // Empty dependency array - fetch once on mount
 
   const filteredSongs = songs.filter(song =>
     song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,8 +100,13 @@ const Library = () => {
         bpm: formData.bpm ? parseInt(formData.bpm) : null,
         time_signature: formData.timeSig,
         content: formData.content,
-        workspace_id: user.workspace_id
+        workspace_id: activeWorkspace?.id
       };
+
+      // Include workspace_ids if provided
+      if (formData.workspace_ids) {
+        songData.workspace_ids = formData.workspace_ids;
+      }
 
       if (modalSong) {
         // Edit mode - update existing song
@@ -127,8 +134,12 @@ const Library = () => {
           a.title.localeCompare(b.title)
         ));
 
-        // Show success toast
-        setToastMessage('Song created successfully!');
+        // Show success toast with workspace info
+        if (formData.workspace_ids && formData.workspace_ids.length > 0) {
+          setToastMessage(`Song created and made visible in ${formData.workspace_ids.length} workspace(s)!`);
+        } else {
+          setToastMessage('Song created successfully!');
+        }
         setShowToast(true);
       }
 
@@ -151,6 +162,71 @@ const Library = () => {
 
   const handleOpenFullView = () => {
     navigate(`/song/${selectedSong.id}`);
+  };
+
+  const handleMakePublic = async () => {
+    if (!selectedSong) return;
+
+    try {
+      console.log('Making song public:', selectedSong.id);
+
+      const updatedSong = await songService.updateSong(selectedSong.id, {
+        title: selectedSong.title,
+        content: selectedSong.content,
+        key: selectedSong.key,
+        bpm: selectedSong.bpm,
+        time_signature: selectedSong.time_signature,
+        authors: selectedSong.authors,
+        copyright_info: selectedSong.copyright_info,
+        is_public: true
+      });
+
+      console.log('Song updated successfully:', updatedSong);
+      console.log('is_public value:', updatedSong.is_public);
+
+      // Update the songs list
+      setSongs(prev => prev.map(song =>
+        song.id === updatedSong.id ? { ...updatedSong, is_public: true } : song
+      ));
+
+      // Update the selected song with is_public explicitly set
+      setSelectedSong({ ...updatedSong, is_public: true });
+
+      // Show success toast
+      setToastMessage('Song is now public!');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Error making song public:', err);
+      setToastMessage('Failed to make song public. Please try again.');
+      setShowToast(true);
+    }
+  };
+
+  const handleDeleteSong = async () => {
+    if (!selectedSong) return;
+
+    // Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete "${selectedSong.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await songService.deleteSong(selectedSong.id);
+
+      // Remove from songs list
+      setSongs(prev => prev.filter(song => song.id !== selectedSong.id));
+
+      // Clear selection
+      setSelectedSong(null);
+
+      // Show success toast
+      setToastMessage('Song deleted successfully!');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Error deleting song:', err);
+      setToastMessage('Failed to delete song. Please try again.');
+      setShowToast(true);
+    }
   };
 
   // Detect if song content has Hebrew characters
@@ -190,7 +266,23 @@ const Library = () => {
           >
             <div className="song-card-content">
               <div className="song-card-left">
-                <h3 className="song-card-title">{song.title}</h3>
+                <h3 className="song-card-title">
+                  {song.title}
+                  {user && song.is_public && (
+                    <span className="badge-public">Public</span>
+                  )}
+                  {user && !song.is_public && (
+                    <>
+                      {song.workspace?.id === activeWorkspace?.id && song.workspace?.workspace_type === 'organization' ? (
+                        <span className="badge-workspace">{song.workspace.name}</span>
+                      ) : song.created_by === user.id ? (
+                        <span className="badge-personal">Personal</span>
+                      ) : user.role === 'admin' ? (
+                        <span className="badge-personal-user">Personal/{song.creator?.username || 'Unknown'}</span>
+                      ) : null}
+                    </>
+                  )}
+                </h3>
                 <p className="song-card-authors">{song.authors}</p>
               </div>
               <div className="song-card-right">
@@ -257,6 +349,22 @@ const Library = () => {
             >
               Edit Song
             </button>
+            {user?.role === 'admin' && !selectedSong.is_public && (
+              <button
+                className="btn-make-public"
+                onClick={handleMakePublic}
+              >
+                Make Public
+              </button>
+            )}
+            {(user?.role === 'admin' || selectedSong.created_by === user?.id) && (
+              <button
+                className="btn-delete-song"
+                onClick={handleDeleteSong}
+              >
+                Delete Song
+              </button>
+            )}
             <button
               className="btn-close-song"
               onClick={() => setSelectedSong(null)}

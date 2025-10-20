@@ -1,10 +1,5 @@
-/* ============================================
-   Song Edit Modal - Clean Rebuild
-   All styles scoped to .song-edit-modal
-   ============================================ */
-
-/* Modal Overlay */
-.song-edit-modal {
+/* Song Edit Modal Specific Styles */
+.song-edit-modal.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -18,18 +13,16 @@
   padding: 20px;
 }
 
-/* Modal Content Container */
 .song-edit-modal .modal-content {
   background-color: white;
   border-radius: 8px;
-  width: 900px;
-  max-width: 90vw;
+  max-width: 900px;
+  width: 100%;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
-/* Modal Header */
 .song-edit-modal .modal-header {
   display: flex;
   justify-content: space-between;
@@ -61,7 +54,6 @@
   color: #333;
 }
 
-/* Modal Error */
 .song-edit-modal .modal-error {
   margin: 20px 25px 0;
   padding: 12px 15px;
@@ -72,61 +64,43 @@
   font-size: 14px;
 }
 
-/* Form Container */
 .song-edit-modal .song-edit-form {
-  display: block;
-  width: 100%;
   padding: 25px;
-  box-sizing: border-box;
 }
 
-/* Form Rows - Use CSS Grid */
 .song-edit-modal .form-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 15px;
   margin-bottom: 15px;
-  width: 100%;
 }
 
 .song-edit-modal .form-row.three-cols {
   grid-template-columns: 2fr 1fr 1fr;
-  width: 100%;
 }
 
-/* Form Groups */
 .song-edit-modal .form-group {
   display: flex;
   flex-direction: column;
-  min-width: 0 !important; /* Important for grid items */
-  max-width: none !important;
-  width: 100%;
-  flex: 1;
+  min-width: 0; /* Allow flex items to shrink below content size */
 }
 
-/* Full-width form groups (not part of grid) */
 .song-edit-modal .form-group.full-width {
-  display: block;
+  grid-column: 1 / -1; /* Take full width in grid */
   width: 100%;
-  margin-bottom: 20px;
 }
 
-/* Labels */
-.song-edit-modal .form-group > label {
-  display: block;
+.song-edit-modal .form-group label {
   font-size: 14px;
   font-weight: 600;
   color: #495057;
   margin-bottom: 6px;
 }
 
-/* ALL Form Inputs, Selects, Textareas */
-.song-edit-modal .form-group > input,
-.song-edit-modal .form-group > textarea,
-.song-edit-modal .form-group > select {
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
+.song-edit-modal .form-group input,
+.song-edit-modal .form-group textarea,
+.song-edit-modal .form-group select {
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid #dee2e6;
   border-radius: 4px;
@@ -137,18 +111,26 @@
   box-sizing: border-box;
 }
 
-.song-edit-modal .form-group > input:focus,
-.song-edit-modal .form-group > textarea:focus,
-.song-edit-modal .form-group > select:focus {
+/* Specific input types to override any conflicts */
+.song-edit-modal .form-group input[type="text"],
+.song-edit-modal .form-group input[type="number"],
+.song-edit-modal .form-group input[type="email"] {
+  width: 100%;
+  max-width: none;
+}
+
+.song-edit-modal .form-group input:focus,
+.song-edit-modal .form-group textarea:focus,
+.song-edit-modal .form-group select:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-.song-edit-modal .form-group > select {
+.song-edit-modal .form-group select {
   cursor: pointer;
 }
 
-.song-edit-modal .form-group > textarea {
+.song-edit-modal .form-group textarea {
   font-family: 'Courier New', monospace;
   resize: vertical;
   min-height: 200px;
@@ -160,7 +142,6 @@
   direction: rtl;
 }
 
-/* Editor Helpers */
 .song-edit-modal .editor-helpers {
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
@@ -286,7 +267,6 @@
   margin-top: 6px;
 }
 
-/* Modal Actions (Footer Buttons) */
 .song-edit-modal .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -331,91 +311,8 @@
   cursor: not-allowed;
 }
 
-/* Workspace Selection */
-.song-edit-modal .workspace-selection {
-  display: block;
-  width: 100%;
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 6px;
-  border: 1px solid #dee2e6;
-  margin-bottom: 20px;
-  box-sizing: border-box;
-}
-
-.song-edit-modal .workspace-selection > label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 10px;
-}
-
-.song-edit-modal .workspace-checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.song-edit-modal .workspace-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background-color: white;
-  border: 2px solid #dee2e6;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: normal;
-}
-
-.song-edit-modal .workspace-checkbox-label:hover {
-  border-color: var(--color-primary);
-  background-color: #fffaf3;
-}
-
-.song-edit-modal .workspace-checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  margin: 0;
-}
-
-.song-edit-modal .workspace-checkbox-label input[type="checkbox"]:checked + span {
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-.song-edit-modal .workspace-checkbox-label span {
-  font-size: 14px;
-  color: #333;
-}
-
-.song-edit-modal .workspace-hint {
-  font-size: 12px;
-  color: #6c757d;
-  font-style: italic;
-  margin-top: 8px;
-}
-
-/* NUCLEAR OPTION - Force inputs to be full width */
-.song-edit-modal #title,
-.song-edit-modal #authors,
-.song-edit-modal #key,
-.song-edit-modal #bpm,
-.song-edit-modal #timeSig,
-.song-edit-modal #content {
-  width: 100% !important;
-  max-width: none !important;
-  min-width: auto !important;
-  flex: none !important;
-}
-
-/* Responsive Design */
 @media (max-width: 768px) {
-  .song-edit-modal {
+  .song-edit-modal.modal-overlay {
     padding: 10px;
   }
 
@@ -442,7 +339,7 @@
     gap: 15px;
   }
 
-  .song-edit-modal .form-group > textarea {
+  .song-edit-modal .form-group textarea {
     min-height: 150px;
   }
 
@@ -476,4 +373,71 @@
     text-align: center;
     margin-bottom: 4px;
   }
+}
+
+/* Workspace Selection Styles */
+.song-edit-modal .workspace-selection {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  margin-bottom: 20px;
+  width: 100%;
+  grid-column: 1 / -1; /* Take full width in grid */
+}
+
+.song-edit-modal .workspace-selection label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 10px;
+}
+
+.song-edit-modal .workspace-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.song-edit-modal .workspace-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background-color: white;
+  border: 2px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: normal !important;
+}
+
+.song-edit-modal .workspace-checkbox-label:hover {
+  border-color: var(--color-primary);
+  background-color: #fffaf3;
+}
+
+.song-edit-modal .workspace-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.song-edit-modal .workspace-checkbox-label input[type="checkbox"]:checked + span {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.song-edit-modal .workspace-checkbox-label span {
+  font-size: 14px;
+  color: #333;
+}
+
+.song-edit-modal .workspace-hint {
+  font-size: 12px;
+  color: #6c757d;
+  font-style: italic;
+  margin-top: 8px;
 }

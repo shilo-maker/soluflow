@@ -39,6 +39,11 @@
   padding: var(--spacing-2xl) var(--spacing-xl);
 }
 
+.login-card form {
+  display: block !important;
+  width: 100%;
+}
+
 .login-mode-toggle {
   display: flex;
   gap: var(--spacing-sm);
@@ -81,11 +86,14 @@
   margin-bottom: var(--spacing-lg);
 }
 
-.form-group {
+.login-page .form-group {
+  display: block !important;
   margin-bottom: var(--spacing-lg);
+  width: 100% !important;
+  max-width: none !important;
 }
 
-.form-group label {
+.login-page .form-group label {
   display: block;
   font-size: var(--font-sm);
   font-weight: var(--font-semibold);
@@ -93,8 +101,12 @@
   margin-bottom: var(--spacing-sm);
 }
 
-.form-group input {
-  width: 100%;
+.login-page .form-group input {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 100% !important;
+  flex: none !important;
   padding: var(--spacing-md) var(--spacing-md);
   border: 2px solid var(--color-light-gray);
   border-radius: var(--border-radius-md);
@@ -104,19 +116,30 @@
   box-sizing: border-box;
 }
 
-.form-group input:focus {
+.login-page .form-group input:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 }
 
-.form-group input:disabled {
+.login-page .form-group input:disabled {
   background-color: var(--color-background);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
-.form-help {
+/* Specific targeting for email and password inputs */
+.login-page #email,
+.login-page #password {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 100% !important;
+  flex: none !important;
+  box-sizing: border-box !important;
+}
+
+.login-page .form-help {
   display: block;
   margin-top: var(--spacing-sm);
   font-size: var(--font-xs);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { WorkspaceProvider } from './contexts/WorkspaceContext';
 import PrivateRoute from './components/PrivateRoute';
 import Header from './components/layout/Header';
 import BottomNav from './components/layout/BottomNav';
@@ -11,6 +12,9 @@ import GuestServiceView from './pages/GuestServiceView';
 import GuestLanding from './pages/GuestLanding';
 import Library from './pages/Library';
 import SongView from './pages/SongView';
+import UserManagement from './pages/UserManagement';
+import WorkspaceManagement from './pages/WorkspaceManagement';
+import AcceptInvite from './pages/AcceptInvite';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import './App.css';
@@ -77,6 +81,9 @@ function AppContent() {
           <Route path="/service" element={<PrivateRoute><Service /></PrivateRoute>} />
           <Route path="/service/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
           <Route path="/library" element={<PrivateRoute><Library /></PrivateRoute>} />
+          <Route path="/users" element={<PrivateRoute><UserManagement /></PrivateRoute>} />
+          <Route path="/workspace/settings" element={<PrivateRoute><WorkspaceManagement /></PrivateRoute>} />
+          <Route path="/workspace/invite/:token" element={<PrivateRoute><AcceptInvite /></PrivateRoute>} />
         </Routes>
       </main>
 
@@ -92,7 +99,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <WorkspaceProvider>
+          <AppContent />
+        </WorkspaceProvider>
       </AuthProvider>
     </Router>
   );

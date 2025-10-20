@@ -7,7 +7,12 @@
       "Bash(npm start)",
       "Bash(cmd.exe /c \"taskkill /F /PID 10636\")",
       "Bash(timeout:*)",
-      "Bash(ping 127.0.0.1 -n 2)"
+      "Bash(ping 127.0.0.1 -n 2)",
+      "Bash(git add render.yaml)",
+      "Bash(git commit -m \"Fix render.yaml: remove region from static site\")",
+      "Bash(git push)",
+      "Bash(node server/test-api.js)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

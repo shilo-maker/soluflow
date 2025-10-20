@@ -55,6 +55,18 @@ const Song = sequelize.define('Song', {
       model: 'users',
       key: 'id'
     }
+  },
+  is_public: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Whether song is visible to all users or only creator'
+  },
+  approval_status: {
+    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Approval status when regular user submits song to become public'
   }
 }, {
   tableName: 'songs',
@@ -71,6 +83,12 @@ const Song = sequelize.define('Song', {
     },
     {
       fields: ['key']
+    },
+    {
+      fields: ['created_by']
+    },
+    {
+      fields: ['is_public']
     }
   ]
 });

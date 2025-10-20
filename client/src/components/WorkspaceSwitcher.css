@@ -1,0 +1,288 @@
+.workspace-switcher {
+  position: relative;
+  margin-right: 16px;
+}
+
+.workspace-switcher-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.workspace-switcher-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.workspace-switcher-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.workspace-switcher-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.workspace-settings-button-hover {
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.workspace-switcher-container:hover .workspace-settings-button-hover {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.workspace-settings-button-hover:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.workspace-name {
+  font-weight: 500;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-type-badge {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.workspace-type-badge.personal {
+  background: #4caf50;
+  color: white;
+}
+
+.workspace-type-badge.organization {
+  background: #2196f3;
+  color: white;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.workspace-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  z-index: 1000;
+}
+
+.workspace-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.workspace-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+  transition: background 0.2s ease;
+}
+
+.workspace-item:hover {
+  background: #f8f9fa;
+}
+
+.workspace-item.active {
+  background: #e8f4f8;
+}
+
+.workspace-item-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.workspace-item-button:disabled {
+  cursor: not-allowed;
+}
+
+.workspace-item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.workspace-item-name {
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.active-indicator {
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.workspace-error {
+  padding: 12px 16px;
+  background: #ffebee;
+  color: #c62828;
+  font-size: 13px;
+  border-top: 1px solid #ffcdd2;
+}
+
+.workspace-settings-icon {
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workspace-settings-icon:hover {
+  background: rgba(96, 125, 139, 0.1);
+  transform: scale(1.1);
+}
+
+.create-workspace-button {
+  width: 100%;
+  padding: 12px 16px;
+  background: #c9956e;
+  color: white;
+  border: none;
+  border-radius: 0 0 8px 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.create-workspace-button:hover {
+  background: #b58558;
+}
+
+.create-workspace-form {
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.create-workspace-form input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.create-workspace-form input:focus {
+  outline: none;
+  border-color: #c9956e;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.form-buttons button {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-create {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-create:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.btn-cancel {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.form-buttons button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.workspace-limit-message {
+  padding: 12px 16px;
+  background: #fff3e0;
+  color: #e65100;
+  font-size: 13px;
+  text-align: center;
+  border-top: 1px solid #ffe0b2;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Scrollbar styling for workspace list */
+.workspace-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.workspace-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.workspace-list::-webkit-scrollbar-thumb {
+  background: #c9956e;
+  border-radius: 4px;
+}
+
+.workspace-list::-webkit-scrollbar-thumb:hover {
+  background: #b58558;
+}

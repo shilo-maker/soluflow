@@ -10,19 +10,22 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3001',
-    methods: ['GET', 'POST']
-  }
-});
 
 // Middleware
 const allowedOrigins = [
   process.env.CLIENT_URL,
   'http://localhost:3001',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://localhost:3002'
 ].filter(Boolean);
+
+const io = socketIo(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
 
 app.use(cors({
   origin: function(origin, callback) {
@@ -46,6 +49,8 @@ const authRoutes = require('./routes/auth');
 const songsRoutes = require('./routes/songs');
 const servicesRoutes = require('./routes/services');
 const notesRoutes = require('./routes/notes');
+const usersRoutes = require('./routes/users');
+const workspacesRoutes = require('./routes/workspaces');
 
 // API routes
 app.get('/api/health', (req, res) => {
@@ -56,6 +61,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/songs', songsRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/notes', notesRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/workspaces', workspacesRoutes);
 
 // 404 handler
 app.use((req, res) => {

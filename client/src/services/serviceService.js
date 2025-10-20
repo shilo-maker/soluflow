@@ -65,6 +65,14 @@ const serviceService = {
   acceptSharedService: async (code) => {
     const response = await api.post(`/services/accept/${code}`);
     return response.data;
+  },
+
+  // Move service to another workspace
+  moveToWorkspace: async (serviceId, targetWorkspaceId) => {
+    const response = await api.put(`/services/${serviceId}/move`, {
+      target_workspace_id: targetWorkspaceId
+    });
+    return response.data;
   }
 };
 

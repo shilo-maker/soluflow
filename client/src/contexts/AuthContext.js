@@ -26,8 +26,8 @@ export const AuthProvider = ({ children }) => {
       const token = authService.getToken();
       if (token) {
         // Verify token is still valid by fetching user data
-        const userData = await authService.getMe();
-        setUser(userData);
+        const data = await authService.getMe();
+        setUser(data.user);
         setIsAuthenticated(true);
       } else {
         setUser(null);

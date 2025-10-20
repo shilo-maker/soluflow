@@ -243,7 +243,6 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 value={formData.title}
                 onChange={handleChange}
                 required
-                style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>
 
@@ -256,7 +255,6 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 value={formData.authors}
                 onChange={handleChange}
                 placeholder="e.g., John Doe"
-                style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>
           </div>
@@ -270,7 +268,6 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 value={formData.key}
                 onChange={handleChange}
                 required
-                style={{ width: '100%', boxSizing: 'border-box' }}
               >
                 <option value="">Select Key</option>
                 {COMMON_KEYS.map(key => (
@@ -289,7 +286,6 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 onChange={handleChange}
                 placeholder="e.g., 120"
                 min="1"
-                style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>
 
@@ -300,7 +296,6 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 name="timeSig"
                 value={formData.timeSig}
                 onChange={handleChange}
-                style={{ width: '100%', boxSizing: 'border-box' }}
               >
                 <option value="4/4">4/4</option>
                 <option value="6/8">6/8</option>
@@ -398,7 +393,6 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
               required
               rows="15"
               className="lyrics-textarea-rtl"
-              style={{ width: '100%', boxSizing: 'border-box' }}
               placeholder="הקלד את מילות השיר כאן. השתמש בכפתורים למעלה כדי להוסיף אקורדים וקטעים.
 
 דוגמה:

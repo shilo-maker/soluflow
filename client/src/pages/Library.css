@@ -95,6 +95,75 @@
   font-weight: 600;
   color: #333;
   margin: 0 0 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge-public {
+  display: inline-block;
+  background-color: #28a745;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-personal {
+  display: inline-block;
+  background-color: #17a2b8;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-workspace {
+  display: inline-block;
+  background-color: #007bff;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+}
+
+.badge-personal-user {
+  display: inline-block;
+  background-color: #6c757d;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+}
+
+.song-card.selected .badge-public {
+  background-color: white;
+  color: #28a745;
+}
+
+.song-card.selected .badge-personal {
+  background-color: white;
+  color: #17a2b8;
+}
+
+.song-card.selected .badge-workspace {
+  background-color: white;
+  color: #007bff;
+}
+
+.song-card.selected .badge-personal-user {
+  background-color: white;
+  color: #6c757d;
 }
 
 .song-card-authors {
@@ -300,6 +369,23 @@
 
 .btn-edit-song:hover {
   background-color: #b8844e;
+}
+
+.btn-make-public {
+  flex: 1;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-make-public:hover {
+  background-color: #218838;
 }
 
 .btn-delete-song {

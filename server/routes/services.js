@@ -12,7 +12,8 @@ const {
   updateServiceSong,
   removeSongFromService,
   acceptSharedService,
-  getShareLink
+  getShareLink,
+  moveToWorkspace
 } = require('../controllers/serviceController');
 
 // GET /api/services - Get all services (authenticated)
@@ -47,5 +48,8 @@ router.get('/:id/share', authenticate, getShareLink);
 
 // POST /api/services/accept/:code - Accept shared service (authenticated)
 router.post('/accept/:code', authenticate, acceptSharedService);
+
+// PUT /api/services/:id/move - Move service to another workspace (authenticated)
+router.put('/:id/move', authenticate, moveToWorkspace);
 
 module.exports = router;

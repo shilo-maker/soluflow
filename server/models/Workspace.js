@@ -15,6 +15,11 @@ const Workspace = sequelize.define('Workspace', {
     type: DataTypes.STRING(100),
     allowNull: false,
     unique: true
+  },
+  workspace_type: {
+    type: DataTypes.ENUM('personal', 'organization'),
+    allowNull: false,
+    defaultValue: 'personal'
   }
 }, {
   tableName: 'workspaces',

@@ -20,7 +20,7 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    setError('');
+    // Don't clear error on input change - let it persist until next submit
   };
 
   const handleSubmit = async (e) => {

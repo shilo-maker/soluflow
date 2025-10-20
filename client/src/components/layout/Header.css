@@ -39,6 +39,7 @@
   font-weight: 600;
 }
 
+.btn-users,
 .btn-logout {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: white;
@@ -53,11 +54,13 @@
   box-shadow: var(--shadow-primary);
 }
 
+.btn-users:hover,
 .btn-logout:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-primary-hover);
 }
 
+.btn-users:active,
 .btn-logout:active {
   transform: translateY(0);
 }
@@ -71,6 +74,7 @@
     font-size: 12px;
   }
 
+  .btn-users,
   .btn-logout {
     padding: 6px 15px;
   }

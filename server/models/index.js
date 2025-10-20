@@ -6,6 +6,9 @@ const Service = require('./Service');
 const ServiceSong = require('./ServiceSong');
 const Note = require('./Note');
 const SharedService = require('./SharedService');
+const WorkspaceMember = require('./WorkspaceMember');
+const WorkspaceInvitation = require('./WorkspaceInvitation');
+const SongWorkspace = require('./SongWorkspace');
 
 // Define associations
 
@@ -14,8 +17,34 @@ Workspace.hasMany(User, { foreignKey: 'workspace_id', as: 'users' });
 Workspace.hasMany(Song, { foreignKey: 'workspace_id', as: 'songs' });
 Workspace.hasMany(Service, { foreignKey: 'workspace_id', as: 'services' });
 
+// WorkspaceMember associations (many-to-many between User and Workspace)
+WorkspaceMember.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'workspace' });
+WorkspaceMember.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Workspace.hasMany(WorkspaceMember, { foreignKey: 'workspace_id', as: 'members' });
+User.hasMany(WorkspaceMember, { foreignKey: 'user_id', as: 'workspaceMemberships' });
+
+// Many-to-many: Users can be in multiple workspaces, Workspaces can have multiple users
+Workspace.belongsToMany(User, {
+  through: WorkspaceMember,
+  foreignKey: 'workspace_id',
+  otherKey: 'user_id',
+  as: 'workspaceUsers'
+});
+User.belongsToMany(Workspace, {
+  through: WorkspaceMember,
+  foreignKey: 'user_id',
+  otherKey: 'workspace_id',
+  as: 'workspaces'
+});
+
+// WorkspaceInvitation associations
+WorkspaceInvitation.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'workspace' });
+WorkspaceInvitation.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+Workspace.hasMany(WorkspaceInvitation, { foreignKey: 'workspace_id', as: 'invitations' });
+
 // User associations
-User.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'workspace' });
+User.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'defaultWorkspace' }); // Keep for backward compatibility
+User.belongsTo(Workspace, { foreignKey: 'active_workspace_id', as: 'activeWorkspace' });
 User.hasMany(Song, { foreignKey: 'created_by', as: 'createdSongs' });
 User.hasMany(Service, { foreignKey: 'created_by', as: 'createdServices' });
 User.hasMany(Service, { foreignKey: 'leader_id', as: 'ledServices' });
@@ -31,6 +60,26 @@ Song.belongsToMany(Service, {
   foreignKey: 'song_id',
   otherKey: 'service_id',
   as: 'services'
+});
+
+// SongWorkspace associations (many-to-many between Song and Workspace)
+SongWorkspace.belongsTo(Song, { foreignKey: 'song_id', as: 'song' });
+SongWorkspace.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'workspace' });
+Song.hasMany(SongWorkspace, { foreignKey: 'song_id', as: 'songWorkspaces' });
+Workspace.hasMany(SongWorkspace, { foreignKey: 'workspace_id', as: 'songWorkspaces' });
+
+// Many-to-many: Songs can be visible in multiple workspaces
+Song.belongsToMany(Workspace, {
+  through: SongWorkspace,
+  foreignKey: 'song_id',
+  otherKey: 'workspace_id',
+  as: 'visibleInWorkspaces'
+});
+Workspace.belongsToMany(Song, {
+  through: SongWorkspace,
+  foreignKey: 'workspace_id',
+  otherKey: 'song_id',
+  as: 'visibleSongs'
 });
 
 // Service associations
@@ -106,6 +155,9 @@ module.exports = {
   ServiceSong,
   Note,
   SharedService,
+  WorkspaceMember,
+  WorkspaceInvitation,
+  SongWorkspace,
   syncDatabase,
   testConnection
 };

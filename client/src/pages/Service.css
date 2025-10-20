@@ -45,6 +45,23 @@
   background-color: #b8844e;
 }
 
+.btn-move {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-move:hover {
+  background-color: #138496;
+}
+
 .btn-delete {
   background-color: #dc3545;
   color: white;
@@ -107,6 +124,16 @@
 .service-option.selected .btn-edit {
   background-color: white;
   color: var(--color-primary);
+}
+
+.service-option.selected .btn-move {
+  background-color: white;
+  color: #17a2b8;
+}
+
+.service-option.selected .btn-move:hover {
+  background-color: #f8f9fa;
+  color: #138496;
 }
 
 .service-option.selected .btn-delete {
@@ -439,6 +466,103 @@
   box-shadow: var(--shadow-primary-hover);
 }
 
+/* Move Dialog Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.modal-content p {
+  font-size: 15px;
+  color: #6c757d;
+  margin: 0 0 20px 0;
+}
+
+.workspace-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.workspace-option {
+  background-color: white;
+  border: 2px solid #333;
+  color: #333;
+  padding: 14px 20px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.workspace-option:hover {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  transform: translateX(4px);
+}
+
+.no-workspaces {
+  text-align: center;
+  color: #6c757d;
+  padding: 20px;
+  font-style: italic;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background-color: #5a6268;
+}
+
 @media (max-width: 768px) {
   .song-title {
     font-size: 20px;
@@ -457,5 +581,10 @@
   .btn-follow-mode {
     padding: 6px 14px;
     font-size: 12px;
+  }
+
+  .modal-content {
+    padding: 20px;
+    max-width: 95%;
   }
 }

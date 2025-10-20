@@ -1,75 +1,92 @@
-const { Service, User, Song, ServiceSong, Workspace, SharedService } = require('../models');
+const { Service, User, Song, ServiceSong, Workspace, SharedService, WorkspaceMember } = require('../models');
 const { Op } = require('sequelize');
+
+// Helper function to check if user can edit services in workspace
+const canEditServicesInWorkspace = async (userId, workspaceId) => {
+  const membership = await WorkspaceMember.findOne({
+    where: {
+      user_id: userId,
+      workspace_id: workspaceId,
+      role: { [Op.in]: ['admin', 'planner'] }
+    }
+  });
+  return !!membership;
+};
 
 // Get all services for the authenticated user
 const getAllServices = async (req, res) => {
   try {
-    // Get owned services
-    const ownedServices = await Service.findAll({
-      where: {
-        created_by: req.user.id,
-        is_archived: false
-      },
-      include: [
-        {
-          model: User,
-          as: 'leader',
-          attributes: ['id', 'username', 'email']
+    // Use active_workspace_id to filter services
+    const workspaceId = req.user.active_workspace_id;
+
+    // Check if user is admin or planner in this workspace
+    const canEditAll = await canEditServicesInWorkspace(req.user.id, workspaceId);
+
+    let allServices;
+
+    if (canEditAll) {
+      // Admins and planners see ALL services in the workspace
+      const services = await Service.findAll({
+        where: {
+          workspace_id: workspaceId,
+          is_archived: false
         },
-        {
-          model: User,
-          as: 'creator',
-          attributes: ['id', 'username', 'email']
-        }
-      ]
-    });
+        include: [
+          {
+            model: User,
+            as: 'leader',
+            attributes: ['id', 'username', 'email']
+          },
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'username', 'email']
+          }
+        ]
+      });
 
-    // Get shared services
-    const sharedServiceRecords = await SharedService.findAll({
-      where: { user_id: req.user.id },
-      include: [
-        {
-          model: Service,
-          as: 'service',
-          where: { is_archived: false },
-          include: [
-            {
-              model: User,
-              as: 'leader',
-              attributes: ['id', 'username', 'email']
-            },
-            {
-              model: User,
-              as: 'creator',
-              attributes: ['id', 'username', 'email']
-            }
-          ]
-        }
-      ]
-    });
+      allServices = services.map(s => {
+        const service = s.toJSON();
+        service.isShared = service.created_by !== req.user.id;
+        service.canEdit = true; // Admins/planners can edit all
+        return service;
+      });
+    } else {
+      // Members can VIEW all services in the workspace (read-only)
+      const services = await Service.findAll({
+        where: {
+          workspace_id: workspaceId,
+          is_archived: false
+        },
+        include: [
+          {
+            model: User,
+            as: 'leader',
+            attributes: ['id', 'username', 'email']
+          },
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'username', 'email']
+          }
+        ]
+      });
 
-    // Map shared services and add isShared flag
-    const sharedServices = sharedServiceRecords.map(record => {
-      const service = record.service.toJSON();
-      service.isShared = true;
-      return service;
-    });
+      allServices = services.map(s => {
+        const service = s.toJSON();
+        service.isShared = service.created_by !== req.user.id;
+        service.canEdit = false; // Members cannot edit any services
+        return service;
+      });
+    }
 
-    // Add isShared: false to owned services
-    const ownedServicesWithFlag = ownedServices.map(s => {
-      const service = s.toJSON();
-      service.isShared = false;
-      return service;
-    });
-
-    // Combine and sort by date
-    const allServices = [...ownedServicesWithFlag, ...sharedServices].sort((a, b) => {
+    // Sort by date
+    allServices.sort((a, b) => {
       const dateA = new Date(a.date || 0);
       const dateB = new Date(b.date || 0);
       if (dateB.getTime() !== dateA.getTime()) {
         return dateB - dateA;
       }
-      // If dates are equal, sort by time
       const timeA = a.time || '00:00';
       const timeB = b.time || '00:00';
       return timeB.localeCompare(timeA);
@@ -117,8 +134,18 @@ const getServiceById = async (req, res) => {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    // Check if user owns the service or has it shared with them
+    // Check if user has access to this service
     const isOwner = service.created_by === req.user.id;
+
+    // Check if user is a member of the workspace this service belongs to
+    const workspaceMembership = await WorkspaceMember.findOne({
+      where: {
+        workspace_id: service.workspace_id,
+        user_id: req.user.id
+      }
+    });
+
+    // Check if service is shared with the user
     const sharedService = await SharedService.findOne({
       where: {
         service_id: id,
@@ -126,7 +153,8 @@ const getServiceById = async (req, res) => {
       }
     });
 
-    if (!isOwner && !sharedService) {
+    // Allow access if user is owner, workspace member, or has service shared with them
+    if (!isOwner && !workspaceMembership && !sharedService) {
       return res.status(403).json({ error: 'Access denied. You do not have access to this service.' });
     }
 
@@ -213,7 +241,6 @@ const getServiceByCode = async (req, res) => {
 const createService = async (req, res) => {
   try {
     const {
-      workspace_id,
       title,
       date,
       time,
@@ -223,9 +250,20 @@ const createService = async (req, res) => {
       is_public
     } = req.body;
 
+    // Use active_workspace_id if workspace_id not provided in body
+    const workspace_id = req.body.workspace_id || req.user?.active_workspace_id;
+
     if (!workspace_id || !title) {
       return res.status(400).json({
-        error: 'workspace_id and title are required'
+        error: 'workspace_id (or active workspace) and title are required'
+      });
+    }
+
+    // Check if user has permission to create services in this workspace
+    const canEdit = await canEditServicesInWorkspace(req.user.id, workspace_id);
+    if (!canEdit) {
+      return res.status(403).json({
+        error: 'Access denied. Only admins and planners can create services in this workspace.'
       });
     }
 
@@ -286,9 +324,12 @@ const updateService = async (req, res) => {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    // Verify the service belongs to the authenticated user
-    if (service.created_by !== req.user.id) {
-      return res.status(403).json({ error: 'Access denied. You can only update your own services.' });
+    // Check if user has permission to edit services in this workspace
+    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+    if (!canEdit) {
+      return res.status(403).json({
+        error: 'Access denied. Only admins and planners can update services in this workspace.'
+      });
     }
 
     await service.update({
@@ -319,9 +360,12 @@ const deleteService = async (req, res) => {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    // Verify the service belongs to the authenticated user
-    if (service.created_by !== req.user.id) {
-      return res.status(403).json({ error: 'Access denied. You can only delete your own services.' });
+    // Check if user has permission to delete services in this workspace
+    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+    if (!canEdit) {
+      return res.status(403).json({
+        error: 'Access denied. Only admins and planners can delete services in this workspace.'
+      });
     }
 
     await service.destroy();
@@ -349,6 +393,14 @@ const addSongToService = async (req, res) => {
     const service = await Service.findByPk(id);
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
+    }
+
+    // Check if user has permission to edit services in this workspace
+    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+    if (!canEdit) {
+      return res.status(403).json({
+        error: 'Access denied. Only admins and planners can edit service setlists.'
+      });
     }
 
     const serviceSong = await ServiceSong.create({
@@ -385,6 +437,19 @@ const updateServiceSong = async (req, res) => {
       return res.status(404).json({ error: 'Service song not found' });
     }
 
+    // Check permissions
+    const service = await Service.findByPk(parseInt(id));
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+    if (!canEdit) {
+      return res.status(403).json({
+        error: 'Access denied. Only admins and planners can edit service setlists.'
+      });
+    }
+
     const { position, notes, segment_title, segment_content } = req.body;
 
     await serviceSong.update({
@@ -416,6 +481,19 @@ const removeSongFromService = async (req, res) => {
 
     if (!serviceSong) {
       return res.status(404).json({ error: 'Service song not found' });
+    }
+
+    // Check permissions
+    const service = await Service.findByPk(parseInt(id));
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+    if (!canEdit) {
+      return res.status(403).json({
+        error: 'Access denied. Only admins and planners can edit service setlists.'
+      });
     }
 
     await serviceSong.destroy();
@@ -510,6 +588,50 @@ const getShareLink = async (req, res) => {
   }
 };
 
+// Move service to another workspace
+const moveToWorkspace = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { target_workspace_id } = req.body;
+
+    if (!target_workspace_id) {
+      return res.status(400).json({ error: 'target_workspace_id is required' });
+    }
+
+    const service = await Service.findByPk(id);
+
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    // Verify ownership
+    if (service.created_by !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. You can only move your own services.' });
+    }
+
+    // Verify user is a member of the target workspace
+    const { WorkspaceMember } = require('../models');
+    const membership = await WorkspaceMember.findOne({
+      where: {
+        workspace_id: target_workspace_id,
+        user_id: req.user.id
+      }
+    });
+
+    if (!membership) {
+      return res.status(403).json({ error: 'You are not a member of the target workspace' });
+    }
+
+    // Update the service's workspace
+    await service.update({ workspace_id: target_workspace_id });
+
+    res.json({ message: 'Service moved successfully', service });
+  } catch (error) {
+    console.error('Error moving service to workspace:', error);
+    res.status(500).json({ error: 'Failed to move service' });
+  }
+};
+
 module.exports = {
   getAllServices,
   getServiceById,
@@ -521,5 +643,6 @@ module.exports = {
   updateServiceSong,
   removeSongFromService,
   acceptSharedService,
-  getShareLink
+  getShareLink,
+  moveToWorkspace
 };

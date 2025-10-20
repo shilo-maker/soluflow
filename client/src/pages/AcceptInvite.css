@@ -1,0 +1,213 @@
+.accept-invite-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.invite-card {
+  background: white;
+  border-radius: 12px;
+  padding: 48px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.invite-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.success-icon {
+  font-size: 72px;
+  color: #4caf50;
+  margin-bottom: 24px;
+  animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.error-icon {
+  font-size: 72px;
+  color: #f44336;
+  margin-bottom: 24px;
+  animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
+}
+
+.invite-card h1 {
+  color: #333;
+  font-size: 28px;
+  margin: 0 0 16px 0;
+  font-weight: 600;
+}
+
+.invite-description {
+  color: #666;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+}
+
+.success-message {
+  color: #4caf50;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 16px 0;
+}
+
+.error-message {
+  color: #f44336;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+  padding: 16px;
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 6px;
+}
+
+.redirect-message {
+  color: #999;
+  font-size: 14px;
+  margin: 0;
+}
+
+.loading-text {
+  color: #666;
+  font-size: 18px;
+  padding: 40px 0;
+}
+
+.btn-accept {
+  width: 100%;
+  padding: 14px 24px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.btn-accept:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.btn-accept:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-cancel {
+  width: 100%;
+  padding: 14px 24px;
+  background: transparent;
+  color: #666;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-home {
+  padding: 14px 32px;
+  background: #c9956e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-home:hover {
+  background: #b58558;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(201, 149, 110, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .invite-card {
+    padding: 32px 24px;
+  }
+
+  .invite-card h1 {
+    font-size: 24px;
+  }
+
+  .invite-icon,
+  .success-icon,
+  .error-icon {
+    font-size: 48px;
+  }
+
+  .invite-description,
+  .error-message {
+    font-size: 14px;
+  }
+}

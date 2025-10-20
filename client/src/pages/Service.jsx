@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import serviceService from '../services/serviceService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import ServiceEditModal from '../components/ServiceEditModal';
@@ -16,6 +17,7 @@ const Service = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
+  const { workspaces, activeWorkspace } = useWorkspace();
   const songPillsRef = useRef(null);
   const socketRef = useRef(null);
 
@@ -25,6 +27,7 @@ const Service = () => {
   const [selectedSongIndex, setSelectedSongIndex] = useState(0);
   const [fontSize, setFontSize] = useState(14);
   const [transposition, setTransposition] = useState(0);
+  const [songTranspositions, setSongTranspositions] = useState({}); // Store transposition per service and song
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,6 +39,8 @@ const Service = () => {
   const [serviceToDelete, setServiceToDelete] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [serviceToShare, setServiceToShare] = useState(null);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [serviceToMove, setServiceToMove] = useState(null);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
@@ -88,7 +93,7 @@ const Service = () => {
         const details = await serviceService.getServiceById(selectedService.id);
         setServiceDetails(details);
         setSelectedSongIndex(0);
-        setTransposition(0);
+        // Don't reset transposition - it will be loaded from saved state
       } catch (err) {
         console.error('Error fetching service details:', err);
         setError('Failed to load service details.');
@@ -98,10 +103,14 @@ const Service = () => {
     fetchServiceDetails();
   }, [selectedService]);
 
-  // Reset transposition when song changes
+  // Load saved transposition when song or service changes
   useEffect(() => {
-    setTransposition(0);
-  }, [selectedSongIndex]);
+    if (!selectedService || !serviceDetails?.setlist?.[selectedSongIndex]) return;
+
+    const currentSongId = serviceDetails.setlist[selectedSongIndex].id;
+    const savedTransposition = songTranspositions[selectedService.id]?.[currentSongId] || 0;
+    setTransposition(savedTransposition);
+  }, [selectedSongIndex, selectedService, serviceDetails, songTranspositions]);
 
   // Socket.IO connection and real-time sync
   useEffect(() => {
@@ -207,7 +216,7 @@ const Service = () => {
   const handleSelectService = (service) => {
     setSelectedService(service);
     setSelectedSongIndex(0); // Reset to first song when changing service
-    setTransposition(0); // Reset transposition when changing service
+    // Don't reset transposition - it will be loaded from saved state
   };
 
   const zoomIn = () => {
@@ -240,6 +249,18 @@ const Service = () => {
     const newTransposition = Math.min(transposition + 1, 11);
     setTransposition(newTransposition);
 
+    // Save transposition for current song in current service
+    if (selectedService && serviceDetails?.setlist?.[selectedSongIndex]) {
+      const currentSongId = serviceDetails.setlist[selectedSongIndex].id;
+      setSongTranspositions(prev => ({
+        ...prev,
+        [selectedService.id]: {
+          ...(prev[selectedService.id] || {}),
+          [currentSongId]: newTransposition
+        }
+      }));
+    }
+
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && selectedService) {
       socketRef.current.emit('leader-transpose', {
@@ -253,6 +274,18 @@ const Service = () => {
     const newTransposition = Math.max(transposition - 1, -11);
     setTransposition(newTransposition);
 
+    // Save transposition for current song in current service
+    if (selectedService && serviceDetails?.setlist?.[selectedSongIndex]) {
+      const currentSongId = serviceDetails.setlist[selectedSongIndex].id;
+      setSongTranspositions(prev => ({
+        ...prev,
+        [selectedService.id]: {
+          ...(prev[selectedService.id] || {}),
+          [currentSongId]: newTransposition
+        }
+      }));
+    }
+
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && selectedService) {
       socketRef.current.emit('leader-transpose', {
@@ -264,6 +297,18 @@ const Service = () => {
 
   const resetTransposition = () => {
     setTransposition(0);
+
+    // Save transposition for current song in current service
+    if (selectedService && serviceDetails?.setlist?.[selectedSongIndex]) {
+      const currentSongId = serviceDetails.setlist[selectedSongIndex].id;
+      setSongTranspositions(prev => ({
+        ...prev,
+        [selectedService.id]: {
+          ...(prev[selectedService.id] || {}),
+          [currentSongId]: 0
+        }
+      }));
+    }
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && selectedService) {
@@ -288,7 +333,7 @@ const Service = () => {
     try {
       const serviceData = {
         ...formData,
-        workspace_id: user.workspace_id,
+        workspace_id: activeWorkspace?.id,
         leader_id: user.id,
         created_by: user.id
       };
@@ -458,6 +503,53 @@ const Service = () => {
     setIsShareModalOpen(true);
   };
 
+  const handleMoveService = (service) => {
+    setServiceToMove(service);
+    setShowMoveDialog(true);
+  };
+
+  const confirmMove = async (targetWorkspaceId) => {
+    if (!serviceToMove) return;
+
+    try {
+      const targetWorkspace = workspaces?.find(ws => ws.id === targetWorkspaceId);
+      const serviceName = serviceToMove.title;
+
+      await serviceService.moveToWorkspace(serviceToMove.id, targetWorkspaceId);
+
+      // Close dialog first
+      setShowMoveDialog(false);
+
+      // Remove from current services list
+      setServices(prev => prev.filter(s => s.id !== serviceToMove.id));
+
+      // If we moved the selected service, clear selection
+      if (selectedService?.id === serviceToMove.id) {
+        const remainingServices = services.filter(s => s.id !== serviceToMove.id);
+        setSelectedService(remainingServices.length > 0 ? remainingServices[0] : null);
+      }
+
+      // Show success message with workspace name
+      const message = targetWorkspace
+        ? `"${serviceName}" moved to "${targetWorkspace.name}" successfully!`
+        : 'Service moved successfully!';
+      setToastMessage(message);
+      setShowToast(true);
+      setServiceToMove(null);
+    } catch (err) {
+      console.error('Error moving service:', err);
+      setShowMoveDialog(false);
+      setToastMessage('Failed to move service');
+      setShowToast(true);
+      setServiceToMove(null);
+    }
+  };
+
+  const cancelMove = () => {
+    setShowMoveDialog(false);
+    setServiceToMove(null);
+  };
+
   // Drag-to-scroll handlers for song pills
   const handleMouseDown = (e) => {
     if (!songPillsRef.current) return;
@@ -541,6 +633,15 @@ const Service = () => {
                         EDIT
                       </button>
                       <button
+                        className="btn-move"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveService(service);
+                        }}
+                      >
+                        MOVE
+                      </button>
+                      <button
                         className="btn-delete"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -559,7 +660,7 @@ const Service = () => {
       </div>
 
       {/* Current Service Display */}
-      {currentSetList.length > 0 ? (
+      {selectedService && currentSetList.length > 0 ? (
         <div className="current-service">
           <div className="service-header-bar">
             <h3>
@@ -660,7 +761,7 @@ const Service = () => {
       ) : (
         <div className="current-service">
           <div className="empty-service">
-            No set list for this service yet.
+            {selectedService ? 'No set list for this service yet.' : 'Please select a service.'}
           </div>
         </div>
       )}
@@ -699,6 +800,35 @@ const Service = () => {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
+
+      {/* Move to Workspace Dialog */}
+      {showMoveDialog && (
+        <div className="modal-overlay" onClick={cancelMove}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Move "{serviceToMove?.title}" to Workspace</h2>
+            <p>Select a workspace to move this service to:</p>
+            <div className="workspace-list">
+              {workspaces
+                ?.filter(ws => ws.id !== activeWorkspace?.id)
+                .map(workspace => (
+                  <button
+                    key={workspace.id}
+                    className="workspace-option"
+                    onClick={() => confirmMove(workspace.id)}
+                  >
+                    {workspace.name}
+                  </button>
+                ))}
+              {(!workspaces || workspaces.filter(ws => ws.id !== activeWorkspace?.id).length === 0) && (
+                <p className="no-workspaces">No other workspaces available</p>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button onClick={cancelMove} className="btn-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share Modal */}
       <ShareModal
