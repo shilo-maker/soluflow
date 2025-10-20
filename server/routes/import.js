@@ -84,9 +84,20 @@ router.post('/data', async (req, res) => {
     }
 
     // Import songs
+    // Get the first user as default for songs without created_by
+    const defaultUserId = Object.values(userIdMap)[0];
+    const defaultWorkspaceId = Object.values(workspaceIdMap)[0];
+
     for (const song of songs || []) {
-      const newUserId = userIdMap[song.created_by];
-      const workspaceId = workspaceIdMap[song.created_by];
+      // Use the song's created_by if available, otherwise use default user
+      let newUserId = song.created_by ? userIdMap[song.created_by] : null;
+      let workspaceId = song.created_by ? workspaceIdMap[song.created_by] : null;
+
+      // If no created_by or mapping failed, use defaults
+      if (!newUserId || !workspaceId) {
+        newUserId = defaultUserId;
+        workspaceId = defaultWorkspaceId;
+      }
 
       const newSong = await Song.create({
         title: song.title,
@@ -106,8 +117,15 @@ router.post('/data', async (req, res) => {
 
     // Import services
     for (const service of services || []) {
-      const newUserId = userIdMap[service.created_by];
-      const workspaceId = workspaceIdMap[service.created_by];
+      let newUserId = service.created_by ? userIdMap[service.created_by] : null;
+      let workspaceId = service.created_by ? workspaceIdMap[service.created_by] : null;
+
+      // If no created_by or mapping failed, use defaults
+      if (!newUserId || !workspaceId) {
+        newUserId = defaultUserId;
+        workspaceId = defaultWorkspaceId;
+      }
+
       const newLeaderId = service.leader_id ? userIdMap[service.leader_id] : null;
 
       const newService = await Service.create({
