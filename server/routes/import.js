@@ -26,8 +26,20 @@ router.post('/data', async (req, res) => {
         workspaceIdMap[user.id] = existingUser.workspace_id;
       } else {
         // Create workspace first
+        // Generate a unique slug from username
+        const baseSlug = user.username.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        let slug = baseSlug;
+        let counter = 1;
+
+        // Ensure slug is unique
+        while (await Workspace.findOne({ where: { slug } })) {
+          slug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+
         const workspace = await Workspace.create({
           name: `${user.username}'s Workspace`,
+          slug: slug,
           workspace_type: 'personal',
           created_by: null // Will update after user is created
         });
