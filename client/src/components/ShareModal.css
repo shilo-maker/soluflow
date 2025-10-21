@@ -115,6 +115,25 @@
   background-color: #b8844e;
 }
 
+.qr-section {
+  text-align: center;
+}
+
+.qr-code-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.qr-code-container canvas {
+  display: block;
+}
+
 .share-note {
   background-color: #fff3cd;
   border: 1px solid #ffc107;

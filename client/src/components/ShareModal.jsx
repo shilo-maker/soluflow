@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 import serviceService from '../services/serviceService';
 import './ShareModal.css';
 
@@ -144,6 +145,19 @@ const ShareModal = ({ service, isOpen, onClose }) => {
                     {copied ? 'Copied!' : 'Copy Link'}
                   </button>
                 </div>
+              </div>
+
+              <div className="share-section qr-section">
+                <label className="share-label">QR Code</label>
+                <div className="qr-code-container">
+                  <QRCodeCanvas
+                    value={getShareUrl()}
+                    size={200}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+                <p className="share-hint">Scan this QR code with a phone camera to join the service</p>
               </div>
 
               <div className="share-note">
