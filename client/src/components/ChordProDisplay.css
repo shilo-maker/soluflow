@@ -44,11 +44,14 @@
   color: var(--color-primary);
   font-weight: 600;
   font-size: 0.93em; /* Relative to parent font size (13/14 = 0.93) */
+  direction: ltr;
 }
 
 .chord {
   color: var(--color-primary);
   font-weight: 700;
+  direction: ltr;
+  unicode-bidi: embed;
 }
 
 .lyric-line {
