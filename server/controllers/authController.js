@@ -18,27 +18,28 @@ const register = async (req, res) => {
     }
 
     let finalWorkspaceId = workspaceId;
+    let createdWorkspace = null;
 
-    // If workspaceId is not provided or doesn't exist, create a new personal workspace
-    if (!finalWorkspaceId) {
-      // Generate workspace name and slug from email
-      const emailPrefix = email.split('@')[0];
-      const workspaceName = `${emailPrefix}'s Workspace`;
-      const workspaceSlug = `${emailPrefix}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-
-      const workspace = await Workspace.create({
-        name: workspaceName,
-        slug: workspaceSlug,
-        workspace_type: 'personal'
-      });
-
-      finalWorkspaceId = workspace.id;
-    } else {
-      // Verify the workspace exists
+    // If workspaceId is provided, verify it exists
+    if (finalWorkspaceId) {
       const workspace = await Workspace.findByPk(finalWorkspaceId);
       if (!workspace) {
         return res.status(400).json({ error: 'Invalid workspace ID' });
       }
+    } else {
+      // Create workspace first without created_by (will update after user creation)
+      const emailPrefix = email.split('@')[0];
+      const workspaceName = `${emailPrefix}'s Workspace`;
+      const workspaceSlug = `${emailPrefix}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+      createdWorkspace = await Workspace.create({
+        name: workspaceName,
+        slug: workspaceSlug,
+        workspace_type: 'personal',
+        created_by: null // Will update after user is created
+      });
+
+      finalWorkspaceId = createdWorkspace.id;
     }
 
     // Create user with active_workspace_id set to the workspace
@@ -50,6 +51,11 @@ const register = async (req, res) => {
       active_workspace_id: finalWorkspaceId,
       role: role || 'member'
     });
+
+    // Update workspace created_by if we created it
+    if (createdWorkspace) {
+      await createdWorkspace.update({ created_by: user.id });
+    }
 
     // Create workspace membership - creator is always admin of their workspace
     await WorkspaceMember.create({
