@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import serviceService from '../services/serviceService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import Toast from '../components/Toast';
-import { getTransposeDisplay } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord } from '../utils/transpose';
 import io from 'socket.io-client';
 import './GuestServiceView.css';
 
@@ -326,7 +326,8 @@ const GuestServiceView = () => {
                       onClick={(e) => { e.stopPropagation(); resetTransposition(); }}
                       title="Click to reset"
                     >
-                      {getTransposeDisplay(transposition)}
+                      {transposeChord(currentSong.key, transposition)}
+                      {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                     </span>
                     <button className="btn-transpose" onClick={(e) => { e.stopPropagation(); transposeUp(); }}>+</button>
                   </div>

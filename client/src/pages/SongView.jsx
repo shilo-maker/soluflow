@@ -7,7 +7,7 @@ import ChordProDisplay from '../components/ChordProDisplay';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import NotesModal from '../components/NotesModal';
-import { getTransposeDisplay } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord } from '../utils/transpose';
 import io from 'socket.io-client';
 import './SongView.css';
 
@@ -459,7 +459,8 @@ const SongView = () => {
             onClick={resetTransposition}
             title="Click to reset"
           >
-            {getTransposeDisplay(transposition)}
+            {transposeChord(song.key, transposition)}
+            {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
           </span>
           <button className="btn-action btn-transpose-view" onClick={transposeUp}>+</button>
         </div>

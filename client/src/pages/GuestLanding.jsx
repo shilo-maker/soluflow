@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
-import { getTransposeDisplay } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord } from '../utils/transpose';
 import './GuestLanding.css';
 
 const GuestLanding = () => {
@@ -179,7 +179,8 @@ const GuestLanding = () => {
                   onClick={resetTransposition}
                   title="Click to reset"
                 >
-                  {getTransposeDisplay(transposition)}
+                  {transposeChord(selectedSong.key, transposition)}
+                  {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                 </span>
                 <button className="btn-transpose-inline" onClick={transposeUp}>+</button>
               </div>

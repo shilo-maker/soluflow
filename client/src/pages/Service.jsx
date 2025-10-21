@@ -735,7 +735,8 @@ const Service = () => {
                       onClick={(e) => { e.stopPropagation(); resetTransposition(); }}
                       title="Click to reset"
                     >
-                      {getTransposeDisplay(transposition)}
+                      {transposeChord(currentSong.key, transposition)}
+                      {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                     </span>
                     <button className="btn-transpose-service" onClick={(e) => { e.stopPropagation(); transposeUp(); }}>+</button>
                   </div>
