@@ -9,6 +9,7 @@ import FullscreenButton from './components/FullscreenButton';
 import Home from './pages/Home';
 import Service from './pages/Service';
 import GuestServiceView from './pages/GuestServiceView';
+import SharedSongView from './pages/SharedSongView';
 import GuestLanding from './pages/GuestLanding';
 import Library from './pages/Library';
 import SongView from './pages/SongView';
@@ -31,6 +32,7 @@ function AppContent() {
   // Check if we're on auth pages or guest pages
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
   const isGuestPage = location.pathname.startsWith('/service/code/') ||
+                      location.pathname.startsWith('/song/code/') ||
                       location.pathname.startsWith('/song/') ||
                       (!isAuthenticated && location.pathname === '/');
 
@@ -67,6 +69,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/service/code/:code" element={<GuestServiceView />} />
+          <Route path="/song/code/:code" element={<SharedSongView />} />
 
           {/* Root route - conditional based on auth */}
           <Route path="/" element={

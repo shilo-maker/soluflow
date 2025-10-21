@@ -5,8 +5,9 @@ import { useWorkspace } from '../contexts/WorkspaceContext';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import SongEditModal from '../components/SongEditModal';
+import SongShareModal from '../components/SongShareModal';
 import Toast from '../components/Toast';
-import { getTransposeDisplay } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord } from '../utils/transpose';
 import './Library.css';
 
 const Library = () => {
@@ -24,6 +25,8 @@ const Library = () => {
   const [modalSong, setModalSong] = useState(null); // null = create mode, song object = edit mode
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareSong, setShareSong] = useState(null);
 
   // Fetch songs on component mount
   useEffect(() => {
@@ -229,6 +232,16 @@ const Library = () => {
     }
   };
 
+  const handleShareSong = () => {
+    setShareSong(selectedSong);
+    setIsShareModalOpen(true);
+  };
+
+  const handleCloseShareModal = () => {
+    setIsShareModalOpen(false);
+    setShareSong(null);
+  };
+
   // Detect if song content has Hebrew characters
   const hasHebrew = (text) => /[\u0590-\u05FF]/.test(text);
 
@@ -268,10 +281,13 @@ const Library = () => {
               <div className="song-card-left">
                 <h3 className="song-card-title">
                   {song.title}
-                  {user && song.is_public && (
+                  {user && song.isShared && (
+                    <span className="badge-shared">Shared with me / {song.sharedBy?.username || 'Unknown'}</span>
+                  )}
+                  {user && !song.isShared && song.is_public && (
                     <span className="badge-public">Public</span>
                   )}
-                  {user && !song.is_public && (
+                  {user && !song.isShared && !song.is_public && (
                     <>
                       {song.workspace?.id === activeWorkspace?.id && song.workspace?.workspace_type === 'organization' ? (
                         <span className="badge-workspace">{song.workspace.name}</span>
@@ -316,7 +332,8 @@ const Library = () => {
                   onClick={resetTransposition}
                   title="Click to reset"
                 >
-                  {getTransposeDisplay(transposition)}
+                  {transposeChord(selectedSong.key, transposition)}
+                  {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                 </span>
                 <button className="btn-transpose-inline" onClick={transposeUp}>+</button>
               </div>
@@ -349,6 +366,14 @@ const Library = () => {
             >
               Edit Song
             </button>
+            {!selectedSong.is_public && (user?.role === 'admin' || selectedSong.created_by === user?.id) && (
+              <button
+                className="btn-share-song"
+                onClick={handleShareSong}
+              >
+                Share Song
+              </button>
+            )}
             {user?.role === 'admin' && !selectedSong.is_public && (
               <button
                 className="btn-make-public"
@@ -381,6 +406,13 @@ const Library = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSaveSong}
+      />
+
+      {/* Song Share Modal */}
+      <SongShareModal
+        song={shareSong}
+        isOpen={isShareModalOpen}
+        onClose={handleCloseShareModal}
       />
 
       {/* Success Toast */}

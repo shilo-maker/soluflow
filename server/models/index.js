@@ -6,6 +6,7 @@ const Service = require('./Service');
 const ServiceSong = require('./ServiceSong');
 const Note = require('./Note');
 const SharedService = require('./SharedService');
+const SharedSong = require('./SharedSong');
 const WorkspaceMember = require('./WorkspaceMember');
 const WorkspaceInvitation = require('./WorkspaceInvitation');
 const SongWorkspace = require('./SongWorkspace');
@@ -124,6 +125,27 @@ User.belongsToMany(Service, {
   as: 'servicesSharedWithMe'
 });
 
+// SharedSong associations
+SharedSong.belongsTo(Song, { foreignKey: 'song_id', as: 'song' });
+SharedSong.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+SharedSong.belongsTo(User, { foreignKey: 'shared_by', as: 'sharer' });
+Song.hasMany(SharedSong, { foreignKey: 'song_id', as: 'sharedWith' });
+User.hasMany(SharedSong, { foreignKey: 'user_id', as: 'sharedSongs' });
+
+// Many-to-many: Users can have many shared songs, Songs can be shared with many users
+Song.belongsToMany(User, {
+  through: SharedSong,
+  foreignKey: 'song_id',
+  otherKey: 'user_id',
+  as: 'sharedWithUsers'
+});
+User.belongsToMany(Song, {
+  through: SharedSong,
+  foreignKey: 'user_id',
+  otherKey: 'song_id',
+  as: 'songsSharedWithMe'
+});
+
 // Sync database (create tables)
 const syncDatabase = async (options = {}) => {
   try {
@@ -155,6 +177,7 @@ module.exports = {
   ServiceSong,
   Note,
   SharedService,
+  SharedSong,
   WorkspaceMember,
   WorkspaceInvitation,
   SongWorkspace,

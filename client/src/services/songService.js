@@ -38,6 +38,24 @@ const songService = {
   deleteSong: async (id) => {
     const response = await api.delete(`/songs/${id}`);
     return response.data;
+  },
+
+  // Get share link for song
+  getShareLink: async (id) => {
+    const response = await api.get(`/songs/${id}/share`);
+    return response.data;
+  },
+
+  // Get song by code (for sharing)
+  getSongByCode: async (code) => {
+    const response = await api.get(`/songs/code/${code}`);
+    return response.data;
+  },
+
+  // Accept shared song and add to library
+  acceptSharedSong: async (code) => {
+    const response = await api.post(`/songs/code/${code}/accept`);
+    return response.data;
   }
 };
 

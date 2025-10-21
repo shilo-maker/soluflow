@@ -1,4 +1,4 @@
-const { Song, User, Workspace, SongWorkspace, WorkspaceMember } = require('../models');
+const { Song, User, Workspace, SongWorkspace, WorkspaceMember, SharedSong } = require('../models');
 const { Op } = require('sequelize');
 
 // Get all songs for a workspace with visibility filtering
@@ -19,6 +19,7 @@ const getAllSongs = async (req, res) => {
       // 1. All songs in their active workspace
       // 2. Public songs from outside their workspace (global library)
       // 3. Their own private songs
+      // 4. Songs shared with them
       const visibilityFilter = [
         { workspace_id: activeWorkspaceId }, // All songs in active workspace
         { is_public: true } // Public songs from anywhere
@@ -26,16 +27,38 @@ const getAllSongs = async (req, res) => {
 
       if (userId) {
         visibilityFilter.push({ created_by: userId }); // User's own songs
+
+        // Get song IDs that are shared with this user
+        const sharedSongs = await SharedSong.findAll({
+          where: { user_id: userId },
+          attributes: ['song_id']
+        });
+        const sharedSongIds = sharedSongs.map(s => s.song_id);
+
+        if (sharedSongIds.length > 0) {
+          visibilityFilter.push({ id: { [Op.in]: sharedSongIds } }); // Songs shared with user
+        }
       }
 
       whereClause = {
         [Op.or]: visibilityFilter
       };
     } else {
-      // Users without active workspace see public songs + their own
+      // Users without active workspace see public songs + their own + shared
       const visibilityFilter = [{ is_public: true }];
       if (userId) {
         visibilityFilter.push({ created_by: userId });
+
+        // Get song IDs that are shared with this user
+        const sharedSongs = await SharedSong.findAll({
+          where: { user_id: userId },
+          attributes: ['song_id']
+        });
+        const sharedSongIds = sharedSongs.map(s => s.song_id);
+
+        if (sharedSongIds.length > 0) {
+          visibilityFilter.push({ id: { [Op.in]: sharedSongIds } }); // Songs shared with user
+        }
       }
       whereClause = {
         [Op.or]: visibilityFilter
@@ -59,7 +82,35 @@ const getAllSongs = async (req, res) => {
       order: [['title', 'ASC']]
     });
 
-    res.json(songs);
+    // For each song, check if it's shared with the current user and get sharer info
+    const songsWithShareInfo = await Promise.all(songs.map(async (song) => {
+      const songData = song.toJSON();
+
+      if (userId) {
+        const sharedSong = await SharedSong.findOne({
+          where: {
+            song_id: song.id,
+            user_id: userId
+          },
+          include: [
+            {
+              model: User,
+              as: 'sharer',
+              attributes: ['id', 'username', 'email']
+            }
+          ]
+        });
+
+        if (sharedSong) {
+          songData.isShared = true;
+          songData.sharedBy = sharedSong.sharer;
+        }
+      }
+
+      return songData;
+    }));
+
+    res.json(songsWithShareInfo);
   } catch (error) {
     console.error('Error fetching songs:', error);
     res.status(500).json({ error: 'Failed to fetch songs' });
@@ -119,12 +170,21 @@ const getSongById = async (req, res) => {
       }
     });
 
+    // Check if song has been shared with this user
+    const sharedSong = await SharedSong.findOne({
+      where: {
+        song_id: song.id,
+        user_id: userId
+      }
+    });
+
     // Check visibility permissions
-    // Allow access if user is admin, song is public, user created it, or user is workspace member
+    // Allow access if user is admin, song is public, user created it, user is workspace member, or song is shared with them
     const canView = userRole === 'admin' ||
                     song.is_public ||
                     song.created_by === userId ||
-                    !!workspaceMembership;
+                    !!workspaceMembership ||
+                    !!sharedSong;
 
     if (!canView) {
       return res.status(403).json({ error: 'You do not have permission to view this song' });
@@ -525,6 +585,157 @@ const rejectSong = async (req, res) => {
   }
 };
 
+// Get share link for a song
+const getShareLink = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    const song = await Song.findByPk(id);
+
+    if (!song) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+
+    // Verify user has permission (owner or admin)
+    const userRole = req.user?.role;
+    const canShare = userRole === 'admin' || song.created_by === userId;
+
+    if (!canShare) {
+      return res.status(403).json({ error: 'Access denied. You can only share your own songs.' });
+    }
+
+    // Generate code if it doesn't exist
+    if (!song.code) {
+      // Generate unique code (4 characters)
+      const generateCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 4; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+
+      let code = generateCode();
+      // Ensure code is unique
+      let existing = await Song.findOne({ where: { code } });
+      while (existing) {
+        code = generateCode();
+        existing = await Song.findOne({ where: { code } });
+      }
+
+      await song.update({ code });
+    }
+
+    // Return the song code
+    res.json({ code: song.code });
+  } catch (error) {
+    console.error('Error getting share link:', error);
+    res.status(500).json({ error: 'Failed to get share link' });
+  }
+};
+
+// Get song by code (for shared access)
+const getSongByCode = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    const song = await Song.findOne({
+      where: { code },
+      include: [
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'username', 'email']
+        }
+      ]
+    });
+
+    if (!song) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+
+    // Check if authenticated user already has this song shared
+    if (req.user && req.user.id) {
+      const isOwner = song.created_by === req.user.id;
+      const sharedSong = await SharedSong.findOne({
+        where: {
+          song_id: song.id,
+          user_id: req.user.id
+        }
+      });
+      const songData = song.toJSON();
+      songData.alreadyAdded = isOwner || !!sharedSong;
+      songData.isOwner = isOwner;
+      return res.json(songData);
+    }
+
+    // For unauthenticated users, just return the song
+    res.json(song);
+  } catch (error) {
+    console.error('Error fetching song by code:', error);
+    res.status(500).json({ error: 'Failed to fetch song' });
+  }
+};
+
+// Accept/add a shared song (for registered users)
+const acceptSharedSong = async (req, res) => {
+  try {
+    const { code } = req.params;
+    const userId = req.user?.id;
+
+    // Find the song by code
+    const song = await Song.findOne({
+      where: { code },
+      include: [
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'username', 'email']
+        }
+      ]
+    });
+
+    if (!song) {
+      return res.status(404).json({ error: 'Song not found or not available for sharing' });
+    }
+
+    // Check if user is the owner
+    if (song.created_by === userId) {
+      return res.status(400).json({ error: 'You already own this song' });
+    }
+
+    // Check if already shared
+    const existingShare = await SharedSong.findOne({
+      where: {
+        song_id: song.id,
+        user_id: userId
+      }
+    });
+
+    if (existingShare) {
+      return res.status(400).json({ error: 'Song already added to your library' });
+    }
+
+    // Create the shared song record
+    await SharedSong.create({
+      song_id: song.id,
+      user_id: userId,
+      shared_by: song.created_by
+    });
+
+    // Return song with creator info
+    res.json({
+      message: 'Song added to your library successfully',
+      song: song.toJSON()
+    });
+  } catch (error) {
+    console.error('Error accepting shared song:', error);
+    res.status(500).json({ error: 'Failed to add shared song' });
+  }
+};
+
 module.exports = {
   getAllSongs,
   getSongById,
@@ -535,5 +746,8 @@ module.exports = {
   submitForApproval,
   getPendingApprovals,
   approveSong,
-  rejectSong
+  rejectSong,
+  getShareLink,
+  getSongByCode,
+  acceptSharedSong
 };

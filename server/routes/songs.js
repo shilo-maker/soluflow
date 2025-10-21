@@ -11,7 +11,10 @@ const {
   submitForApproval,
   getPendingApprovals,
   approveSong,
-  rejectSong
+  rejectSong,
+  getShareLink,
+  getSongByCode,
+  acceptSharedSong
 } = require('../controllers/songController');
 
 // GET /api/songs - Get all songs (with visibility filtering)
@@ -23,8 +26,17 @@ router.get('/search', authenticateOptional, searchSongs);
 // GET /api/songs/pending-approvals - Get pending approvals (admin only)
 router.get('/pending-approvals', authenticate, getPendingApprovals);
 
+// GET /api/songs/code/:code - Get song by code (for sharing) - MUST come before /:id
+router.get('/code/:code', authenticateOptional, getSongByCode);
+
+// POST /api/songs/code/:code/accept - Accept shared song and add to library (authenticated)
+router.post('/code/:code/accept', authenticate, acceptSharedSong);
+
 // GET /api/songs/:id - Get single song (with visibility check)
 router.get('/:id', authenticateOptional, getSongById);
+
+// GET /api/songs/:id/share - Get share link for song (authenticated, owner or admin)
+router.get('/:id/share', authenticate, getShareLink);
 
 // POST /api/songs - Create new song (authenticated)
 router.post('/', authenticate, createSong);

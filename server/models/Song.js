@@ -56,6 +56,12 @@ const Song = sequelize.define('Song', {
       key: 'id'
     }
   },
+  code: {
+    type: DataTypes.STRING(20),
+    unique: true,
+    allowNull: true,
+    comment: 'Short code for sharing song with other users'
+  },
   is_public: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
@@ -89,6 +95,9 @@ const Song = sequelize.define('Song', {
     },
     {
       fields: ['is_public']
+    },
+    {
+      fields: ['code']
     }
   ]
 });

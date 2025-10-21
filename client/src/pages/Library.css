@@ -146,6 +146,17 @@
   letter-spacing: 0.3px;
 }
 
+.badge-shared {
+  display: inline-block;
+  background-color: #9c27b0;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+}
+
 .song-card.selected .badge-public {
   background-color: white;
   color: #28a745;
@@ -164,6 +175,11 @@
 .song-card.selected .badge-personal-user {
   background-color: white;
   color: #6c757d;
+}
+
+.song-card.selected .badge-shared {
+  background-color: white;
+  color: #9c27b0;
 }
 
 .song-card-authors {
@@ -369,6 +385,23 @@
 
 .btn-edit-song:hover {
   background-color: #b8844e;
+}
+
+.btn-share-song {
+  flex: 1;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-share-song:hover {
+  background-color: #0056b3;
 }
 
 .btn-make-public {
