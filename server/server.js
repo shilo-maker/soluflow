@@ -87,8 +87,8 @@ const startServer = async () => {
     // Test database connection
     await testConnection();
 
-    // Sync database (create tables if they don't exist, alter existing tables)
-    await syncDatabase({ alter: true });
+    // Sync database (create tables if they don't exist, don't alter existing tables)
+    await syncDatabase({ alter: false });
 
     // Start server
     server.listen(PORT, '0.0.0.0', () => {
