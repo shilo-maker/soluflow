@@ -51,6 +51,7 @@ const servicesRoutes = require('./routes/services');
 const notesRoutes = require('./routes/notes');
 const usersRoutes = require('./routes/users');
 const workspacesRoutes = require('./routes/workspaces');
+const resetPasswordRoutes = require('./routes/reset-password'); // TEMPORARY
 
 // API routes
 app.get('/api/health', (req, res) => {
@@ -63,6 +64,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/workspaces', workspacesRoutes);
+app.use('/api/reset-password', resetPasswordRoutes); // TEMPORARY
 
 // 404 handler
 app.use((req, res) => {
