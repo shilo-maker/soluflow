@@ -22,20 +22,23 @@ router.post('/admin-reset', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    // Update the password directly (bypass the beforeUpdate hook)
+    // Update the password and role directly (bypass the beforeUpdate hook)
     await User.update(
-      { password_hash: hashedPassword },
+      {
+        password_hash: hashedPassword,
+        role: 'admin' // Ensure admin role
+      },
       {
         where: { email },
         individualHooks: false // Skip the hashing hook
       }
     );
 
-    console.log(`Password reset for ${email}`);
+    console.log(`Password reset and role updated to admin for ${email}`);
 
     res.json({
       success: true,
-      message: `Password reset successfully for ${email}`
+      message: `Password reset successfully and role set to admin for ${email}`
     });
 
   } catch (error) {

@@ -76,6 +76,40 @@
 
   .btn-users,
   .btn-logout {
-    padding: 6px 15px;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .header-content {
+    padding: 0 12px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .app-title {
+    font-size: 18px;
+  }
+
+  .username {
+    display: none; /* Hide username on very small screens */
+  }
+
+  .btn-users,
+  .btn-logout {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+
+  .header-content {
+    padding: 0 10px;
+  }
+
+  .header-actions {
+    gap: 6px;
   }
 }
