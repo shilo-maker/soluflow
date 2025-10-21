@@ -31,7 +31,7 @@ const SongView = () => {
   const [error, setError] = useState(null);
   const [isLyricsOnly, setIsLyricsOnly] = useState(false);
   const [fontSize, setFontSize] = useState(16);
-  const [transposition, setTransposition] = useState(0);
+  const [transposition, setTransposition] = useState(setlistContext?.initialTransposition || 0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);

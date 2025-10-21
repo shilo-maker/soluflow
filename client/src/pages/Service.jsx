@@ -717,7 +717,8 @@ const Service = () => {
                   currentIndex: selectedSongIndex,
                   serviceId: selectedService.id,
                   serviceTitle: selectedService.title,
-                  isLeader: isLeader
+                  isLeader: isLeader,
+                  initialTransposition: transposition
                 }
               })}
             >

@@ -162,7 +162,18 @@ const getServiceById = async (req, res) => {
     const serviceData = service.toJSON();
     serviceData.isShared = !isOwner;
     if (serviceData.serviceSongs) {
+      console.log('[GET SERVICE] ServiceSongs order from DB:');
+      serviceData.serviceSongs.forEach(ss => {
+        console.log(`  Position: ${ss.position}, Song ID: ${ss.song_id}, Song Title: ${ss.song?.title || 'N/A'}`);
+      });
+
       serviceData.songs = serviceData.serviceSongs.map(ss => ss.song).filter(song => song !== null);
+
+      console.log('[GET SERVICE] Songs array after mapping:');
+      serviceData.songs.forEach((song, index) => {
+        console.log(`  Index: ${index}, Song ID: ${song.id}, Song Title: ${song.title}`);
+      });
+
       delete serviceData.serviceSongs;
     }
 
@@ -452,12 +463,16 @@ const updateServiceSong = async (req, res) => {
 
     const { position, notes, segment_title, segment_content } = req.body;
 
+    console.log(`[UPDATE] Song ${songId} in Service ${id}: position ${serviceSong.position} -> ${position}`);
+
     await serviceSong.update({
       position: position !== undefined ? position : serviceSong.position,
       notes: notes !== undefined ? notes : serviceSong.notes,
       segment_title: segment_title !== undefined ? segment_title : serviceSong.segment_title,
       segment_content: segment_content !== undefined ? segment_content : serviceSong.segment_content
     });
+
+    console.log(`[UPDATE] Song ${songId} saved with position: ${serviceSong.position}`);
 
     res.json(serviceSong);
   } catch (error) {
