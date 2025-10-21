@@ -72,6 +72,7 @@ const getSongById = async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id;
     const userRole = req.user?.role;
+    const isGuest = req.user?.type === 'guest';
 
     const song = await Song.findByPk(id, {
       include: [
@@ -85,6 +86,11 @@ const getSongById = async (req, res) => {
 
     if (!song) {
       return res.status(404).json({ error: 'Song not found' });
+    }
+
+    // For guest users, allow viewing any song (they can only access via public services)
+    if (isGuest) {
+      return res.json(song);
     }
 
     // Check if user is a member of the workspace this song belongs to
