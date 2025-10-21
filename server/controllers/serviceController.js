@@ -124,10 +124,10 @@ const getServiceById = async (req, res) => {
               model: Song,
               as: 'song'
             }
-          ],
-          order: [['position', 'ASC']]
+          ]
         }
-      ]
+      ],
+      order: [[{ model: ServiceSong, as: 'serviceSongs' }, 'position', 'ASC']]
     });
 
     if (!service) {
@@ -194,10 +194,10 @@ const getServiceByCode = async (req, res) => {
               model: Song,
               as: 'song'
             }
-          ],
-          order: [['position', 'ASC']]
+          ]
         }
-      ]
+      ],
+      order: [[{ model: ServiceSong, as: 'serviceSongs' }, 'position', 'ASC']]
     });
 
     if (!service) {

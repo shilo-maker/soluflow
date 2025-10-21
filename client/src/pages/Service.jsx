@@ -9,7 +9,7 @@ import SetlistBuilder from '../components/SetlistBuilder';
 import ShareModal from '../components/ShareModal';
 import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { getTransposeDisplay } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord } from '../utils/transpose';
 import io from 'socket.io-client';
 import './Service.css';
 
@@ -742,7 +742,7 @@ const Service = () => {
                     <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
                     <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
                   </div>
-                  <span className="key-info">Key: {currentSong.key}</span>
+                  <span className="key-info">Key: {transposeChord(currentSong.key, transposition)}</span>
                   {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}</span>}
                 </div>
               </div>
