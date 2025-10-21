@@ -235,13 +235,21 @@ const getServiceByCode = async (req, res) => {
       serviceData.alreadyAdded = isOwner || !!sharedService;
       serviceData.isOwner = isOwner;
       console.log('Already added check:', { isOwner, hasSharedService: !!sharedService, alreadyAdded: serviceData.alreadyAdded });
+      res.json(serviceData);
     } else {
-      console.log('No authenticated user - guest access');
+      console.log('No authenticated user - guest access, generating guest token');
       serviceData.alreadyAdded = false;
       serviceData.isOwner = false;
-    }
 
-    res.json(serviceData);
+      // Generate guest token for unauthenticated users
+      const { generateGuestToken } = require('../utils/jwt');
+      const guestToken = generateGuestToken(service.id);
+
+      res.json({
+        ...serviceData,
+        guestToken
+      });
+    }
   } catch (error) {
     console.error('Error fetching service by code:', error);
     res.status(500).json({ error: 'Failed to fetch service' });

@@ -88,9 +88,27 @@ const getSongById = async (req, res) => {
       return res.status(404).json({ error: 'Song not found' });
     }
 
+    // Debug logging
+    console.log('[getSongById] req.user:', req.user);
+    console.log('[getSongById] isGuest:', isGuest);
+    console.log('[getSongById] userId:', userId);
+    console.log('[getSongById] song.is_public:', song.is_public);
+
     // For guest users, allow viewing any song (they can only access via public services)
     if (isGuest) {
+      console.log('[getSongById] Returning song for guest user');
       return res.json(song);
+    }
+
+    // Allow unauthenticated users to view public songs
+    if (!req.user && song.is_public) {
+      console.log('[getSongById] Returning public song for unauthenticated user');
+      return res.json(song);
+    }
+
+    // For authenticated users, check workspace membership and permissions
+    if (!userId) {
+      return res.status(403).json({ error: 'You do not have permission to view this song' });
     }
 
     // Check if user is a member of the workspace this song belongs to

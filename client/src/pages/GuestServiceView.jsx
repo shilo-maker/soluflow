@@ -32,6 +32,13 @@ const GuestServiceView = () => {
       try {
         setLoading(true);
         const data = await serviceService.getServiceByCode(code);
+
+        // Store guest token if provided (for unauthenticated users)
+        if (data.guestToken) {
+          localStorage.setItem('token', data.guestToken);
+          console.log('Guest token stored');
+        }
+
         setServiceDetails(data);
         setError(null);
       } catch (err) {
