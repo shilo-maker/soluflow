@@ -3,8 +3,19 @@ import './FullscreenButton.css';
 
 const FullscreenButton = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSupported, setIsSupported] = useState(true);
 
   useEffect(() => {
+    // Check if fullscreen is supported (not available on iOS Safari)
+    const elem = document.documentElement;
+    const fullscreenSupported = !!(
+      elem.requestFullscreen ||
+      elem.webkitRequestFullscreen ||
+      elem.mozRequestFullScreen ||
+      elem.msRequestFullscreen
+    );
+    setIsSupported(fullscreenSupported);
+
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
@@ -52,6 +63,11 @@ const FullscreenButton = () => {
       console.error('Error toggling fullscreen:', err);
     }
   };
+
+  // Don't render button if fullscreen is not supported (e.g., iOS Safari)
+  if (!isSupported) {
+    return null;
+  }
 
   return (
     <button

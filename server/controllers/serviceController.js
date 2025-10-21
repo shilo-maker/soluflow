@@ -190,7 +190,7 @@ const getServiceByCode = async (req, res) => {
     const { code } = req.params;
 
     const service = await Service.findOne({
-      where: { code, is_public: true },
+      where: { code },
       include: [
         {
           model: User,
@@ -212,7 +212,29 @@ const getServiceByCode = async (req, res) => {
     });
 
     if (!service) {
-      return res.status(404).json({ error: 'Service not found or not public' });
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    // Check if service link has expired (1 day after service date)
+    if (service.date) {
+      const serviceDate = new Date(service.date);
+
+      // If service has a time, use it; otherwise assume end of day
+      if (service.time) {
+        const [hours, minutes] = service.time.split(':');
+        serviceDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      } else {
+        serviceDate.setHours(23, 59, 59, 999);
+      }
+
+      // Add 1 day
+      const expirationDate = new Date(serviceDate);
+      expirationDate.setDate(expirationDate.getDate() + 1);
+
+      const now = new Date();
+      if (now > expirationDate) {
+        return res.status(410).json({ error: 'This service link has expired' });
+      }
     }
 
     // Transform serviceSongs to songs array for frontend
@@ -223,7 +245,7 @@ const getServiceByCode = async (req, res) => {
     }
 
     // Check if authenticated user already has this service
-    if (req.user) {
+    if (req.user && req.user.id) {
       console.log('User authenticated:', req.user.id, req.user.email);
       const isOwner = service.created_by === req.user.id;
       const sharedService = await SharedService.findOne({

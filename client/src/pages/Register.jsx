@@ -81,6 +81,9 @@ const Register = () => {
   return (
     <div className="register-page">
       <div className="register-container">
+        <button className="btn-back-to-songs" onClick={() => navigate('/')}>
+          ← Browse Songs
+        </button>
         <div className="register-header">
           <h1>SoluFlow</h1>
           <p>Create your account</p>

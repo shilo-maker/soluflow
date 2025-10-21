@@ -47,6 +47,9 @@ const Login = () => {
   return (
     <div className="login-page">
       <div className="login-container">
+        <button className="btn-back-to-songs" onClick={() => navigate('/')}>
+          ← Browse Songs
+        </button>
         <div className="login-header">
           <h1>SoluFlow</h1>
           <p>Worship Service Planning & Chord Sheets</p>
