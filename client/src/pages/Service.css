@@ -137,13 +137,16 @@
 }
 
 .service-option.selected .btn-delete {
-  background-color: white;
-  color: #dc3545;
+  background-color: #dc3545;
+  color: white;
+  border: 2px solid white;
+  font-weight: 700;
 }
 
 .service-option.selected .btn-delete:hover {
-  background-color: #f8f9fa;
-  color: #c82333;
+  background-color: #c82333;
+  color: white;
+  border-color: white;
 }
 
 .service-option-info {
@@ -240,6 +243,28 @@
 
 .btn-edit-setlist:hover {
   background-color: #b8844e;
+}
+
+.btn-download-pdf {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-download-pdf:hover {
+  background-color: #138496;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
 }
 
 .song-pills {

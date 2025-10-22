@@ -10,10 +10,12 @@ import ShareModal from '../components/ShareModal';
 import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTransposeDisplay, transposeChord } from '../utils/transpose';
+import { generateSetlistPDF } from '../utils/pdfGenerator';
 import io from 'socket.io-client';
 import './Service.css';
 
 const Service = () => {
+  console.log('[Service] Component render - VERSION 2.0');
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
@@ -27,7 +29,6 @@ const Service = () => {
   const [selectedSongIndex, setSelectedSongIndex] = useState(0);
   const [fontSize, setFontSize] = useState(14);
   const [transposition, setTransposition] = useState(0);
-  const [songTranspositions, setSongTranspositions] = useState({}); // Store transposition per service and song
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,14 +104,29 @@ const Service = () => {
     fetchServiceDetails();
   }, [selectedService]);
 
-  // Load saved transposition when song or service changes
+  // Load saved transposition when song changes
   useEffect(() => {
-    if (!selectedService || !serviceDetails?.setlist?.[selectedSongIndex]) return;
+    console.log('[Service] useEffect triggered - selectedSongIndex:', selectedSongIndex, 'selectedService:', !!selectedService, 'serviceDetails:', !!serviceDetails, 'songs:', !!serviceDetails?.songs);
+    if (!selectedService || !serviceDetails?.songs?.[selectedSongIndex]) {
+      console.log('[Service] useEffect early return - condition failed');
+      return;
+    }
 
-    const currentSongId = serviceDetails.setlist[selectedSongIndex].id;
-    const savedTransposition = songTranspositions[selectedService.id]?.[currentSongId] || 0;
+    const currentSong = serviceDetails.songs[selectedSongIndex];
+    // Read transposition from song object (loaded from database)
+    const savedTransposition = currentSong.transposition || 0;
+
+    console.log('[Service] Song changed - Loading transposition for song', currentSong.id, ':', savedTransposition);
     setTransposition(savedTransposition);
-  }, [selectedSongIndex, selectedService, serviceDetails, songTranspositions]);
+
+    // Broadcast to followers if user is leader (so they also load this song's saved transposition)
+    if (isLeader && socketRef.current) {
+      socketRef.current.emit('leader-transpose', {
+        serviceId: selectedService.id,
+        transposition: savedTransposition
+      });
+    }
+  }, [selectedSongIndex, selectedService, serviceDetails, isLeader]);
 
   // Socket.IO connection and real-time sync
   useEffect(() => {
@@ -245,20 +261,31 @@ const Service = () => {
     }
   };
 
-  const transposeUp = () => {
+  const transposeUp = async () => {
+    console.log('[Service] ===== TRANSPOSE UP CALLED =====');
     const newTransposition = Math.min(transposition + 1, 11);
+    console.log('[Service] Current transposition:', transposition, 'New:', newTransposition);
     setTransposition(newTransposition);
 
-    // Save transposition for current song in current service
-    if (selectedService && serviceDetails?.setlist?.[selectedSongIndex]) {
-      const currentSongId = serviceDetails.setlist[selectedSongIndex].id;
-      setSongTranspositions(prev => ({
-        ...prev,
-        [selectedService.id]: {
-          ...(prev[selectedService.id] || {}),
-          [currentSongId]: newTransposition
-        }
-      }));
+    // Save transposition to database
+    if (selectedService && serviceDetails?.songs?.[selectedSongIndex]) {
+      const currentSong = serviceDetails.songs[selectedSongIndex];
+      console.log('[Service] Transpose UP - Saving song', currentSong.id, 'in service', selectedService.id, 'with transposition', newTransposition);
+
+      try {
+        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, newTransposition);
+        console.log('[Service] Transposition saved to database');
+
+        // Update local state to reflect the change
+        setServiceDetails(prev => ({
+          ...prev,
+          songs: prev.songs.map((song, idx) =>
+            idx === selectedSongIndex ? { ...song, transposition: newTransposition } : song
+          )
+        }));
+      } catch (error) {
+        console.error('[Service] Failed to save transposition:', error);
+      }
     }
 
     // Broadcast to followers if user is leader
@@ -270,20 +297,29 @@ const Service = () => {
     }
   };
 
-  const transposeDown = () => {
+  const transposeDown = async () => {
     const newTransposition = Math.max(transposition - 1, -11);
     setTransposition(newTransposition);
 
-    // Save transposition for current song in current service
-    if (selectedService && serviceDetails?.setlist?.[selectedSongIndex]) {
-      const currentSongId = serviceDetails.setlist[selectedSongIndex].id;
-      setSongTranspositions(prev => ({
-        ...prev,
-        [selectedService.id]: {
-          ...(prev[selectedService.id] || {}),
-          [currentSongId]: newTransposition
-        }
-      }));
+    // Save transposition to database
+    if (selectedService && serviceDetails?.songs?.[selectedSongIndex]) {
+      const currentSong = serviceDetails.songs[selectedSongIndex];
+      console.log('[Service] Transpose DOWN - Saving song', currentSong.id, 'in service', selectedService.id, 'with transposition', newTransposition);
+
+      try {
+        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, newTransposition);
+        console.log('[Service] Transposition saved to database');
+
+        // Update local state to reflect the change
+        setServiceDetails(prev => ({
+          ...prev,
+          songs: prev.songs.map((song, idx) =>
+            idx === selectedSongIndex ? { ...song, transposition: newTransposition } : song
+          )
+        }));
+      } catch (error) {
+        console.error('[Service] Failed to save transposition:', error);
+      }
     }
 
     // Broadcast to followers if user is leader
@@ -295,19 +331,28 @@ const Service = () => {
     }
   };
 
-  const resetTransposition = () => {
+  const resetTransposition = async () => {
     setTransposition(0);
 
-    // Save transposition for current song in current service
-    if (selectedService && serviceDetails?.setlist?.[selectedSongIndex]) {
-      const currentSongId = serviceDetails.setlist[selectedSongIndex].id;
-      setSongTranspositions(prev => ({
-        ...prev,
-        [selectedService.id]: {
-          ...(prev[selectedService.id] || {}),
-          [currentSongId]: 0
-        }
-      }));
+    // Save transposition to database
+    if (selectedService && serviceDetails?.songs?.[selectedSongIndex]) {
+      const currentSong = serviceDetails.songs[selectedSongIndex];
+      console.log('[Service] Reset transposition - Saving song', currentSong.id, 'in service', selectedService.id, 'with transposition 0');
+
+      try {
+        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, 0);
+        console.log('[Service] Transposition reset saved to database');
+
+        // Update local state to reflect the change
+        setServiceDetails(prev => ({
+          ...prev,
+          songs: prev.songs.map((song, idx) =>
+            idx === selectedSongIndex ? { ...song, transposition: 0 } : song
+          )
+        }));
+      } catch (error) {
+        console.error('[Service] Failed to save transposition reset:', error);
+      }
     }
 
     // Broadcast to followers if user is leader
@@ -503,6 +548,32 @@ const Service = () => {
     setIsShareModalOpen(true);
   };
 
+  const handleDownloadPDF = async () => {
+    if (!selectedService || !serviceDetails || !serviceDetails.songs) {
+      setToastMessage('No setlist to download');
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      setToastMessage('Generating PDF...');
+      setShowToast(true);
+
+      await generateSetlistPDF(
+        selectedService,
+        serviceDetails.songs,
+        { fontSize: 11 }
+      );
+
+      setToastMessage('PDF downloaded successfully!');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      setToastMessage('Failed to generate PDF');
+      setShowToast(true);
+    }
+  };
+
   const handleMoveService = (service) => {
     setServiceToMove(service);
     setShowMoveDialog(true);
@@ -684,6 +755,9 @@ const Service = () => {
                   <button className="btn-share" onClick={() => handleShareService(selectedService)}>SHARE</button>
                 </>
               )}
+              <button className="btn-download-pdf" onClick={handleDownloadPDF}>
+                📄 DOWNLOAD PDF
+              </button>
             </div>
           </div>
 

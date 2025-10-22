@@ -11,7 +11,9 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
   return (
     <header className="app-header">
       <div className="header-content">
-        <div className="app-title">{title || 'SoluFlow'}</div>
+        <div className="app-title">
+          <img src="/navbar.png" alt="SoluFlow" className="app-logo" />
+        </div>
         <div className="header-actions">
           {user && !user.isGuest && <WorkspaceSwitcher />}
           {user && <span className="username">[{user.username}]</span>}

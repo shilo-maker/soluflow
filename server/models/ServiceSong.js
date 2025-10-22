@@ -47,6 +47,12 @@ const ServiceSong = sequelize.define('ServiceSong', {
     type: DataTypes.TEXT,
     allowNull: true,
     comment: 'Planner notes for this item'
+  },
+  transposition: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false,
+    comment: 'Transposition value for this song in this service (-11 to +11)'
   }
 }, {
   tableName: 'service_songs',

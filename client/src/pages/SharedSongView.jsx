@@ -91,6 +91,12 @@ const SharedSongView = () => {
     setShowToast(false);
   };
 
+  const handleOpenFullView = () => {
+    if (song?.id) {
+      navigate(`/song/${song.id}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="shared-song-page">
@@ -180,15 +186,23 @@ const SharedSongView = () => {
                 <button className="btn-transpose" onClick={transposeUp}>+</button>
               </div>
               <div className="zoom-controls">
-                <button className="btn-zoom" onClick={zoomOut}>A-</button>
-                <button className="btn-zoom" onClick={zoomIn}>A+</button>
+                <button className="btn-zoom btn-zoom-out" onClick={zoomOut}>
+                  <span className="zoom-icon-small">A</span>
+                </button>
+                <button className="btn-zoom btn-zoom-in" onClick={zoomIn}>
+                  <span className="zoom-icon-large">A</span>
+                </button>
               </div>
               <span className="key-info">Key: {song.key}</span>
               {song.bpm && <span className="bpm-info">BPM: {song.bpm}</span>}
             </div>
           </div>
 
-          <div className="song-content">
+          <div
+            className="song-content clickable"
+            onClick={handleOpenFullView}
+            title="Click to open in full view"
+          >
             <ChordProDisplay
               content={song.content}
               dir={hasHebrew(song.content) ? 'rtl' : 'ltr'}

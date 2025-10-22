@@ -33,12 +33,20 @@ api.interceptors.response.use(
       // Server responded with error
       if (error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
-        // But only if we're not on a guest-accessible page
+        // But only if we're not on a guest-accessible page or auth pages
         const guestPages = ['/', '/service/code', '/song'];
+        const authPages = ['/login', '/register'];
         const currentPath = window.location.pathname;
         const isGuestPage = guestPages.some(page => currentPath === page || currentPath.startsWith(page + '/'));
+        const isAuthPage = authPages.some(page => currentPath === page || currentPath.startsWith(page + '/'));
 
-        if (!isGuestPage) {
+        // Also check if this is a login/register API call - don't redirect on failed auth attempts
+        const isAuthRequest = error.config && (
+          error.config.url.includes('/auth/login') ||
+          error.config.url.includes('/auth/register')
+        );
+
+        if (!isGuestPage && !isAuthPage && !isAuthRequest) {
           localStorage.removeItem('token');
           window.location.href = '/login';
         }

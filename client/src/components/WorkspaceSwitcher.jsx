@@ -95,7 +95,7 @@ const WorkspaceSwitcher = () => {
           }}
           title="Workspace Settings"
         >
-          ⚙️
+          ⋯
         </button>
       </div>
 
@@ -118,7 +118,7 @@ const WorkspaceSwitcher = () => {
                       {workspace.workspace_type === 'personal' ? 'Personal' : 'Team'}
                     </span>
                   </div>
-                  {workspace.is_active && <span className="active-indicator">✓</span>}
+                  {workspace.is_active && <span className="active-indicator">●</span>}
                 </button>
                 {workspace.is_active && (
                   <button
@@ -130,7 +130,7 @@ const WorkspaceSwitcher = () => {
                     }}
                     title="Workspace Settings"
                   >
-                    ⚙️
+                    ⋯
                   </button>
                 )}
               </div>

@@ -85,7 +85,7 @@ const Register = () => {
           ← Browse Songs
         </button>
         <div className="register-header">
-          <h1>SoluFlow</h1>
+          <img src="/solu_flow_login.png" alt="SoluFlow" className="register-logo" />
           <p>Create your account</p>
         </div>
 

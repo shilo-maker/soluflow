@@ -178,3 +178,15 @@ export const getTransposeDisplay = (semitones) => {
   if (semitones > 0) return `+${semitones}`;
   return `${semitones}`;
 };
+
+/**
+ * Strips ChordPro chord markup from text, leaving only lyrics
+ * @param {string} chordProText - The ChordPro formatted text
+ * @returns {string} - Plain text without chord markup
+ */
+export const stripChords = (chordProText) => {
+  if (!chordProText) return '';
+
+  // Remove all chord brackets [chord]
+  return chordProText.replace(/\[([^\]]+)\]/g, '');
+};

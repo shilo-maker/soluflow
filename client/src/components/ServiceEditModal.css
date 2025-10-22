@@ -15,7 +15,7 @@
 .modal-content {
   background-color: white;
   border-radius: 8px;
-  max-width: 700px;
+  max-width: 1200px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -47,7 +47,7 @@
 }
 
 .service-modal {
-  max-width: 600px;
+  max-width: 1200px;
 }
 
 .modal-body {
@@ -225,6 +225,12 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
+}
+
+.setlist-current-mini,
+.available-songs-mini {
+  min-width: 0;
+  width: 100%;
 }
 
 .setlist-current-mini h4,

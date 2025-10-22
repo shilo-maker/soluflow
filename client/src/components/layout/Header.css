@@ -25,6 +25,13 @@
   font-size: 24px;
   font-weight: 400;
   color: #333;
+  display: flex;
+  align-items: center;
+}
+
+.app-logo {
+  height: 40px;
+  width: auto;
 }
 
 .header-actions {
@@ -70,6 +77,10 @@
     font-size: 20px;
   }
 
+  .app-logo {
+    height: 35px;
+  }
+
   .username {
     font-size: 12px;
   }
@@ -93,6 +104,10 @@
 @media (max-width: 480px) {
   .app-title {
     font-size: 18px;
+  }
+
+  .app-logo {
+    height: 30px;
   }
 
   .username {

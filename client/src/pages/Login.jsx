@@ -20,12 +20,12 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    // Don't clear error on input change - let it persist until next submit
+    // Keep error visible so user can see what went wrong while fixing input
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(''); // Clear previous error
     setLoading(true);
 
     try {
@@ -34,12 +34,23 @@ const Login = () => {
         setLoading(false);
         return;
       }
+
       await login(formData.email, formData.password);
-      navigate('/home'); // Redirect to home
+      // Success - navigate to home
+      setLoading(false);
+      navigate('/home');
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
-    } finally {
+
+      // Extract error message
+      let errorMessage = 'Login failed. Please check your credentials.';
+      if (err.response?.data?.error) {
+        errorMessage = String(err.response.data.error);
+      } else if (err.message) {
+        errorMessage = String(err.message);
+      }
+
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -51,7 +62,7 @@ const Login = () => {
           ← Browse Songs
         </button>
         <div className="login-header">
-          <h1>SoluFlow</h1>
+          <img src="/solu_flow_login.png" alt="SoluFlow" className="login-logo" />
           <p>Worship Service Planning & Chord Sheets</p>
         </div>
 

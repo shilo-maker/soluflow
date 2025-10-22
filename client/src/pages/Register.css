@@ -39,6 +39,13 @@
   color: white;
 }
 
+.register-logo {
+  height: 160px;
+  width: auto;
+  margin-bottom: var(--spacing-md);
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+}
+
 .register-header h1 {
   font-size: var(--font-3xl);
   font-weight: var(--font-bold);

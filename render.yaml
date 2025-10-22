@@ -37,6 +37,10 @@ services:
         sync: false
       - key: REACT_APP_SERVER_URL
         sync: false
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
     routes:
       - type: rewrite
         source: /*

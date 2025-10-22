@@ -1,6 +1,6 @@
 .home-page {
   padding: 80px 20px 80px 20px;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   min-height: 100vh;
   background-color: var(--color-background);
@@ -164,9 +164,10 @@
 
 .join-input-group {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: var(--spacing-md);
   align-items: center;
+  justify-content: center;
 }
 
 .code-input {

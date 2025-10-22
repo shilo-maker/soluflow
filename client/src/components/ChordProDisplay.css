@@ -9,15 +9,15 @@
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .section-header {
   font-weight: 700;
-  font-size: 1.14em; /* Relative to parent font size (16/14 = 1.14) */
+  font-size: 1em; /* Same as base font size for compactness */
   color: var(--color-primary);
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -45,6 +45,7 @@
   font-weight: 600;
   font-size: 0.93em; /* Relative to parent font size (13/14 = 0.93) */
   direction: ltr;
+  font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
 }
 
 .chord {
@@ -52,6 +53,7 @@
   font-weight: 700;
   direction: ltr;
   unicode-bidi: embed;
+  font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
 }
 
 .lyric-line {

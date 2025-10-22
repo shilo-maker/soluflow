@@ -7,6 +7,7 @@ import ChordProDisplay from '../components/ChordProDisplay';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import NotesModal from '../components/NotesModal';
+import SongEditModal from '../components/SongEditModal';
 import { getTransposeDisplay, transposeChord } from '../utils/transpose';
 import io from 'socket.io-client';
 import './SongView.css';
@@ -39,6 +40,7 @@ const SongView = () => {
   const [inlineNotes, setInlineNotes] = useState([]);
   const [notesVisible, setNotesVisible] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true);
@@ -291,6 +293,24 @@ const SongView = () => {
     setShowDeleteConfirm(false);
   };
 
+  const handleEditSong = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEditedSong = async (updatedSong) => {
+    try {
+      const saved = await songService.updateSong(id, updatedSong);
+      setSong(saved);
+      setIsEditModalOpen(false);
+      setToastMessage('Song updated successfully!');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Error updating song:', err);
+      setToastMessage('Failed to update song. Please try again.');
+      setShowToast(true);
+    }
+  };
+
   const handleCloseToast = () => {
     setShowToast(false);
   };
@@ -433,8 +453,13 @@ const SongView = () => {
           <button className="btn-back" onClick={() => navigate(-1)}>
             ← Back
           </button>
-          {isAuthenticated && user?.role === 'admin' && (
-            <button className="btn-delete-header" onClick={handleDeleteSong}>Delete</button>
+          {isAuthenticated && (user?.role === 'admin' || song.created_by === user?.id) && (
+            <>
+              <button className="btn-edit-header" onClick={handleEditSong}>Edit</button>
+              {user?.role === 'admin' && (
+                <button className="btn-delete-header" onClick={handleDeleteSong}>Delete</button>
+              )}
+            </>
           )}
         </div>
         <div className="song-view-title-section">
@@ -471,8 +496,12 @@ const SongView = () => {
           {isLyricsOnly ? 'Show Chords' : 'Lyrics Only'}
         </button>
         <div className="zoom-controls-view">
-          <button className="btn-action btn-zoom-view" onClick={zoomOut}>A-</button>
-          <button className="btn-action btn-zoom-view" onClick={zoomIn}>A+</button>
+          <button className="btn-action btn-zoom-view btn-zoom-out" onClick={zoomOut}>
+            <span className="zoom-icon-small">A</span>
+          </button>
+          <button className="btn-action btn-zoom-view btn-zoom-in" onClick={zoomIn}>
+            <span className="zoom-icon-large">A</span>
+          </button>
         </div>
         {setlistContext?.serviceId && !isLeader && (
           <button
@@ -486,18 +515,20 @@ const SongView = () => {
         {isAuthenticated && !user?.isGuest && setlistContext?.serviceId && (
           <>
             <button
-              className={`btn-action ${isEditMode ? 'active' : ''}`}
+              className={`btn-action btn-icon-action ${isEditMode ? 'active' : ''}`}
               onClick={() => setIsEditMode(!isEditMode)}
-              title="Toggle note editing"
+              title={isEditMode ? 'Done editing notes' : 'Edit notes'}
             >
-              {isEditMode ? 'Done Editing' : 'Edit Notes'}
+              <span className="btn-icon">{isEditMode ? '✓' : '✎'}</span>
+              <span className="btn-text">{isEditMode ? 'Done' : 'Edit'}</span>
             </button>
             <button
-              className={`btn-action ${!notesVisible ? 'active' : ''}`}
+              className={`btn-action btn-icon-action ${!notesVisible ? 'active' : ''}`}
               onClick={handleToggleNotesVisibility}
-              title="Toggle note visibility"
+              title={notesVisible ? 'Hide notes' : 'Show notes'}
             >
-              {notesVisible ? 'Hide Notes' : 'Show Notes'}
+              <span className="btn-icon">{notesVisible ? '👁' : '⊘'}</span>
+              <span className="btn-text">{notesVisible ? 'Hide' : 'Show'}</span>
             </button>
           </>
         )}
@@ -559,6 +590,14 @@ const SongView = () => {
           onClose={() => setShowNotesModal(false)}
         />
       )}
+
+      {/* Edit Song Modal */}
+      <SongEditModal
+        song={song}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleSaveEditedSong}
+      />
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog

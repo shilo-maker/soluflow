@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import songService from '../services/songService';
 import serviceService from '../services/serviceService';
+import Toast from '../components/Toast';
 import './Home.css';
 
 const Home = () => {
@@ -11,6 +12,8 @@ const Home = () => {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   // Fetch services and songs on component mount
   useEffect(() => {
@@ -45,14 +48,36 @@ const Home = () => {
     return serviceDate >= today;
   });
 
-  const handleJoinService = () => {
-    if (serviceCode.trim()) {
-      navigate(`/service/code/${serviceCode}`);
+  const handleJoinService = async () => {
+    if (!serviceCode.trim()) {
+      return;
+    }
+
+    const code = serviceCode.trim();
+
+    try {
+      // Try to fetch as a service first
+      await serviceService.getServiceByCode(code);
+      navigate(`/service/code/${code}`);
+    } catch (serviceError) {
+      // If service fails, try as a song
+      try {
+        await songService.getSongByCode(code);
+        navigate(`/song/code/${code}`);
+      } catch (songError) {
+        // Both failed - show error
+        setToastMessage('Invalid code. Please check and try again.');
+        setShowToast(true);
+      }
     }
   };
 
   const handleCreateService = () => {
     navigate('/service/create');
+  };
+
+  const handleCloseToast = () => {
+    setShowToast(false);
   };
 
   return (
@@ -134,9 +159,9 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Join Service by Code */}
+      {/* Join with Code (Service or Song) */}
       <div className="join-section">
-        <h3>Service</h3>
+        <h3>Join with Code</h3>
         <div className="join-input-group">
           <input
             type="text"
@@ -158,6 +183,14 @@ const Home = () => {
           CREATE SERVICE
         </button>
       </div>
+
+      {/* Toast for errors */}
+      <Toast
+        message={toastMessage}
+        type="error"
+        isVisible={showToast}
+        onClose={handleCloseToast}
+      />
     </div>
   );
 };

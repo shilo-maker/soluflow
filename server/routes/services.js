@@ -11,6 +11,7 @@ const {
   addSongToService,
   updateServiceSong,
   removeSongFromService,
+  updateSongTransposition,
   acceptSharedService,
   getShareLink,
   moveToWorkspace
@@ -39,6 +40,9 @@ router.post('/:id/songs', authenticate, addSongToService);
 
 // PUT /api/services/:id/songs/:songId - Update service song (authenticated)
 router.put('/:id/songs/:songId', authenticate, updateServiceSong);
+
+// PUT /api/services/:id/songs/:songId/transpose - Update song transposition (authenticated)
+router.put('/:id/songs/:songId/transpose', authenticate, updateSongTransposition);
 
 // DELETE /api/services/:id/songs/:songId - Remove song from service (authenticated)
 router.delete('/:id/songs/:songId', authenticate, removeSongFromService);

@@ -44,6 +44,27 @@
   --color-text-medium: #4a5568;
   --color-text-light: #a0aec0;
 
+  /* Secondary/Accent Colors */
+  --color-secondary: #C9956E;  /* Warm bronze/gold accent */
+  --color-secondary-dark: #b8844e;
+  --color-secondary-rgb: 201, 149, 110;
+
+  /* Border colors */
+  --color-border-light: #e9ecef;
+  --color-border-medium: #dee2e6;
+  --color-border-dark: #333333;
+
+  /* Badge/Label colors (semantic) */
+  --color-badge-public: var(--color-success);
+  --color-badge-workspace: var(--color-info);
+  --color-badge-shared: #9c27b0;  /* Purple for shared items */
+  --color-badge-personal: #17a2b8;  /* Teal for personal items */
+
+  /* State colors */
+  --color-disabled: #e9ecef;
+  --color-placeholder: #adb5bd;
+  --color-hover-bg: #f8f9fa;
+
   /* ============================================
      TYPOGRAPHY
      ============================================ */
@@ -553,3 +574,12 @@ body {
 .fw-medium { font-weight: var(--font-medium) !important; }
 .fw-semibold { font-weight: var(--font-semibold) !important; }
 .fw-bold { font-weight: var(--font-bold) !important; }
+
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+body {
+  background: linear-gradient(180deg, #f7fafc 0%, #edf2f7 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}

@@ -1,13 +1,14 @@
 .shared-song-page {
   min-height: 100vh;
-  background-color: #fafafa;
-  padding-bottom: 30px;
+  background-color: var(--color-background);
+  padding-bottom: var(--spacing-xl);
 }
 
 .shared-song-header {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #b8844e 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary-dark) 100%);
   color: white;
-  padding: 20px;
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .header-top {
@@ -69,24 +70,23 @@
 }
 
 .btn-add-song {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: white;
   border: none;
-  padding: 16px 50px;
-  border-radius: 8px;
-  font-size: 18px;
-  font-weight: 600;
+  padding: var(--spacing-md) var(--spacing-3xl);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all var(--transition-slow);
+  box-shadow: var(--shadow-primary);
   min-width: 280px;
   white-space: nowrap;
 }
 
 .btn-add-song:hover {
-  background-color: #b8844e;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-primary-hover);
 }
 
 .already-added-section {
@@ -206,10 +206,25 @@
   cursor: pointer;
   transition: background-color 0.2s ease;
   min-width: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-zoom:hover {
   background-color: #5a6268;
+}
+
+.zoom-icon-small {
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.zoom-icon-large {
+  font-size: 1.4em;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .key-info,
@@ -224,6 +239,16 @@
   border-radius: 8px;
   padding: 25px;
   min-height: 400px;
+}
+
+.song-content.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.song-content.clickable:hover {
+  background-color: #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .loading-state,

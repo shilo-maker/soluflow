@@ -55,6 +55,14 @@ const serviceService = {
     return response.data;
   },
 
+  // Update song transposition in service
+  updateSongTransposition: async (serviceId, songId, transposition) => {
+    const response = await api.put(`/services/${serviceId}/songs/${songId}/transpose`, {
+      transposition
+    });
+    return response.data;
+  },
+
   // Get share link for service
   getShareLink: async (serviceId) => {
     const response = await api.get(`/services/${serviceId}/share`);

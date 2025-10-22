@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
-import { getTransposeDisplay, transposeChord } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
 import './GuestLanding.css';
 
 const GuestLanding = () => {
@@ -16,6 +16,7 @@ const GuestLanding = () => {
   const [transposition, setTransposition] = useState(0);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [serviceCode, setServiceCode] = useState('');
+  const songDisplayRef = useRef(null);
 
   // Fetch all songs on component mount (guest-accessible, no workspace restriction)
   useEffect(() => {
@@ -36,18 +37,67 @@ const GuestLanding = () => {
     fetchSongs();
   }, []);
 
-  const filteredSongs = songs.filter(song =>
-    song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (song.authors && song.authors.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Close expanded song when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectedSong && songDisplayRef.current && !songDisplayRef.current.contains(event.target)) {
+        // Check if click is not on a song card
+        const clickedSongCard = event.target.closest('.song-card');
+        if (!clickedSongCard) {
+          setSelectedSong(null);
+        }
+      }
+    };
 
-  // Show only 3 results when a song is selected
-  const displayedSongs = selectedSong ? filteredSongs.slice(0, 3) : filteredSongs;
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [selectedSong]);
+
+  const filteredSongs = songs.filter(song => {
+    const query = searchQuery.toLowerCase();
+    const titleMatch = song.title.toLowerCase().includes(query);
+    const authorsMatch = song.authors && song.authors.toLowerCase().includes(query);
+
+    // Search in lyrics content (strip chords first)
+    const strippedContent = stripChords(song.content || '').toLowerCase();
+    const contentMatch = strippedContent.includes(query);
+
+    return titleMatch || authorsMatch || contentMatch;
+  }).map(song => {
+    // Assign priority based on what matched (lower number = higher priority)
+    const query = searchQuery.toLowerCase();
+    const titleMatch = song.title.toLowerCase().includes(query);
+    const strippedContent = stripChords(song.content || '').toLowerCase();
+    const contentMatch = strippedContent.includes(query);
+    const authorsMatch = song.authors && song.authors.toLowerCase().includes(query);
+
+    let priority;
+    if (titleMatch) {
+      priority = 1;
+    } else if (contentMatch) {
+      priority = 2;
+    } else if (authorsMatch) {
+      priority = 3;
+    } else {
+      priority = 4;
+    }
+
+    return { ...song, searchPriority: priority };
+  }).sort((a, b) => a.searchPriority - b.searchPriority);
+
+  const displayedSongs = filteredSongs;
 
   const handleSongClick = (song) => {
-    setSelectedSong(song);
-    setFontSize(14);
-    setTransposition(0);
+    // Toggle: if clicking the same song, close it; otherwise open the new song
+    if (selectedSong?.id === song.id) {
+      setSelectedSong(null);
+    } else {
+      setSelectedSong(song);
+      setFontSize(14);
+      setTransposition(0);
+    }
   };
 
   const zoomIn = () => {
@@ -91,81 +141,77 @@ const GuestLanding = () => {
 
   return (
     <div className="guest-landing-page">
-      {/* App Header */}
-      <div className="guest-header">
-        <h1 className="app-name">SoluFlow</h1>
-        <p className="app-subtitle">Worship Service Planning & Chord Sheets</p>
-      </div>
+      {/* Sticky Header Bar */}
+      <div className="guest-sticky-header">
+        {/* App Name Group */}
+        <div className="header-name-group">
+          <img src="/solu_flow_logo.png" alt="SoluFlow" className="guest-logo" />
+          <h1 className="app-name">SoluFlow</h1>
+        </div>
 
-      {/* Join Service Button */}
-      <div className="join-service-section">
-        <button className="btn-join-service" onClick={() => setShowJoinModal(true)}>
-          Join Service
-        </button>
-        <div className="auth-links-inline">
-          <button className="btn-auth-link" onClick={() => navigate('/login')}>
-            Login
+        {/* Search Row */}
+        <div className="header-search-row">
+          <input
+            type="text"
+            className="search-input-library"
+            placeholder="Search Songs..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSelectedSong(null);
+            }}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="header-actions">
+          <button className="btn-join-service" onClick={() => setShowJoinModal(true)}>
+            Join Service
           </button>
-          <span className="separator">|</span>
-          <button className="btn-auth-link" onClick={() => navigate('/register')}>
-            Register
-          </button>
+          <div className="auth-links-inline">
+            <button className="btn-auth-link" onClick={() => navigate('/login')}>
+              Login
+            </button>
+            <span className="separator">|</span>
+            <button className="btn-auth-link" onClick={() => navigate('/register')}>
+              Register
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Search Section */}
-      <div className="search-section">
-        <input
-          type="text"
-          className="search-input-library"
-          placeholder="Search Songs..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setSelectedSong(null);
-          }}
-        />
-      </div>
+      {/* Content Area */}
+      <div className="guest-content">
+        {loading && (
+          <div className="loading-state">Loading songs...</div>
+        )}
 
-      {loading && (
-        <div className="loading-state">Loading songs...</div>
-      )}
+        {error && (
+          <div className="error-state">{error}</div>
+        )}
 
-      {error && (
-        <div className="error-state">{error}</div>
-      )}
-
-      {!loading && !error && (
-        <div className="songs-list">
+        {!loading && !error && (
+          <div className="songs-list">
           {displayedSongs.map(song => (
-            <div
-              key={song.id}
-              className={`song-card ${selectedSong?.id === song.id ? 'selected' : ''}`}
-              onClick={() => handleSongClick(song)}
-            >
-              <div className="song-card-content">
-                <div className="song-card-left">
-                  <h3 className="song-card-title">{song.title}</h3>
-                  <p className="song-card-authors">{song.authors}</p>
-                </div>
-                <div className="song-card-right">
-                  <span className="song-key">Key: {song.key}</span>
+            <React.Fragment key={song.id}>
+              <div
+                className={`song-card ${selectedSong?.id === song.id ? 'selected' : ''}`}
+                onClick={() => handleSongClick(song)}
+              >
+                <div className="song-card-content">
+                  <div className="song-card-left">
+                    <h3 className="song-card-title">{song.title}</h3>
+                    <p className="song-card-authors">{song.authors}</p>
+                  </div>
+                  <div className="song-card-right">
+                    <span className="song-key">Key: {song.key}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
 
-          {filteredSongs.length === 0 && (
-            <div className="empty-state">
-              No songs found matching "{searchQuery}"
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Display selected song chord sheet */}
-      {selectedSong && (
-        <div className="song-display-inline">
+              {/* Display selected song chord sheet inline */}
+              {selectedSong?.id === song.id && (
+                <div className="song-display-inline" ref={songDisplayRef}>
           <div className="song-header-inline">
             <div className="song-info-inline">
               <h2 className="song-title-inline">{selectedSong.title}</h2>
@@ -185,8 +231,12 @@ const GuestLanding = () => {
                 <button className="btn-transpose-inline" onClick={transposeUp}>+</button>
               </div>
               <div className="zoom-controls">
-                <button className="btn-zoom" onClick={zoomOut}>A-</button>
-                <button className="btn-zoom" onClick={zoomIn}>A+</button>
+                <button className="btn-zoom btn-zoom-out" onClick={zoomOut}>
+                  <span className="zoom-icon-small">A</span>
+                </button>
+                <button className="btn-zoom btn-zoom-in" onClick={zoomIn}>
+                  <span className="zoom-icon-large">A</span>
+                </button>
               </div>
               <span className="key-info-inline">Key: {selectedSong.key}</span>
               {selectedSong.bpm && <span className="bpm-info-inline">BPM: {selectedSong.bpm}</span>}
@@ -214,8 +264,19 @@ const GuestLanding = () => {
               Close
             </button>
           </div>
-        </div>
-      )}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+
+          {filteredSongs.length === 0 && (
+            <div className="empty-state">
+              No songs found matching "{searchQuery}"
+            </div>
+          )}
+          </div>
+        )}
+      </div>
 
       {/* Join Service Modal */}
       {showJoinModal && (

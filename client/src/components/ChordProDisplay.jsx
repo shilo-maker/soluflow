@@ -262,6 +262,14 @@ const ChordProDisplay = ({
     );
   };
 
+  // Helper function to measure text width
+  const measureTextWidth = (text, fontSize, fontFamily) => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    context.font = `${fontSize}px ${fontFamily}`;
+    return context.measureText(text).width;
+  };
+
   const renderItem = (item, index) => {
     switch (item.type) {
       case 'empty':
@@ -283,13 +291,15 @@ const ChordProDisplay = ({
           <div key={index} className="chord-lyric-pair">
             <div className="chord-line">
               {item.chords.map((c, i) => {
-                // Calculate position in em units (0.6em per character)
-                const chordPos = c.position * 0.6;
+                // Measure actual text width up to this chord position
+                const textBeforeChord = item.lyrics.substring(0, c.position);
+                const fontFamily = "'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif";
+                const textWidth = measureTextWidth(textBeforeChord, fontSize, fontFamily);
 
                 // For RTL, use right positioning; for LTR, use left positioning
                 const position = isRTL
-                  ? { right: `${chordPos}em` }
-                  : { left: `${chordPos}em` };
+                  ? { right: `${textWidth}px` }
+                  : { left: `${textWidth}px` };
 
                 return (
                   <span

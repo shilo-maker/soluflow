@@ -22,8 +22,10 @@ const getAllServices = async (req, res) => {
     // Check if user is admin or planner in this workspace
     const canEditAll = await canEditServicesInWorkspace(req.user.id, workspaceId);
 
-    let allServices;
+    let workspaceServices = [];
+    let sharedServices = [];
 
+    // Get services from user's active workspace
     if (canEditAll) {
       // Admins and planners see ALL services in the workspace
       const services = await Service.findAll({
@@ -45,10 +47,11 @@ const getAllServices = async (req, res) => {
         ]
       });
 
-      allServices = services.map(s => {
+      workspaceServices = services.map(s => {
         const service = s.toJSON();
         service.isShared = service.created_by !== req.user.id;
         service.canEdit = true; // Admins/planners can edit all
+        service.isFromSharedLink = false;
         return service;
       });
     } else {
@@ -72,13 +75,67 @@ const getAllServices = async (req, res) => {
         ]
       });
 
-      allServices = services.map(s => {
+      workspaceServices = services.map(s => {
         const service = s.toJSON();
         service.isShared = service.created_by !== req.user.id;
         service.canEdit = false; // Members cannot edit any services
+        service.isFromSharedLink = false;
         return service;
       });
     }
+
+    // Get services shared with this user (from other workspaces)
+    const sharedServiceRecords = await SharedService.findAll({
+      where: {
+        user_id: req.user.id
+      },
+      include: [
+        {
+          model: Service,
+          as: 'service',
+          where: {
+            is_archived: false
+          },
+          include: [
+            {
+              model: User,
+              as: 'leader',
+              attributes: ['id', 'username', 'email']
+            },
+            {
+              model: User,
+              as: 'creator',
+              attributes: ['id', 'username', 'email']
+            }
+          ]
+        }
+      ]
+    });
+
+    sharedServices = sharedServiceRecords.map(ss => {
+      const service = ss.service.toJSON();
+      service.isShared = true;
+      service.canEdit = false; // Shared services are read-only
+      service.isFromSharedLink = true; // Mark as added via share link
+      return service;
+    });
+
+    // Combine workspace services and shared services, removing duplicates
+    const serviceMap = new Map();
+
+    // Add workspace services first
+    workspaceServices.forEach(s => {
+      serviceMap.set(s.id, s);
+    });
+
+    // Add shared services (only if not already in workspace)
+    sharedServices.forEach(s => {
+      if (!serviceMap.has(s.id)) {
+        serviceMap.set(s.id, s);
+      }
+    });
+
+    const allServices = Array.from(serviceMap.values());
 
     // Sort by date
     allServices.sort((a, b) => {
@@ -167,7 +224,14 @@ const getServiceById = async (req, res) => {
         console.log(`  Position: ${ss.position}, Song ID: ${ss.song_id}, Song Title: ${ss.song?.title || 'N/A'}`);
       });
 
-      serviceData.songs = serviceData.serviceSongs.map(ss => ss.song).filter(song => song !== null);
+      serviceData.songs = serviceData.serviceSongs.map(ss => {
+        if (!ss.song) return null;
+        return {
+          ...ss.song,
+          transposition: ss.transposition || 0, // Include transposition from ServiceSong
+          serviceSongId: ss.id // Include ServiceSong ID for reference
+        };
+      }).filter(song => song !== null);
 
       console.log('[GET SERVICE] Songs array after mapping:');
       serviceData.songs.forEach((song, index) => {
@@ -240,7 +304,14 @@ const getServiceByCode = async (req, res) => {
     // Transform serviceSongs to songs array for frontend
     const serviceData = service.toJSON();
     if (serviceData.serviceSongs) {
-      serviceData.songs = serviceData.serviceSongs.map(ss => ss.song).filter(song => song !== null);
+      serviceData.songs = serviceData.serviceSongs.map(ss => {
+        if (!ss.song) return null;
+        return {
+          ...ss.song,
+          transposition: ss.transposition || 0, // Include transposition from ServiceSong
+          serviceSongId: ss.id // Include ServiceSong ID for reference
+        };
+      }).filter(song => song !== null);
       delete serviceData.serviceSongs;
     }
 
@@ -550,6 +621,62 @@ const removeSongFromService = async (req, res) => {
   }
 };
 
+// Update transposition for a song in a service
+const updateSongTransposition = async (req, res) => {
+  try {
+    const { id, songId } = req.params; // service_id, song_id
+    const { transposition } = req.body;
+
+    // Validate transposition value (-11 to +11)
+    if (typeof transposition !== 'number' || transposition < -11 || transposition > 11) {
+      return res.status(400).json({ error: 'Transposition must be a number between -11 and +11' });
+    }
+
+    // Find the ServiceSong by service_id and song_id combination
+    const serviceSong = await ServiceSong.findOne({
+      where: {
+        service_id: parseInt(id),
+        song_id: parseInt(songId)
+      }
+    });
+
+    if (!serviceSong) {
+      return res.status(404).json({ error: 'Service song not found' });
+    }
+
+    // Check permissions - only leader or admin/planner can update transposition
+    const service = await Service.findByPk(parseInt(id));
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    const isLeader = service.leader_id === req.user.id;
+    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+
+    if (!isLeader && !canEdit) {
+      return res.status(403).json({
+        error: 'Access denied. Only the service leader, admins, and planners can update transposition.'
+      });
+    }
+
+    // Update transposition
+    await serviceSong.update({ transposition });
+
+    res.json({
+      message: 'Transposition updated successfully',
+      serviceSong: {
+        id: serviceSong.id,
+        service_id: serviceSong.service_id,
+        song_id: serviceSong.song_id,
+        transposition: serviceSong.transposition
+      }
+    });
+  } catch (error) {
+    console.error('Error updating song transposition:', error);
+    res.status(500).json({ error: 'Failed to update song transposition' });
+  }
+};
+
 // Accept/add a shared service (for registered users)
 const acceptSharedService = async (req, res) => {
   try {
@@ -687,6 +814,7 @@ module.exports = {
   addSongToService,
   updateServiceSong,
   removeSongFromService,
+  updateSongTransposition,
   acceptSharedService,
   getShareLink,
   moveToWorkspace
