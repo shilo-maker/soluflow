@@ -85,6 +85,140 @@
   align-items: center;
 }
 
+.service-option-menu {
+  position: relative;
+}
+
+.btn-menu-toggle {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 6px 10px;
+  color: #555;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  font-weight: bold;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-menu-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  transform: scale(1.1);
+}
+
+.service-option.selected .btn-menu-toggle {
+  color: white;
+}
+
+.service-option.selected .btn-menu-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.service-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  min-width: 140px;
+  z-index: 100;
+  margin-top: 8px;
+  overflow: hidden;
+  animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:hover {
+  background-color: #fafafa;
+  padding-left: 20px;
+}
+
+.menu-item-delete {
+  color: #dc3545;
+}
+
+.menu-item-delete:hover {
+  background-color: #fff5f5;
+  padding-left: 20px;
+}
+
+.header-menu-container {
+  position: relative;
+}
+
+.btn-header-menu-toggle {
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  padding: 6px 10px;
+  color: #555;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  font-weight: bold;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-header-menu-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  transform: scale(1.1);
+}
+
+.header-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  min-width: 160px;
+  z-index: 100;
+  margin-top: 8px;
+  overflow: hidden;
+  animation: slideDown 0.15s ease-out;
+}
+
 .service-list {
   display: flex;
   flex-direction: column;

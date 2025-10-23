@@ -44,6 +44,8 @@ const Service = () => {
   const [serviceToShare, setServiceToShare] = useState(null);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [serviceToMove, setServiceToMove] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
@@ -664,6 +666,30 @@ const Service = () => {
     setShowToast(true);
   };
 
+  // Toggle service menu
+  const toggleServiceMenu = (serviceId, e) => {
+    e.stopPropagation();
+    // Close header menu if open
+    setHeaderMenuOpen(false);
+    // Toggle this service menu
+    setOpenMenuId(openMenuId === serviceId ? null : serviceId);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (openMenuId !== null) {
+        setOpenMenuId(null);
+      }
+      if (headerMenuOpen) {
+        setHeaderMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openMenuId, headerMenuOpen]);
+
   return (
     <div className="service-page">
       {/* Service Selector */}
@@ -693,39 +719,50 @@ const Service = () => {
                   <span className="service-option-title">{service.title}</span>
                   {service.isShared && <span className="shared-label">Shared with me</span>}
                 </div>
-                <div className="service-option-buttons">
-                  {!service.isShared && (
-                    <>
-                      <button
-                        className="btn-edit"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditService(service);
-                        }}
-                      >
-                        {t('service.edit')}
-                      </button>
-                      <button
-                        className="btn-move"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMoveService(service);
-                        }}
-                      >
-                        {t('service.move')}
-                      </button>
-                      <button
-                        className="btn-delete"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteService(service);
-                        }}
-                      >
-                        {t('service.delete')}
-                      </button>
-                    </>
-                  )}
-                </div>
+                {!service.isShared && (
+                  <div className="service-option-menu">
+                    <button
+                      className="btn-menu-toggle"
+                      onClick={(e) => toggleServiceMenu(service.id, e)}
+                    >
+                      ⋮
+                    </button>
+                    {openMenuId === service.id && (
+                      <div className="service-dropdown-menu">
+                        <button
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(null);
+                            handleEditService(service);
+                          }}
+                        >
+                          {t('service.edit')}
+                        </button>
+                        <button
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(null);
+                            handleMoveService(service);
+                          }}
+                        >
+                          {t('service.move')}
+                        </button>
+                        <button
+                          className="menu-item menu-item-delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(null);
+                            handleDeleteService(service);
+                          }}
+                        >
+                          {t('service.delete')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -751,15 +788,55 @@ const Service = () => {
                   {isFollowMode ? 'FOLLOWING' : 'FREE MODE'}
                 </button>
               )}
-              {!selectedService.isShared && (
-                <>
-                  <button className="btn-edit-setlist" onClick={handleEditSetlist}>{t('service.editSetlist')}</button>
-                  <button className="btn-share" onClick={() => handleShareService(selectedService)}>{t('service.share')}</button>
-                </>
-              )}
-              <button className="btn-download-pdf" onClick={handleDownloadPDF}>
-                📄 {t('service.downloadPdf')}
-              </button>
+              <div className="header-menu-container">
+                <button
+                  className="btn-header-menu-toggle"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Close service menu if open
+                    setOpenMenuId(null);
+                    // Toggle header menu
+                    setHeaderMenuOpen(!headerMenuOpen);
+                  }}
+                >
+                  ⋮
+                </button>
+                {headerMenuOpen && (
+                  <div className="header-dropdown-menu">
+                    {!selectedService.isShared && (
+                      <>
+                        <button
+                          className="menu-item"
+                          onClick={() => {
+                            setHeaderMenuOpen(false);
+                            handleEditSetlist();
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="menu-item"
+                          onClick={() => {
+                            setHeaderMenuOpen(false);
+                            handleShareService(selectedService);
+                          }}
+                        >
+                          {t('service.share')}
+                        </button>
+                      </>
+                    )}
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setHeaderMenuOpen(false);
+                        handleDownloadPDF();
+                      }}
+                    >
+                      PDF
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

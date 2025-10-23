@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import WorkspaceSwitcher from '../WorkspaceSwitcher';
@@ -9,6 +9,19 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
   const location = useLocation();
   const { t } = useLanguage();
   const isOnUsersPage = location.pathname === '/users';
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (userMenuOpen) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [userMenuOpen]);
 
   return (
     <header className="app-header">
@@ -19,23 +32,53 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
         <div className="header-actions">
           {user && !user.isGuest && <WorkspaceSwitcher />}
           {user && (
-            <span
-              className="username"
-              onClick={() => navigate('/settings')}
-              title={t('common.settings')}
-            >
-              [{user.username}]
-            </span>
-          )}
-          {user?.role === 'admin' && !isOnUsersPage && (
-            <button className="btn-users" onClick={() => navigate('/users')}>
-              {t('common.users')}
-            </button>
-          )}
-          {showLogout && (
-            <button className="btn-logout" onClick={onLogout}>
-              {t('common.logout')}
-            </button>
+            <div className="user-menu-container">
+              <span
+                className="username"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUserMenuOpen(!userMenuOpen);
+                }}
+                title={t('common.settings')}
+              >
+                [{user.username}]
+              </span>
+              {userMenuOpen && (
+                <div className="user-dropdown-menu">
+                  <button
+                    className="menu-item"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      navigate('/settings');
+                    }}
+                  >
+                    {t('common.settings')}
+                  </button>
+                  {user?.role === 'admin' && !isOnUsersPage && (
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('/users');
+                      }}
+                    >
+                      {t('common.users')}
+                    </button>
+                  )}
+                  {showLogout && (
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        onLogout();
+                      }}
+                    >
+                      {t('common.logout')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
