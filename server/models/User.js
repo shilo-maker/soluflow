@@ -48,6 +48,35 @@ const User = sequelize.define('User', {
       model: 'workspaces',
       key: 'id'
     }
+  },
+  language: {
+    type: DataTypes.STRING(2),
+    allowNull: false,
+    defaultValue: 'en',
+    validate: {
+      isIn: [['en', 'he']]
+    }
+  },
+  email_verified: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  },
+  verification_token: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  verification_token_expires: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  reset_password_token: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  reset_password_expires: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'users',
@@ -76,10 +105,14 @@ User.prototype.validPassword = async function(password) {
   return await bcrypt.compare(password, this.password_hash);
 };
 
-// Don't return password hash in JSON
+// Don't return password hash and verification token in JSON
 User.prototype.toJSON = function() {
   const values = Object.assign({}, this.get());
   delete values.password_hash;
+  delete values.verification_token;
+  delete values.verification_token_expires;
+  delete values.reset_password_token;
+  delete values.reset_password_expires;
   return values;
 };
 

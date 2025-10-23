@@ -3,6 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const { testConnection, syncDatabase } = require('./models');
 
 // Load environment variables
@@ -64,10 +65,23 @@ app.use('/api/notes', notesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/workspaces', workspacesRoutes);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+// Serve static files from React app in production
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../client/build');
+
+  // Serve static files
+  app.use(express.static(clientBuildPath));
+
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+} else {
+  // 404 handler for development (API only)
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
+}
 
 // Error handler
 app.use((err, req, res, next) => {

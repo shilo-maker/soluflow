@@ -21,6 +21,9 @@ const SongView = () => {
   const touchEndRef = useRef(null);
   const socketRef = useRef(null);
 
+  // Store transposition per song ID to remember transposition when navigating
+  const songTranspositionsRef = useRef(new Map());
+
   // Get setlist context from navigation state
   const setlistContext = location.state || null;
   const [currentSetlistIndex, setCurrentSetlistIndex] = useState(
@@ -32,7 +35,15 @@ const SongView = () => {
   const [error, setError] = useState(null);
   const [isLyricsOnly, setIsLyricsOnly] = useState(false);
   const [fontSize, setFontSize] = useState(16);
-  const [transposition, setTransposition] = useState(setlistContext?.initialTransposition || 0);
+  const [transposition, setTransposition] = useState(() => {
+    // Initialize with transposition from setlist context
+    const initialTranspose = setlistContext?.initialTransposition || 0;
+    // Store it in the Map for this song
+    if (id) {
+      songTranspositionsRef.current.set(id, initialTranspose);
+    }
+    return initialTranspose;
+  });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -69,6 +80,50 @@ const SongView = () => {
 
     fetchSong();
   }, [id]);
+
+  // Update stored transposition whenever it changes (but not when song changes)
+  useEffect(() => {
+    // Only save if the song is already in the map (i.e., we're updating existing transposition)
+    // This prevents saving the previous song's transposition when navigating to a new song
+    if (id && songTranspositionsRef.current.has(id)) {
+      console.log('[SongView] Updating transposition in map for song', id, ':', transposition);
+      songTranspositionsRef.current.set(id, transposition);
+    }
+  }, [transposition]);
+
+  // Load transposition from storage when song changes
+  useEffect(() => {
+    if (id) {
+      console.log('[SongView] Loading transposition for song ID:', id);
+      console.log('[SongView] Setlist context:', setlistContext);
+      console.log('[SongView] Song transpositions map:', Array.from(songTranspositionsRef.current.entries()));
+
+      if (songTranspositionsRef.current.has(id)) {
+        // Load stored transposition for this song (user changed it in SongView)
+        const storedTransposition = songTranspositionsRef.current.get(id);
+        console.log('[SongView] Found in map, using stored transposition:', storedTransposition);
+        setTransposition(storedTransposition);
+      } else {
+        // First time viewing this song - check if there's transposition in setlist
+        let initialTranspose = 0;
+
+        // Look for this song in the setlist to get its saved transposition
+        if (setlistContext?.setlist) {
+          console.log('[SongView] Searching in setlist:', setlistContext.setlist.map(s => ({ id: s.id, transposition: s.transposition })));
+          const songInSetlist = setlistContext.setlist.find(s => s.id.toString() === id);
+          console.log('[SongView] Found song in setlist:', songInSetlist);
+          if (songInSetlist && songInSetlist.transposition !== undefined) {
+            initialTranspose = songInSetlist.transposition;
+            console.log('[SongView] Using transposition from setlist:', initialTranspose);
+          }
+        }
+
+        console.log('[SongView] Setting initial transposition:', initialTranspose);
+        setTransposition(initialTranspose);
+        songTranspositionsRef.current.set(id, initialTranspose);
+      }
+    }
+  }, [id, setlistContext]);
 
   // Fetch inline notes
   useEffect(() => {

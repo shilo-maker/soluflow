@@ -1,6 +1,9 @@
-# SoluFlow Deployment Guide
+# SoluFlow Deployment Guide - Render.com
 
-This guide will walk you through deploying SoluFlow to Render.com (free tier).
+**Last Updated:** October 2025
+**Architecture:** Single Service (Backend + Frontend Static Files) + PostgreSQL Database
+
+This guide explains how to deploy SoluFlow to Render.com from scratch.
 
 ## Prerequisites
 
@@ -19,7 +22,7 @@ This is the easiest method as the `render.yaml` file contains all the configurat
    - Log in or create a new account
 
 2. **Create New Blueprint**
-   - Click "New +" ’ "Blueprint"
+   - Click "New +" ï¿½ "Blueprint"
    - Connect your GitHub repository
    - Select your `soluflow` repository
    - Render will automatically detect the `render.yaml` file
@@ -55,7 +58,7 @@ If you prefer to set up each service manually:
 
 #### 1. Deploy PostgreSQL Database
 
-1. In Render Dashboard, click "New +" ’ "PostgreSQL"
+1. In Render Dashboard, click "New +" ï¿½ "PostgreSQL"
 2. Name: `soluflow-db`
 3. Database: `soluflow`
 4. Region: Oregon (free)
@@ -65,7 +68,7 @@ If you prefer to set up each service manually:
 
 #### 2. Deploy Backend (Node.js)
 
-1. Click "New +" ’ "Web Service"
+1. Click "New +" ï¿½ "Web Service"
 2. Connect your GitHub repository
 3. Configure:
    - **Name:** `soluflow-api`
@@ -93,7 +96,7 @@ If you prefer to set up each service manually:
 
 #### 3. Deploy Frontend (React)
 
-1. Click "New +" ’ "Static Site"
+1. Click "New +" ï¿½ "Static Site"
 2. Connect your GitHub repository
 3. Configure:
    - **Name:** `soluflow-frontend`
@@ -202,4 +205,4 @@ Before going to production:
 
 ---
 
-**Congratulations!** Your SoluFlow app is now deployed and accessible to the world! <‰
+**Congratulations!** Your SoluFlow app is now deployed and accessible to the world! <ï¿½
