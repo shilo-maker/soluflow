@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
 import serviceService from '../services/serviceService';
 import Toast from '../components/Toast';
@@ -7,6 +8,7 @@ import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [serviceCode, setServiceCode] = useState('');
   const [services, setServices] = useState([]);
   const [songs, setSongs] = useState([]);
@@ -66,7 +68,7 @@ const Home = () => {
         navigate(`/song/code/${code}`);
       } catch (songError) {
         // Both failed - show error
-        setToastMessage('Invalid code. Please check and try again.');
+        setToastMessage(t('home.invalidCode'));
         setShowToast(true);
       }
     }
@@ -84,11 +86,11 @@ const Home = () => {
     <div className="home-page">
       <div className="welcome-section">
         <h1 className="app-name">SoluFlow</h1>
-        <h2 className="welcome-text">Welcome</h2>
+        <h2 className="welcome-text">{t('home.welcome')}</h2>
       </div>
 
       {loading && (
-        <div className="loading-state">Loading...</div>
+        <div className="loading-state">{t('common.loading')}</div>
       )}
 
       {error && (
@@ -98,9 +100,9 @@ const Home = () => {
       {/* Upcoming Services */}
       <div className="content-section">
         <div className="section-header">
-          <h3>Upcoming Services</h3>
+          <h3>{t('home.upcomingServices')}</h3>
           <button className="btn-view-all" onClick={() => navigate('/services')}>
-            VIEW ALL
+            {t('home.viewAll')}
           </button>
         </div>
         <div className="section-content">
@@ -120,7 +122,7 @@ const Home = () => {
               </div>
             ))
           ) : (
-            <div className="empty-state">No upcoming services</div>
+            <div className="empty-state">{t('home.noServices')}</div>
           )}
         </div>
       </div>
@@ -128,16 +130,16 @@ const Home = () => {
       {/* Search Songs */}
       <div className="content-section">
         <div className="section-header">
-          <h3>Recent Songs</h3>
+          <h3>{t('home.recentSongs')}</h3>
           <button className="btn-view-all" onClick={() => navigate('/library')}>
-            VIEW ALL
+            {t('home.viewAll')}
           </button>
         </div>
         <div className="section-content">
           <input
             type="text"
             className="search-input"
-            placeholder="Search Songs..."
+            placeholder={t('home.searchPlaceholder')}
             onClick={() => navigate('/library')}
             readOnly
           />
@@ -152,7 +154,7 @@ const Home = () => {
                   <div className="song-preview-title">{song.title}</div>
                   <div className="song-preview-author">{song.authors}</div>
                 </div>
-                <div className="song-preview-key">Key: {song.key}</div>
+                <div className="song-preview-key">{t('home.key')}: {song.key}</div>
               </div>
             ))}
           </div>
@@ -161,7 +163,7 @@ const Home = () => {
 
       {/* Join with Code (Service or Song) */}
       <div className="join-section">
-        <h3>Join with Code</h3>
+        <h3>{t('home.joinWithCode')}</h3>
         <div className="join-input-group">
           <input
             type="text"
@@ -172,7 +174,7 @@ const Home = () => {
             maxLength="4"
           />
           <button className="btn-join" onClick={handleJoinService}>
-            JOIN
+            {t('home.join')}
           </button>
         </div>
       </div>
@@ -180,7 +182,7 @@ const Home = () => {
       {/* Create Service Button */}
       <div className="create-section">
         <button className="btn-create-service" onClick={handleCreateService}>
-          CREATE SERVICE
+          {t('home.createService')}
         </button>
       </div>
 

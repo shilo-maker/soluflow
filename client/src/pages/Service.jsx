@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import serviceService from '../services/serviceService';
 import ChordProDisplay from '../components/ChordProDisplay';
@@ -19,6 +20,7 @@ const Service = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { workspaces, activeWorkspace } = useWorkspace();
   const songPillsRef = useRef(null);
   const socketRef = useRef(null);
@@ -667,8 +669,8 @@ const Service = () => {
       {/* Service Selector */}
       <div className="service-selector">
         <div className="selector-header">
-          <h3>Choose Service</h3>
-          <button className="btn-new" onClick={handleNewService}>NEW</button>
+          <h3>{t('service.chooseService')}</h3>
+          <button className="btn-new" onClick={handleNewService}>{t('service.new')}</button>
         </div>
 
         {loading && (
@@ -701,7 +703,7 @@ const Service = () => {
                           handleEditService(service);
                         }}
                       >
-                        EDIT
+                        {t('service.edit')}
                       </button>
                       <button
                         className="btn-move"
@@ -710,7 +712,7 @@ const Service = () => {
                           handleMoveService(service);
                         }}
                       >
-                        MOVE
+                        {t('service.move')}
                       </button>
                       <button
                         className="btn-delete"
@@ -719,7 +721,7 @@ const Service = () => {
                           handleDeleteService(service);
                         }}
                       >
-                        DELETE
+                        {t('service.delete')}
                       </button>
                     </>
                   )}
@@ -737,7 +739,7 @@ const Service = () => {
             <h3>
               {selectedService.title}
               {selectedService.isShared && <span className="shared-label-header">Shared with me</span>}
-              {isLeader && <span className="leader-badge">LEADER</span>}
+              {isLeader && <span className="leader-badge">{t('service.leaderBadge')}</span>}
             </h3>
             <div className="header-buttons">
               {!isLeader && (
@@ -751,12 +753,12 @@ const Service = () => {
               )}
               {!selectedService.isShared && (
                 <>
-                  <button className="btn-edit-setlist" onClick={handleEditSetlist}>EDIT SETLIST</button>
-                  <button className="btn-share" onClick={() => handleShareService(selectedService)}>SHARE</button>
+                  <button className="btn-edit-setlist" onClick={handleEditSetlist}>{t('service.editSetlist')}</button>
+                  <button className="btn-share" onClick={() => handleShareService(selectedService)}>{t('service.share')}</button>
                 </>
               )}
               <button className="btn-download-pdf" onClick={handleDownloadPDF}>
-                📄 DOWNLOAD PDF
+                📄 {t('service.downloadPdf')}
               </button>
             </div>
           </div>

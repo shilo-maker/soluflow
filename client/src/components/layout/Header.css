@@ -44,6 +44,16 @@
   color: var(--color-primary);
   font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  padding: 8px 12px;
+  border-radius: var(--border-radius-md);
+  user-select: none;
+}
+
+.username:hover {
+  background: rgba(var(--color-primary-rgb), 0.1);
+  transform: translateY(-1px);
 }
 
 .btn-users,

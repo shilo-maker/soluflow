@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
@@ -13,6 +14,7 @@ import './Library.css';
 const Library = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { activeWorkspace } = useWorkspace();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -301,14 +303,14 @@ const Library = () => {
         <input
           type="text"
           className="search-input-library"
-          placeholder="Search Songs..."
+          placeholder={t('library.searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
             setSelectedSong(null); // Clear selection when searching
           }}
         />
-        <button className="btn-add" onClick={handleAddSong}>ADD</button>
+        <button className="btn-add" onClick={handleAddSong}>{t('library.add')}</button>
       </div>
 
       {loading && (
@@ -335,16 +337,16 @@ const Library = () => {
                       <span className="badge-shared">Shared with me / {song.sharedBy?.username || 'Unknown'}</span>
                     )}
                     {user && !song.isShared && song.is_public && (
-                      <span className="badge-public">Public</span>
+                      <span className="badge-public">{t('library.public')}</span>
                     )}
                     {user && !song.isShared && !song.is_public && (
                       <>
                         {song.workspace?.id === activeWorkspace?.id && song.workspace?.workspace_type === 'organization' ? (
                           <span className="badge-workspace">{song.workspace.name}</span>
                         ) : song.created_by === user.id ? (
-                          <span className="badge-personal">Personal</span>
+                          <span className="badge-personal">{t('workspace.personal')}</span>
                         ) : user.role === 'admin' ? (
-                          <span className="badge-personal-user">Personal/{song.creator?.username || 'Unknown'}</span>
+                          <span className="badge-personal-user">{t('workspace.personal')}/{song.creator?.username || 'Unknown'}</span>
                         ) : null}
                       </>
                     )}

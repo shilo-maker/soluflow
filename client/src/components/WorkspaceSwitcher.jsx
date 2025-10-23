@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import './WorkspaceSwitcher.css';
 
 const WorkspaceSwitcher = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const {
     workspaces,
     activeWorkspace,
@@ -82,7 +84,7 @@ const WorkspaceSwitcher = () => {
         >
           <span className="workspace-name">{activeWorkspace.name}</span>
           <span className={`workspace-type-badge ${activeWorkspace.workspace_type}`}>
-            {activeWorkspace.workspace_type === 'personal' ? 'Personal' : 'Team'}
+            {activeWorkspace.workspace_type === 'personal' ? t('workspace.personal') : t('workspace.team')}
           </span>
           <span className="dropdown-arrow">{isOpen ? '▲' : '▼'}</span>
         </button>
@@ -115,7 +117,7 @@ const WorkspaceSwitcher = () => {
                   <div className="workspace-item-content">
                     <span className="workspace-item-name">{workspace.name}</span>
                     <span className={`workspace-type-badge ${workspace.workspace_type}`}>
-                      {workspace.workspace_type === 'personal' ? 'Personal' : 'Team'}
+                      {workspace.workspace_type === 'personal' ? t('workspace.personal') : t('workspace.team')}
                     </span>
                   </div>
                   {workspace.is_active && <span className="active-indicator">●</span>}

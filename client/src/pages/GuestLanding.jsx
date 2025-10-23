@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
@@ -7,6 +8,7 @@ import './GuestLanding.css';
 
 const GuestLanding = () => {
   const navigate = useNavigate();
+  const { t, language, setLanguage } = useLanguage();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -154,7 +156,7 @@ const GuestLanding = () => {
           <input
             type="text"
             className="search-input-library"
-            placeholder="Search Songs..."
+            placeholder={t('library.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -165,16 +167,30 @@ const GuestLanding = () => {
 
         {/* Actions */}
         <div className="header-actions">
+          <div className="language-switcher">
+            <button
+              className={`lang-btn ${language === 'en' ? 'active' : ''}`}
+              onClick={() => setLanguage('en')}
+            >
+              EN
+            </button>
+            <button
+              className={`lang-btn ${language === 'he' ? 'active' : ''}`}
+              onClick={() => setLanguage('he')}
+            >
+              HE
+            </button>
+          </div>
           <button className="btn-join-service" onClick={() => setShowJoinModal(true)}>
-            Join Service
+            {t('guestLanding.accessService')}
           </button>
           <div className="auth-links-inline">
             <button className="btn-auth-link" onClick={() => navigate('/login')}>
-              Login
+              {t('common.login')}
             </button>
             <span className="separator">|</span>
             <button className="btn-auth-link" onClick={() => navigate('/register')}>
-              Register
+              {t('common.register')}
             </button>
           </div>
         </div>
@@ -261,7 +277,7 @@ const GuestLanding = () => {
               className="btn-close-song"
               onClick={() => setSelectedSong(null)}
             >
-              Close
+              {t('common.close')}
             </button>
           </div>
                 </div>
@@ -282,12 +298,12 @@ const GuestLanding = () => {
       {showJoinModal && (
         <div className="modal-overlay" onClick={() => setShowJoinModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">Join Service</h2>
-            <p className="modal-description">Enter the 4-character service code to join</p>
+            <h2 className="modal-title">{t('guestLanding.accessService')}</h2>
+            <p className="modal-description">{t('guestLanding.enterCode')}</p>
             <input
               type="text"
               className="code-input"
-              placeholder="Enter Code"
+              placeholder={t('guestLanding.codePlaceholder')}
               value={serviceCode}
               onChange={(e) => setServiceCode(e.target.value.toUpperCase())}
               onKeyPress={handleKeyPress}
@@ -296,10 +312,10 @@ const GuestLanding = () => {
             />
             <div className="modal-actions">
               <button className="btn-modal-cancel" onClick={() => setShowJoinModal(false)}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button className="btn-modal-join" onClick={handleJoinService}>
-                Join
+                {t('guestLanding.accessButton')}
               </button>
             </div>
           </div>
