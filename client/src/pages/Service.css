@@ -8,10 +8,16 @@
 
 .service-selector {
   background-color: white;
-  border: 2px solid #333;
-  border-radius: 8px;
+  border: none;
+  border-radius: var(--border-radius-lg);
   padding: 20px;
   margin-bottom: 20px;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.service-selector:hover {
+  box-shadow: var(--shadow-lg);
 }
 
 .selector-header {
@@ -334,10 +340,16 @@
 
 .current-service {
   background-color: white;
-  border: 2px solid #333;
-  border-radius: 8px;
+  border: none;
+  border-radius: var(--border-radius-lg);
   padding: 20px;
   margin-bottom: 20px;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.current-service:hover {
+  box-shadow: var(--shadow-lg);
 }
 
 .service-header-bar {
@@ -346,7 +358,7 @@
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 15px;
-  border-bottom: 2px solid #333;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .service-header-bar h3 {
@@ -432,7 +444,7 @@
 
 .song-pill {
   background-color: white;
-  border: 2px solid #333;
+  border: 1px solid #ddd;
   color: #333;
   padding: 8px 20px;
   border-radius: 20px;
@@ -441,24 +453,34 @@
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .song-pill:hover {
   background-color: #f8f9fa;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .song-pill.active {
   background-color: #333;
   color: white;
+  border-color: #333;
+  box-shadow: var(--shadow-md);
 }
 
 .song-display {
+  background-color: white;
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
 }
 
 .song-display:hover {
   transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .song-header {
