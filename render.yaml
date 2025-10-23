@@ -6,9 +6,9 @@ services:
     plan: free
     buildCommand: |
       # Install server dependencies
-      cd server && npm install && cd ..
+      cd server && npm ci && cd ..
       # Install client dependencies and build
-      cd client && npm install && npm run build && cd ..
+      cd client && npm ci && npm run build && cd ..
     startCommand: cd server && npm start
     envVars:
       # Node Configuration
