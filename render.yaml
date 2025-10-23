@@ -9,9 +9,9 @@ services:
     envVars:
       # React build-time environment variables
       - key: REACT_APP_API_URL
-        value: https://soluflow.onrender.com/api
+        value: https://soluflow.app/api
       - key: REACT_APP_SERVER_URL
-        value: https://soluflow.onrender.com
+        value: https://soluflow.app
       # Node Configuration
       - key: NODE_ENV
         value: production
@@ -20,7 +20,7 @@ services:
 
       # Frontend URL (will be the same as backend in this setup)
       - key: CLIENT_URL
-        sync: false
+        value: https://soluflow.app
 
       # Database (automatically provided by Render PostgreSQL)
       - key: DATABASE_URL

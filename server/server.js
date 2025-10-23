@@ -15,6 +15,8 @@ const server = http.createServer(app);
 // Middleware
 const allowedOrigins = [
   process.env.CLIENT_URL,
+  'https://soluflow.app',
+  'https://soluflow.onrender.com',
   'http://localhost:3001',
   'http://localhost:3000',
   'http://localhost:3002'
