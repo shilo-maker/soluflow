@@ -17,7 +17,6 @@
   top: 0;
   z-index: 100;
   background-color: var(--color-white);
-  border-bottom: 2px solid var(--color-border-dark);
   padding: var(--spacing-md) 5%;
   display: flex;
   flex-wrap: wrap;

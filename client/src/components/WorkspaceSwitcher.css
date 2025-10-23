@@ -1,12 +1,5 @@
 .workspace-switcher {
   position: relative;
-  margin-right: 16px;
-}
-
-.workspace-switcher-container {
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .workspace-switcher-button {
@@ -35,35 +28,6 @@
 .workspace-switcher-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.workspace-settings-button-hover {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--color-hover-bg);
-  border: 2px solid var(--color-border-medium);
-  border-radius: var(--border-radius-sm);
-  color: var(--color-text-dark);
-  font-size: var(--font-xl);
-  font-weight: var(--font-bold);
-  line-height: 1;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: var(--shadow-sm);
-}
-
-.workspace-switcher-container:hover .workspace-settings-button-hover {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.workspace-settings-button-hover:hover {
-  background: var(--color-border-light);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  transform: scale(1.15);
-  box-shadow: var(--shadow-md);
 }
 
 .workspace-name {

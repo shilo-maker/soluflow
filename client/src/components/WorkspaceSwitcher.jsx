@@ -76,30 +76,25 @@ const WorkspaceSwitcher = () => {
 
   return (
     <div className="workspace-switcher" ref={dropdownRef}>
-      <div className="workspace-switcher-container">
-        <button
-          className="workspace-switcher-button"
-          onClick={() => setIsOpen(!isOpen)}
-          disabled={loading}
-        >
-          <span className="workspace-name">{activeWorkspace.name}</span>
-          <span className={`workspace-type-badge ${activeWorkspace.workspace_type}`}>
-            {activeWorkspace.workspace_type === 'personal' ? t('workspace.personal') : t('workspace.team')}
-          </span>
-          <span className="dropdown-arrow">{isOpen ? '▲' : '▼'}</span>
-        </button>
-        <button
-          className="workspace-settings-button-hover"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate('/workspace/settings');
-            setIsOpen(false);
-          }}
-          title="Workspace Settings"
-        >
-          ⋯
-        </button>
-      </div>
+      <button
+        className="workspace-switcher-button"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={loading}
+      >
+        <span className="workspace-name">{activeWorkspace.name}</span>
+        <span className={`workspace-type-badge ${activeWorkspace.workspace_type}`}>
+          {activeWorkspace.workspace_type === 'personal' ? (
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 8c1.66 0 3-1.34 3-3S9.66 2 8 2 5 3.34 5 5s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V15h14v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+          ) : (
+            <svg width="16" height="12" viewBox="0 0 24 16" fill="currentColor">
+              <path d="M8 8c1.66 0 3-1.34 3-3S9.66 2 8 2 5 3.34 5 5s1.34 3 3 3zm8 0c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 2c-2.33 0-7 1.17-7 3.5V15h14v-1.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V15h6v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+          )}
+        </span>
+        <span className="dropdown-arrow">{isOpen ? '▲' : '▼'}</span>
+      </button>
 
       {isOpen && (
         <div className="workspace-dropdown">
@@ -117,7 +112,15 @@ const WorkspaceSwitcher = () => {
                   <div className="workspace-item-content">
                     <span className="workspace-item-name">{workspace.name}</span>
                     <span className={`workspace-type-badge ${workspace.workspace_type}`}>
-                      {workspace.workspace_type === 'personal' ? t('workspace.personal') : t('workspace.team')}
+                      {workspace.workspace_type === 'personal' ? (
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M8 8c1.66 0 3-1.34 3-3S9.66 2 8 2 5 3.34 5 5s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V15h14v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="12" viewBox="0 0 24 16" fill="currentColor">
+                          <path d="M8 8c1.66 0 3-1.34 3-3S9.66 2 8 2 5 3.34 5 5s1.34 3 3 3zm8 0c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 2c-2.33 0-7 1.17-7 3.5V15h14v-1.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V15h6v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        </svg>
+                      )}
                     </span>
                   </div>
                   {workspace.is_active && <span className="active-indicator">●</span>}
