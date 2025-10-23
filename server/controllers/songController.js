@@ -82,33 +82,42 @@ const getAllSongs = async (req, res) => {
       order: [['title', 'ASC']]
     });
 
-    // For each song, check if it's shared with the current user and get sharer info
-    const songsWithShareInfo = await Promise.all(songs.map(async (song) => {
+    // Fix N+1 query: Fetch all SharedSongs for this user in one query
+    let sharedSongsMap = new Map();
+    if (userId && songs.length > 0) {
+      const songIds = songs.map(s => s.id);
+      const sharedSongs = await SharedSong.findAll({
+        where: {
+          song_id: { [Op.in]: songIds },
+          user_id: userId
+        },
+        include: [
+          {
+            model: User,
+            as: 'sharer',
+            attributes: ['id', 'username', 'email']
+          }
+        ]
+      });
+
+      // Create a Map for O(1) lookup
+      sharedSongs.forEach(ss => {
+        sharedSongsMap.set(ss.song_id, ss);
+      });
+    }
+
+    // Map songs with share info (no async needed now)
+    const songsWithShareInfo = songs.map(song => {
       const songData = song.toJSON();
 
-      if (userId) {
-        const sharedSong = await SharedSong.findOne({
-          where: {
-            song_id: song.id,
-            user_id: userId
-          },
-          include: [
-            {
-              model: User,
-              as: 'sharer',
-              attributes: ['id', 'username', 'email']
-            }
-          ]
-        });
-
-        if (sharedSong) {
-          songData.isShared = true;
-          songData.sharedBy = sharedSong.sharer;
-        }
+      if (userId && sharedSongsMap.has(song.id)) {
+        const sharedSong = sharedSongsMap.get(song.id);
+        songData.isShared = true;
+        songData.sharedBy = sharedSong.sharer;
       }
 
       return songData;
-    }));
+    });
 
     res.json(songsWithShareInfo);
   } catch (error) {
@@ -289,6 +298,7 @@ const createSong = async (req, res) => {
       time_signature,
       authors,
       copyright_info,
+      listen_url,
       created_by,
       workspace_ids // Array of workspace IDs where the song should be visible
     } = req.body;
@@ -317,6 +327,7 @@ const createSong = async (req, res) => {
       time_signature,
       authors,
       copyright_info,
+      listen_url,
       created_by: created_by || userId,
       is_public: isPublic,
       approval_status: null
@@ -380,6 +391,7 @@ const updateSong = async (req, res) => {
     if (time_signature !== undefined) updateData.time_signature = time_signature;
     if (authors !== undefined) updateData.authors = authors;
     if (copyright_info !== undefined) updateData.copyright_info = copyright_info;
+    if (req.body.listen_url !== undefined) updateData.listen_url = req.body.listen_url;
 
     // Only admins can change is_public status
     if (userRole === 'admin' && is_public !== undefined) {

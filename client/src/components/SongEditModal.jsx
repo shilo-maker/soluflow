@@ -35,6 +35,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     title: '',
     authors: '',
+    listen_url: '',
     key: '',
     bpm: '',
     timeSig: '4/4',
@@ -78,6 +79,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
       setFormData({
         title: song.title || '',
         authors: song.authors || '',
+        listen_url: song.listen_url || '',
         key: song.key || '',
         bpm: song.bpm || '',
         timeSig: song.timeSig || song.time_signature || '',
@@ -90,6 +92,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
       setFormData({
         title: '',
         authors: '',
+        listen_url: '',
         key: '',
         bpm: '',
         timeSig: '',
@@ -256,6 +259,21 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 value={formData.authors}
                 onChange={handleChange}
                 placeholder="e.g., John Doe"
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="listen_url">Listen URL (YouTube, Spotify, etc.)</label>
+              <input
+                type="url"
+                id="listen_url"
+                name="listen_url"
+                value={formData.listen_url}
+                onChange={handleChange}
+                placeholder="e.g., https://www.youtube.com/watch?v=..."
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>

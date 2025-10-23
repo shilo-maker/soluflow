@@ -155,6 +155,7 @@ const Library = () => {
         bpm: formData.bpm ? parseInt(formData.bpm) : null,
         time_signature: formData.timeSig,
         content: formData.content,
+        listen_url: formData.listen_url,
         workspace_id: activeWorkspace?.id
       };
 
@@ -390,6 +391,17 @@ const Library = () => {
               </div>
               <span className="key-info-inline">Key: {selectedSong.key}</span>
               {selectedSong.bpm && <span className="bpm-info-inline">BPM: {selectedSong.bpm}</span>}
+              {selectedSong.listen_url && (
+                <a
+                  href={selectedSong.listen_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="listen-link-inline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  🎵 Listen
+                </a>
+              )}
             </div>
           </div>
 

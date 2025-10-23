@@ -73,6 +73,11 @@ const Song = sequelize.define('Song', {
     allowNull: true,
     defaultValue: null,
     comment: 'Approval status when regular user submits song to become public'
+  },
+  listen_url: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    comment: 'URL to listen to the song (YouTube, Spotify, etc.)'
   }
 }, {
   tableName: 'songs',

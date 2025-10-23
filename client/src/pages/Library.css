@@ -373,6 +373,26 @@
   font-weight: var(--font-medium);
 }
 
+.listen-link-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-sm);
+  color: white;
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
+  font-weight: var(--font-semibold);
+  text-decoration: none;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-full);
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.listen-link-inline:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-success);
+}
+
 .song-content-inline {
   background-color: var(--color-hover-bg);
   border-radius: var(--border-radius-sm);
