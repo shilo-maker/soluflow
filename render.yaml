@@ -4,9 +4,14 @@ services:
     name: soluflow
     runtime: node
     plan: free
-    buildCommand: cd client && REACT_APP_API_URL=https://soluflow.onrender.com/api REACT_APP_SERVER_URL=https://soluflow.onrender.com npm install && npm run build
+    buildCommand: cd client && npm install && npm run build
     startCommand: bash start.sh
     envVars:
+      # React build-time environment variables
+      - key: REACT_APP_API_URL
+        value: https://soluflow.onrender.com/api
+      - key: REACT_APP_SERVER_URL
+        value: https://soluflow.onrender.com
       # Node Configuration
       - key: NODE_ENV
         value: production
