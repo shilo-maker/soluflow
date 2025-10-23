@@ -91,6 +91,13 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  const updateUser = (updatedUserData) => {
+    setUser(prevUser => ({
+      ...prevUser,
+      ...updatedUserData
+    }));
+  };
+
   const value = {
     user,
     loading,
@@ -99,7 +106,8 @@ export const AuthProvider = ({ children }) => {
     register,
     guestLogin,
     logout,
-    checkAuth
+    checkAuth,
+    updateUser
   };
 
   return (

@@ -14,6 +14,7 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,14 +63,15 @@ const Register = () => {
       // Auto-generate username from email (part before @)
       const username = formData.email.split('@')[0];
 
-      // Don't send workspaceId - backend will auto-create a workspace
+      // Don't send workspaceId - backend will auto-create workspace
       await register(
         formData.email,
         formData.password,
         username,
         null // Backend will auto-create workspace
       );
-      navigate('/'); // Redirect to home/library after successful registration
+      // Show success message instead of navigating
+      setRegistrationSuccess(true);
     } catch (err) {
       console.error('Registration error:', err);
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
@@ -90,9 +92,27 @@ const Register = () => {
         </div>
 
         <div className="register-card">
-          {error && <div className="register-error">{error}</div>}
+          {registrationSuccess ? (
+            <div className="registration-success">
+              <div className="success-icon">✓</div>
+              <h2>Registration Successful!</h2>
+              <p>Please check your email to verify your account.</p>
+              <p>We've sent a verification link to <strong>{formData.email}</strong></p>
+              <p className="verification-note">
+                The link will expire in 24 hours. Once verified, you can log in to your account.
+              </p>
+              <button className="btn-go-to-login" onClick={() => navigate('/login')}>
+                Go to Login
+              </button>
+              <div className="resend-info">
+                <p>Didn't receive the email? Check your spam folder or <Link to="/login">login</Link> and request a new verification email.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {error && <div className="register-error">{error}</div>}
 
-          <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email">Email *</label>
               <input
@@ -149,6 +169,8 @@ const Register = () => {
               Already have an account? <Link to="/login">Login here</Link>
             </p>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

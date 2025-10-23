@@ -176,6 +176,102 @@
   }
 }
 
+/* Registration Success */
+.registration-success {
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.registration-success .success-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  font-size: 48px;
+  line-height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  animation: scaleIn 0.3s ease-out;
+}
+
+.registration-success h2 {
+  margin: 0 0 15px;
+  color: var(--color-text);
+  font-size: 28px;
+}
+
+.registration-success p {
+  margin: 0 0 15px;
+  color: var(--color-text-medium);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.registration-success p strong {
+  color: var(--color-primary);
+}
+
+.verification-note {
+  background: var(--color-background);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin: 20px 0;
+  font-size: 14px !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.btn-go-to-login {
+  width: 100%;
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-base);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  margin-top: var(--spacing-lg);
+}
+
+.btn-go-to-login:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-primary-hover);
+}
+
+.resend-info {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-light-gray);
+}
+
+.resend-info p {
+  font-size: 14px !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.resend-info a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-semibold);
+}
+
+.resend-info a:hover {
+  text-decoration: underline;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 768px) {
   .register-header h1 {
     font-size: 36px;
@@ -187,5 +283,13 @@
 
   .register-card {
     padding: 30px 25px;
+  }
+
+  .registration-success h2 {
+    font-size: 24px;
+  }
+
+  .registration-success p {
+    font-size: 14px;
   }
 }

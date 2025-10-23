@@ -96,6 +96,9 @@ const Login = () => {
                 autoComplete="current-password"
                 disabled={loading}
               />
+              <div className="forgot-password-link">
+                <Link to="/forgot-password">Forgot password?</Link>
+              </div>
             </div>
 
             <button
