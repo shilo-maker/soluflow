@@ -5,7 +5,7 @@ services:
     runtime: node
     plan: free
     buildCommand: cd client && npm install && npm run build
-    startCommand: cd server && npm install && npm start
+    startCommand: bash start.sh
     envVars:
       # Node Configuration
       - key: NODE_ENV
