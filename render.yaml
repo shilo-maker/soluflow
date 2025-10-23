@@ -4,8 +4,8 @@ services:
     name: soluflow
     runtime: node
     plan: free
-    buildCommand: bash build.sh
-    startCommand: cd server && npm start
+    buildCommand: cd client && npm install && npm run build
+    startCommand: cd server && npm install && npm start
     envVars:
       # Node Configuration
       - key: NODE_ENV
