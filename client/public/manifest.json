@@ -9,13 +9,13 @@
       "type": "image/x-icon"
     },
     {
-      "src": "icon-192x192.png",
+      "src": "solu_flow_logo.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512x512.png",
+      "src": "solu_flow_logo.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
