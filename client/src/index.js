@@ -5,6 +5,7 @@ import './styles/modern.css'; // Modern design system
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -12,6 +13,17 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Register service worker for offline support
+serviceWorkerRegistration.register({
+  onSuccess: () => {
+    console.log('SoluFlow is now available offline!');
+  },
+  onUpdate: (registration) => {
+    console.log('New version available! Please refresh to update.');
+    // Optionally, you could show a toast notification here
+  },
+});
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

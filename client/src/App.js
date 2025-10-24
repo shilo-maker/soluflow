@@ -7,6 +7,7 @@ import PrivateRoute from './components/PrivateRoute';
 import Header from './components/layout/Header';
 import BottomNav from './components/layout/BottomNav';
 import FullscreenButton from './components/FullscreenButton';
+import OfflineIndicator from './components/OfflineIndicator';
 import Home from './pages/Home';
 import Service from './pages/Service';
 import GuestServiceView from './pages/GuestServiceView';
@@ -63,6 +64,9 @@ function AppContent() {
 
   return (
     <div className="App">
+      {/* Offline/Online Indicator */}
+      <OfflineIndicator />
+
       {isAuthenticated && !isAuthPage && !isGuestPage && (
         <Header
           title="SoluFlow"
