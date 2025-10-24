@@ -103,6 +103,13 @@ const ChordProDisplay = ({
     return parsed;
   };
 
+  // Normalize chord notation (uppercase M to lowercase m for minor chords)
+  const normalizeChord = (chord) => {
+    // Replace uppercase M with lowercase m for minor chords
+    // Pattern: Match a chord root (letter, optional sharp/flat) followed by uppercase M
+    return chord.replace(/([A-G][#b]?)M/g, '$1m');
+  };
+
   const parseChordLine = (line) => {
     const chords = [];
 
@@ -113,7 +120,7 @@ const ChordProDisplay = ({
 
     while ((match = chordPattern.exec(line)) !== null) {
       chordMatches.push({
-        chord: match[1],
+        chord: normalizeChord(match[1]),
         position: match.index,
         length: match[0].length
       });
@@ -122,7 +129,12 @@ const ChordProDisplay = ({
     // Build the chord and lyric lines
     let lyricLine = line;
     chordMatches.forEach(cm => {
-      lyricLine = lyricLine.replace(`[${cm.chord}]`, '');
+      // Use original chord from match for replacement
+      const originalChordPattern = /\[([^\]]+)\]/;
+      const originalMatch = line.substring(cm.position).match(originalChordPattern);
+      if (originalMatch) {
+        lyricLine = lyricLine.replace(`[${originalMatch[1]}]`, '');
+      }
     });
 
     // Calculate chord positions relative to lyrics
@@ -286,20 +298,48 @@ const ChordProDisplay = ({
 
         // For RTL, use right-aligned positioning
         const isRTL = dir === 'rtl';
+        const fontFamily = "'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif";
+
+        // Calculate positions for all chords, preventing overlaps
+        const chordPositions = [];
+        const minSpacing = 5; // Minimum pixels between chords
+
+        item.chords.forEach((c, i) => {
+          // Measure actual text width up to this chord position
+          const textBeforeChord = item.lyrics.substring(0, c.position);
+          const textWidth = measureTextWidth(textBeforeChord, fontSize, fontFamily);
+
+          // Measure the width of this chord
+          const chordWidth = measureTextWidth(c.chord, fontSize, fontFamily);
+
+          let position = textWidth;
+
+          // Check for overlap with previous chord
+          if (i > 0) {
+            const prevChord = chordPositions[i - 1];
+            const prevEnd = prevChord.position + prevChord.width + minSpacing;
+
+            // If this chord would overlap, push it to the right (or left for RTL)
+            if (position < prevEnd) {
+              position = prevEnd;
+            }
+          }
+
+          chordPositions.push({
+            chord: c.chord,
+            position: position,
+            width: chordWidth
+          });
+        });
 
         return (
           <div key={index} className="chord-lyric-pair">
             <div className="chord-line">
-              {item.chords.map((c, i) => {
-                // Measure actual text width up to this chord position
-                const textBeforeChord = item.lyrics.substring(0, c.position);
-                const fontFamily = "'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif";
-                const textWidth = measureTextWidth(textBeforeChord, fontSize, fontFamily);
-
+              {chordPositions.map((c, i) => {
                 // For RTL, use right positioning; for LTR, use left positioning
                 const position = isRTL
-                  ? { right: `${textWidth}px` }
-                  : { left: `${textWidth}px` };
+                  ? { right: `${c.position}px` }
+                  : { left: `${c.position}px` };
 
                 return (
                   <span
