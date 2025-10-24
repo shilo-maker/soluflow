@@ -446,6 +446,26 @@
   font-weight: 500;
 }
 
+.listen-link-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: white;
+  background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.listen-link-inline:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
 .song-content-inline {
   background-color: #f8f9fa;
   border-radius: 4px;
