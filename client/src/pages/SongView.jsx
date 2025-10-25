@@ -594,7 +594,7 @@ const SongView = () => {
       {/* Next Song Indicator - at top */}
       {nextSong && (
         <div className="next-song-indicator">
-          <span className="next-label">Next:</span>
+          <span className="next-label">{isRTL ? 'הבא →' : 'Next:'}</span>
           <span className="next-song-title">{nextSong.title}</span>
           <span className="next-song-key">Key: {nextSong.key}</span>
         </div>
