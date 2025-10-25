@@ -27,7 +27,7 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
     <header className="app-header">
       <div className="header-content">
         <div className="app-title">
-          <img src="/new_logo.png" alt="SoluFlow" className="app-logo" />
+          <img src="/new_navbar.png" alt="SoluFlow" className="app-logo" />
         </div>
         <div className="header-actions">
           {user && !user.isGuest && <WorkspaceSwitcher />}
