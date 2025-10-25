@@ -1,11 +1,14 @@
 // Service room Socket.IO handlers
 // Handles real-time leader/follower synchronization
 
+const { monitor } = require('../middleware/monitoring');
+
 const serviceRooms = {};  // Track active rooms: { serviceId: { leader: socketId, followers: [socketIds], currentState: {...} } }
 
 const setupServiceRooms = (io) => {
   io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
+    monitor.connectionOpened();
 
     // Join a service room
     socket.on('join-service', ({ serviceId, userId, userRole, isLeader }) => {
@@ -112,6 +115,7 @@ const setupServiceRooms = (io) => {
     // Handle disconnection
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
+      monitor.connectionClosed();
 
       if (socket.serviceId) {
         handleLeaveService(socket, socket.serviceId, io);
