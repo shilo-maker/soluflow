@@ -483,8 +483,7 @@ const SongView = () => {
         </div>
         <div className="song-view-controls">
           <span className="control-info">Key: {song.key}</span>
-          <span className="control-info">BPM: {song.bpm}</span>
-          <span className="control-info">{song.timeSig}</span>
+          {song.bpm && <span className="control-info">BPM: {song.bpm}</span>}
         </div>
       </div>
 
@@ -506,7 +505,7 @@ const SongView = () => {
           className={`btn-action ${isLyricsOnly ? 'active' : ''}`}
           onClick={() => setIsLyricsOnly(!isLyricsOnly)}
         >
-          {isLyricsOnly ? 'Show Chords' : 'Lyrics Only'}
+          {isLyricsOnly ? 'Chords' : 'Lyrics'}
         </button>
         <div className="zoom-controls-view">
           <button className="btn-action btn-zoom-view btn-zoom-out" onClick={zoomOut}>
@@ -522,7 +521,7 @@ const SongView = () => {
             onClick={toggleFollowMode}
             title={isFollowMode ? 'Click to enable free mode' : 'Click to follow leader'}
           >
-            {isFollowMode ? 'Following' : 'Free Mode'}
+            {isFollowMode ? 'Follow' : 'Free'}
           </button>
         )}
       </div>
@@ -532,7 +531,9 @@ const SongView = () => {
         <div className="next-song-indicator">
           <span className="next-label">{isRTL ? 'הבא ←' : 'Next:'}</span>
           <span className="next-song-title">{nextSong.title}</span>
-          <span className="next-song-key">Key: {nextSong.key}</span>
+          <span className="next-song-meta">
+            {nextSong.key}{nextSong.bpm ? ` • ${nextSong.bpm} BPM` : ''}
+          </span>
         </div>
       )}
 

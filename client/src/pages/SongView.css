@@ -108,7 +108,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   margin-bottom: 30px;
   flex-wrap: wrap;
 }
@@ -119,10 +119,11 @@
 }
 
 .btn-zoom-view {
-  min-width: 50px;
+  min-width: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 10px 16px;
 }
 
 .zoom-icon-small {
@@ -144,13 +145,14 @@
 }
 
 .btn-transpose-view {
-  min-width: 50px;
+  min-width: 45px;
+  padding: 10px 16px;
 }
 
 .transpose-display {
-  min-width: 80px;
+  min-width: 70px;
   text-align: center;
-  padding: 12px 16px;
+  padding: 10px 14px;
   background-color: #f8f9fa;
   color: #333;
   font-weight: 600;
@@ -170,11 +172,11 @@
   background-color: var(--color-primary);
   color: white;
   border: none;
-  padding: 12px 30px;
+  padding: 10px 20px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -285,8 +287,12 @@
   }
 
   .btn-action {
-    padding: 10px 20px;
+    padding: 8px 16px;
     font-size: 13px;
+  }
+
+  .song-view-actions {
+    gap: 8px;
   }
 
   .chord-display {
@@ -340,13 +346,15 @@
 .next-song-indicator {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 15px 20px;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 10px 15px;
   background-color: #f0f0f0;
   border-left: 4px solid var(--color-primary);
   border-radius: 4px;
   font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .next-label {
@@ -354,20 +362,26 @@
   color: var(--color-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .next-song-title {
   font-weight: 600;
   color: #333;
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
-.next-song-key {
+.next-song-meta {
   font-weight: 600;
   color: #6c757d;
   background-color: white;
   padding: 4px 12px;
   border-radius: 12px;
+  flex-shrink: 0;
 }
 
 /* Large display mode for stage use */
@@ -410,11 +424,9 @@
   }
 
   .next-song-indicator {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 13px;
-    margin-bottom: 20px;
+    font-size: 12px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
   }
 }
 
