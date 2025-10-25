@@ -7,7 +7,7 @@ import './Header.css';
 const Header = ({ title, user, showLogout = false, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const isOnUsersPage = location.pathname === '/users';
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 

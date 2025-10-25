@@ -6,7 +6,7 @@ import './WorkspaceSwitcher.css';
 
 const WorkspaceSwitcher = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const {
     workspaces,
     activeWorkspace,
@@ -21,6 +21,22 @@ const WorkspaceSwitcher = () => {
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [error, setError] = useState(null);
   const dropdownRef = useRef(null);
+
+  // Format workspace name based on language
+  const formatWorkspaceName = (workspace) => {
+    if (workspace.workspace_type === 'personal') {
+      // Extract username from "[username]'s Workspace" pattern
+      const match = workspace.name.match(/^(.+)'s Workspace$/);
+      if (match) {
+        const username = match[1];
+        if (language === 'he') {
+          return `הסביבה של ${username}`;
+        }
+        return workspace.name; // Keep original English format
+      }
+    }
+    return workspace.name; // Return as-is for team workspaces
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -56,7 +72,7 @@ const WorkspaceSwitcher = () => {
   const handleCreateWorkspace = async (e) => {
     e.preventDefault();
     if (!newWorkspaceName.trim()) {
-      setError('Workspace name is required');
+      setError(t('workspace.workspaceNameRequired'));
       return;
     }
 
@@ -81,7 +97,7 @@ const WorkspaceSwitcher = () => {
         onClick={() => setIsOpen(!isOpen)}
         disabled={loading}
       >
-        <span className="workspace-name">{activeWorkspace.name}</span>
+        <span className="workspace-name">{formatWorkspaceName(activeWorkspace)}</span>
         <span className={`workspace-type-badge ${activeWorkspace.workspace_type}`}>
           {activeWorkspace.workspace_type === 'personal' ? (
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
@@ -110,7 +126,7 @@ const WorkspaceSwitcher = () => {
                   disabled={loading || workspace.is_active}
                 >
                   <div className="workspace-item-content">
-                    <span className="workspace-item-name">{workspace.name}</span>
+                    <span className="workspace-item-name">{formatWorkspaceName(workspace)}</span>
                     <span className={`workspace-type-badge ${workspace.workspace_type}`}>
                       {workspace.workspace_type === 'personal' ? (
                         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
@@ -133,7 +149,7 @@ const WorkspaceSwitcher = () => {
                       navigate('/workspace/settings');
                       setIsOpen(false);
                     }}
-                    title="Workspace Settings"
+                    title={t('workspace.workspaceSettings')}
                   >
                     ⋯
                   </button>
@@ -149,7 +165,7 @@ const WorkspaceSwitcher = () => {
               className="create-workspace-button"
               onClick={() => setIsCreating(true)}
             >
-              + Create Team Workspace
+              + {t('workspace.createTeamWorkspace')}
             </button>
           )}
 
@@ -157,7 +173,7 @@ const WorkspaceSwitcher = () => {
             <form className="create-workspace-form" onSubmit={handleCreateWorkspace}>
               <input
                 type="text"
-                placeholder="Workspace name"
+                placeholder={t('workspace.workspaceName')}
                 value={newWorkspaceName}
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
                 autoFocus
@@ -165,7 +181,7 @@ const WorkspaceSwitcher = () => {
               />
               <div className="form-buttons">
                 <button type="submit" className="btn-create" disabled={loading}>
-                  Create
+                  {t('workspace.create')}
                 </button>
                 <button
                   type="button"
@@ -177,7 +193,7 @@ const WorkspaceSwitcher = () => {
                   }}
                   disabled={loading}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -185,7 +201,7 @@ const WorkspaceSwitcher = () => {
 
           {!canCreateOrganization && !isCreating && (
             <div className="workspace-limit-message">
-              Maximum 3 team workspaces reached
+              {t('workspace.maxWorkspacesReached')}
             </div>
           )}
         </div>

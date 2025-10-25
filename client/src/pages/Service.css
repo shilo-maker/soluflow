@@ -140,6 +140,12 @@
   animation: slideDown 0.15s ease-out;
 }
 
+/* RTL support - align dropdown to left to prevent overflow */
+[dir="rtl"] .service-dropdown-menu {
+  right: auto;
+  left: 0;
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -223,6 +229,12 @@
   margin-top: 8px;
   overflow: hidden;
   animation: slideDown 0.15s ease-out;
+}
+
+/* RTL support - align dropdown to left to prevent overflow */
+[dir="rtl"] .header-dropdown-menu {
+  right: auto;
+  left: 0;
 }
 
 .service-list {

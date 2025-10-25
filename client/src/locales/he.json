@@ -144,7 +144,13 @@
     "personal": "אישי",
     "team": "צוות",
     "personalWorkspace": "אישי",
-    "teamWorkspace": "צוות"
+    "teamWorkspace": "צוות",
+    "createTeamWorkspace": "צור סביבת צוות",
+    "workspaceName": "שם סביבת העבודה",
+    "create": "צור",
+    "workspaceSettings": "הגדרות סביבת עבודה",
+    "maxWorkspacesReached": "הגעת למקסימום של 3 סביבות צוות",
+    "workspaceNameRequired": "שם סביבת העבודה נדרש"
   },
   "errors": {
     "emailRequired": "אימייל נדרש",

@@ -144,7 +144,13 @@
     "personal": "Personal",
     "team": "Team",
     "personalWorkspace": "Personal",
-    "teamWorkspace": "Team"
+    "teamWorkspace": "Team",
+    "createTeamWorkspace": "Create Team Workspace",
+    "workspaceName": "Workspace name",
+    "create": "Create",
+    "workspaceSettings": "Workspace Settings",
+    "maxWorkspacesReached": "Maximum 3 team workspaces reached",
+    "workspaceNameRequired": "Workspace name is required"
   },
   "errors": {
     "emailRequired": "Email is required",
