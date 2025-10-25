@@ -179,7 +179,6 @@
   /* RTL - fix dropdown overflow on mobile */
   [dir="rtl"] .user-dropdown-menu {
     left: 0;
-    right: auto;
     transform: translateX(0);
   }
 }
