@@ -615,10 +615,10 @@
   color: #6c757d;
 }
 
-/* Leader badge */
+/* Leader badge - Instagram-inspired gradient */
 .leader-badge {
   display: inline-block;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);
   color: white;
   padding: 4px 12px;
   border-radius: 15px;
@@ -628,7 +628,7 @@
   letter-spacing: 0.5px;
   margin-left: 15px;
   vertical-align: middle;
-  box-shadow: var(--shadow-primary);
+  box-shadow: 0 2px 8px rgba(131, 58, 180, 0.4);
 }
 
 /* Follow mode toggle button */
@@ -650,8 +650,8 @@
 }
 
 .btn-follow-mode.active {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  box-shadow: var(--shadow-primary);
+  background: linear-gradient(135deg, #405de6 0%, #5851db 50%, #833ab4 100%);
+  box-shadow: 0 2px 8px rgba(64, 93, 230, 0.4);
 }
 
 .btn-follow-mode.active:hover {
