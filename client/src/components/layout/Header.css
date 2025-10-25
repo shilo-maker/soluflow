@@ -166,6 +166,22 @@
   .header-actions {
     gap: 8px;
   }
+
+  /* Fix dropdown overflow on mobile */
+  .user-dropdown-menu {
+    right: 0;
+    left: auto;
+    min-width: 140px;
+    max-width: calc(100vw - 30px);
+    transform: translateX(0);
+  }
+
+  /* RTL - fix dropdown overflow on mobile */
+  [dir="rtl"] .user-dropdown-menu {
+    left: 0;
+    right: auto;
+    transform: translateX(0);
+  }
 }
 
 /* Extra small screens */
