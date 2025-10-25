@@ -5,7 +5,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const { testConnection, syncDatabase } = require('./models');
-const { monitor, requestTracker } = require('./middleware/monitoring');
 
 // Load environment variables
 dotenv.config();
@@ -48,9 +47,6 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' })); // Increase limit for data import
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Add monitoring middleware
-app.use(requestTracker);
-
 // Routes
 const authRoutes = require('./routes/auth');
 const songsRoutes = require('./routes/songs');
@@ -58,7 +54,6 @@ const servicesRoutes = require('./routes/services');
 const notesRoutes = require('./routes/notes');
 const usersRoutes = require('./routes/users');
 const workspacesRoutes = require('./routes/workspaces');
-const monitoringRoutes = require('./routes/monitoring');
 
 // API routes
 app.get('/api/health', (req, res) => {
@@ -71,7 +66,6 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/workspaces', workspacesRoutes);
-app.use('/api/monitoring', monitoringRoutes);
 
 // Serve static files from React app in production
 if (process.env.NODE_ENV === 'production') {
