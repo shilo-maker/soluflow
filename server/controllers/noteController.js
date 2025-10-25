@@ -41,7 +41,14 @@ const getNoteForSongInService = async (req, res) => {
     }
 
     // Ensure content is properly structured
-    if (!content || typeof content !== 'object' || !Array.isArray(content.notes)) {
+    if (!content || typeof content !== 'object') {
+      content = { notes: [] };
+    }
+
+    // If content has plain text, keep it as is
+    // If content has notes array, keep it as is
+    // Otherwise, default to empty notes array
+    if (!content.text && !Array.isArray(content.notes)) {
       content = { notes: [] };
     }
 
@@ -151,8 +158,17 @@ const createOrUpdateNote = async (req, res) => {
         content.notes = content.notes.filter(n => n.id !== noteData.id);
         break;
 
+      case 'save':
+        // Save plain text notes
+        if (noteData && noteData.text !== undefined) {
+          content = { text: noteData.text };
+        } else {
+          return res.status(400).json({ error: 'Text is required' });
+        }
+        break;
+
       default:
-        return res.status(400).json({ error: 'Invalid action. Use: add, update, or delete' });
+        return res.status(400).json({ error: 'Invalid action. Use: add, update, delete, or save' });
     }
 
     // Save updated content

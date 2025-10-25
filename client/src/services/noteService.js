@@ -46,6 +46,17 @@ const noteService = {
     return response.data;
   },
 
+  // Save plain text notes
+  saveNotes: async (songId, serviceId, text) => {
+    const response = await api.post('/notes', {
+      songId,
+      serviceId,
+      action: 'save',
+      noteData: { text }
+    });
+    return response.data;
+  },
+
   // Legacy method for backward compatibility
   getNote: async (songId, serviceId) => {
     return noteService.getNotes(songId, serviceId);

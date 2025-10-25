@@ -50,9 +50,8 @@ const SongView = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
-  const [inlineNotes, setInlineNotes] = useState([]);
-  const [notesVisible, setNotesVisible] = useState(true);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [notesExpanded, setNotesExpanded] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Real-time sync state
@@ -127,7 +126,7 @@ const SongView = () => {
     }
   }, [id, setlistContext]);
 
-  // Fetch inline notes
+  // Fetch notes
   useEffect(() => {
     const fetchNotes = async () => {
       if (!setlistContext?.serviceId || !id || user?.isGuest) {
@@ -136,15 +135,22 @@ const SongView = () => {
 
       try {
         const data = await noteService.getNotes(id, setlistContext.serviceId);
-        if (data && data.content && data.content.notes) {
-          setInlineNotes(data.content.notes);
-          setNotesVisible(data.is_visible);
+        if (data && data.content) {
+          // Convert old format to plain text if needed
+          if (data.content.notes && Array.isArray(data.content.notes)) {
+            const plainText = data.content.notes.map(note => note.text).join('\n\n');
+            setNotes(plainText);
+          } else if (typeof data.content === 'string') {
+            setNotes(data.content);
+          } else if (data.content.text) {
+            setNotes(data.content.text);
+          }
         } else {
-          setInlineNotes([]);
+          setNotes('');
         }
       } catch (err) {
         console.error('Error fetching notes:', err);
-        setInlineNotes([]);
+        setNotes('');
       }
     };
 
@@ -430,68 +436,18 @@ const SongView = () => {
     touchEndRef.current = null;
   };
 
-  // Inline note handlers
-  const handleAddNote = async (lineNumber, text) => {
+  // Save notes handler
+  const handleSaveNotes = async () => {
     if (!setlistContext?.serviceId) return;
 
     try {
-      const data = await noteService.addNote(id, setlistContext.serviceId, lineNumber, text);
-      if (data && data.content && data.content.notes) {
-        setInlineNotes(data.content.notes);
-      }
-      setToastMessage('Note added successfully!');
+      await noteService.saveNotes(id, setlistContext.serviceId, notes);
+      setToastMessage('Notes saved successfully!');
       setShowToast(true);
     } catch (err) {
-      console.error('Error adding note:', err);
-      setToastMessage('Failed to add note');
+      console.error('Error saving notes:', err);
+      setToastMessage('Failed to save notes');
       setShowToast(true);
-    }
-  };
-
-  const handleUpdateNote = async (noteId, text) => {
-    if (!setlistContext?.serviceId) return;
-
-    try {
-      const data = await noteService.updateNote(id, setlistContext.serviceId, noteId, text);
-      if (data && data.content && data.content.notes) {
-        setInlineNotes(data.content.notes);
-      }
-      setToastMessage('Note updated successfully!');
-      setShowToast(true);
-    } catch (err) {
-      console.error('Error updating note:', err);
-      setToastMessage('Failed to update note');
-      setShowToast(true);
-    }
-  };
-
-  const handleDeleteNote = async (noteId) => {
-    if (!setlistContext?.serviceId) return;
-
-    try {
-      const data = await noteService.deleteNote(id, setlistContext.serviceId, noteId);
-      if (data && data.content && data.content.notes) {
-        setInlineNotes(data.content.notes);
-      }
-      setToastMessage('Note deleted successfully!');
-      setShowToast(true);
-    } catch (err) {
-      console.error('Error deleting note:', err);
-      setToastMessage('Failed to delete note');
-      setShowToast(true);
-    }
-  };
-
-  const handleToggleNotesVisibility = async () => {
-    if (!setlistContext?.serviceId) return;
-
-    try {
-      const data = await noteService.toggleVisibility(id, setlistContext.serviceId);
-      setNotesVisible(data.is_visible);
-      setToastMessage(data.is_visible ? 'Notes visible' : 'Notes hidden');
-      setShowToast(true);
-    } catch (err) {
-      console.error('Error toggling notes visibility:', err);
     }
   };
 
@@ -569,26 +525,6 @@ const SongView = () => {
             {isFollowMode ? 'Following' : 'Free Mode'}
           </button>
         )}
-        {isAuthenticated && !user?.isGuest && setlistContext?.serviceId && (
-          <>
-            <button
-              className={`btn-action btn-icon-action ${isEditMode ? 'active' : ''}`}
-              onClick={() => setIsEditMode(!isEditMode)}
-              title={isEditMode ? 'Done editing notes' : 'Edit notes'}
-            >
-              <span className="btn-icon">{isEditMode ? '✓' : '✎'}</span>
-              <span className="btn-text">{isEditMode ? 'Done' : 'Edit'}</span>
-            </button>
-            <button
-              className={`btn-action btn-icon-action ${!notesVisible ? 'active' : ''}`}
-              onClick={handleToggleNotesVisibility}
-              title={notesVisible ? 'Hide notes' : 'Show notes'}
-            >
-              <span className="btn-icon">{notesVisible ? '👁' : '⊘'}</span>
-              <span className="btn-text">{notesVisible ? 'Hide' : 'Show'}</span>
-            </button>
-          </>
-        )}
       </div>
 
       {/* Next Song Indicator - at top */}
@@ -635,13 +571,37 @@ const SongView = () => {
           dir={hasHebrew ? 'rtl' : 'ltr'}
           fontSize={fontSize}
           transposition={transposition}
-          notes={notesVisible ? inlineNotes : []}
-          isEditMode={isEditMode}
-          onAddNote={handleAddNote}
-          onUpdateNote={handleUpdateNote}
-          onDeleteNote={handleDeleteNote}
         />
       </div>
+
+      {/* Collapsible Notes Section */}
+      {isAuthenticated && !user?.isGuest && setlistContext?.serviceId && (
+        <div className="notes-section">
+          <button
+            className="notes-toggle"
+            onClick={() => setNotesExpanded(!notesExpanded)}
+          >
+            {notesExpanded ? '▼' : '►'} Show Notes
+          </button>
+          {notesExpanded && (
+            <div className="notes-content">
+              <textarea
+                className="notes-textarea"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add your notes here..."
+                rows={8}
+              />
+              <button
+                className="btn-save-notes"
+                onClick={handleSaveNotes}
+              >
+                Save Notes
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Notes Modal */}
       {setlistContext?.serviceId && (
