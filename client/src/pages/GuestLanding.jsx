@@ -147,7 +147,7 @@ const GuestLanding = () => {
       <div className="guest-sticky-header">
         {/* App Name Group */}
         <div className="header-name-group">
-          <img src="/solu_flow_logo.png" alt="SoluFlow" className="guest-logo" />
+          <img src="/new_logo.png" alt="SoluFlow" className="guest-logo" />
           <h1 className="app-name">SoluFlow</h1>
         </div>
 

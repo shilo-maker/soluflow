@@ -62,7 +62,7 @@ const Login = () => {
           ← Browse Songs
         </button>
         <div className="login-header">
-          <img src="/solu_flow_login.png" alt="SoluFlow" className="login-logo" />
+          <img src="/new_logo.png" alt="SoluFlow" className="login-logo" />
           <p>Worship Service Planning & Chord Sheets</p>
         </div>
 
