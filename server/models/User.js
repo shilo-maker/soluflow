@@ -52,7 +52,7 @@ const User = sequelize.define('User', {
   language: {
     type: DataTypes.STRING(2),
     allowNull: false,
-    defaultValue: 'en',
+    defaultValue: 'he',
     validate: {
       isIn: [['en', 'he']]
     }
