@@ -631,9 +631,9 @@
   box-shadow: 0 2px 8px rgba(131, 58, 180, 0.4);
 }
 
-/* Follow mode toggle button */
+/* Follow mode toggle button - Free Mode (Instagram-inspired warm gradient) */
 .btn-follow-mode {
-  background-color: #6c757d;
+  background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
   color: white;
   border: none;
   padding: 8px 18px;
@@ -643,10 +643,12 @@
   letter-spacing: 0.5px;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(240, 148, 51, 0.4);
 }
 
 .btn-follow-mode:hover {
-  background-color: #5a6268;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 148, 51, 0.5);
 }
 
 .btn-follow-mode.active {
