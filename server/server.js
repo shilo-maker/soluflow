@@ -101,6 +101,9 @@ app.use((err, req, res, next) => {
 const setupServiceRooms = require('./sockets/serviceRooms');
 setupServiceRooms(io);
 
+// Email alerts
+const { startMonitoring } = require('./services/emailAlerts');
+
 // Initialize database and start server
 const PORT = process.env.PORT || 5001;
 
@@ -111,6 +114,9 @@ const startServer = async () => {
 
     // Sync database (create tables if they don't exist, don't alter existing tables)
     await syncDatabase({ alter: false });
+
+    // Start email monitoring
+    startMonitoring();
 
     // Start server
     server.listen(PORT, '0.0.0.0', () => {
