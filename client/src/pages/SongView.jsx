@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
 import noteService from '../services/noteService';
 import ChordProDisplay from '../components/ChordProDisplay';
@@ -17,6 +18,7 @@ const SongView = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
+  const { isRTL } = useLanguage();
   const touchStartRef = useRef(null);
   const touchEndRef = useRef(null);
   const socketRef = useRef(null);
@@ -602,12 +604,18 @@ const SongView = () => {
       {setlistContext && (
         <>
           {hasPrevious && (
-            <button className="btn-nav-song btn-prev-song" onClick={goToPreviousSong}>
+            <button
+              className={`btn-nav-song ${isRTL ? 'btn-next-song' : 'btn-prev-song'}`}
+              onClick={goToPreviousSong}
+            >
               ‹
             </button>
           )}
           {hasNext && (
-            <button className="btn-nav-song btn-next-song" onClick={goToNextSong}>
+            <button
+              className={`btn-nav-song ${isRTL ? 'btn-prev-song' : 'btn-next-song'}`}
+              onClick={goToNextSong}
+            >
               ›
             </button>
           )}
