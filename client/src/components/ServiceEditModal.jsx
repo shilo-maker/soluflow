@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import songService from '../services/songService';
 import './ServiceEditModal.css';
 
-const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) => {
+const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSave, onUpdate }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
@@ -18,6 +18,7 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
   const [availableSongs, setAvailableSongs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingSongs, setLoadingSongs] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
 
   useEffect(() => {
     if (service) {
@@ -29,7 +30,13 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
         location: service.location || '',
         isPublic: service.isPublic !== undefined ? service.isPublic : true
       });
-      setSetlist([]); // Reset setlist for edit mode
+      // Load current setlist for edit mode
+      setSetlist(currentSetlist || []);
+
+      // Fetch available songs for edit mode
+      if (isOpen) {
+        fetchAvailableSongs();
+      }
     } else {
       // Create mode - default date to today and time to next round hour
       const today = new Date();
@@ -58,7 +65,7 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
     }
     setError('');
     setSearchQuery('');
-  }, [service, isOpen]);
+  }, [service, isOpen, currentSetlist]);
 
   const fetchAvailableSongs = async () => {
     if (!user) return;
@@ -88,6 +95,28 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
 
   const handleRemoveSong = (songId) => {
     setSetlist(prev => prev.filter(s => s.id !== songId));
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newSetlist = [...setlist];
+    const draggedItem = newSetlist[draggedIndex];
+    newSetlist.splice(draggedIndex, 1);
+    newSetlist.splice(index, 0, draggedItem);
+
+    setSetlist(newSetlist);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
   };
 
   const filteredSongs = availableSongs.filter(song => {
@@ -121,21 +150,23 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
 
     try {
       setSaving(true);
+
+      // Save service metadata
       await onSave({
         ...formData,
         title: generatedTitle
       }, service ? null : setlist); // Pass setlist only for new services
+
+      // If editing existing service, also update setlist
+      if (service && onUpdate) {
+        await onUpdate(setlist);
+      }
+
       onClose();
     } catch (err) {
       setError(err.message || 'Failed to save service');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleEditSetlistClick = () => {
-    if (onEditSetlist) {
-      onEditSetlist();
     }
   };
 
@@ -214,38 +245,47 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
               </label>
             </div>
 
-            {/* Setlist Section - Only show when creating new service */}
-            {!service && (
-              <div className="setlist-section">
-                <h3 className="setlist-section-title">Add Songs to Setlist (Optional)</h3>
+            {/* Setlist Section - Show for both create and edit modes */}
+            <div className="setlist-section">
+              <h3 className="setlist-section-title">
+                {service ? 'Edit Setlist' : 'Add Songs to Setlist (Optional)'}
+              </h3>
 
-                <div className="setlist-mini-builder">
-                  {/* Current Setlist */}
-                  <div className="setlist-current-mini">
-                    <h4>Selected Songs ({setlist.length})</h4>
-                    <div className="selected-songs-list">
-                      {setlist.length === 0 ? (
-                        <div className="no-songs-selected">No songs selected yet</div>
-                      ) : (
-                        setlist.map((song, index) => (
-                          <div key={song.id} className="selected-song-item">
-                            <span className="song-number-mini">{index + 1}</span>
-                            <div className="song-info-mini">
-                              <div className="song-title-mini">{song.title}</div>
-                              <div className="song-meta-mini">{song.authors}</div>
-                            </div>
-                            <button
-                              type="button"
-                              className="btn-remove-mini"
-                              onClick={() => handleRemoveSong(song.id)}
-                            >
-                              ×
-                            </button>
+              <div className="setlist-mini-builder">
+                {/* Current Setlist */}
+                <div className="setlist-current-mini">
+                  <h4>Selected Songs ({setlist.length})</h4>
+                  <div className="selected-songs-list">
+                    {setlist.length === 0 ? (
+                      <div className="no-songs-selected">No songs selected yet</div>
+                    ) : (
+                      setlist.map((song, index) => (
+                        <div
+                          key={song.id}
+                          className={`selected-song-item ${draggedIndex === index ? 'dragging' : ''}`}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragOver={(e) => handleDragOver(e, index)}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <span className="drag-handle-mini">⋮⋮</span>
+                          <span className="song-number-mini">{index + 1}</span>
+                          <div className="song-info-mini">
+                            <div className="song-title-mini">{song.title}</div>
+                            <div className="song-meta-mini">{song.authors}</div>
                           </div>
-                        ))
-                      )}
-                    </div>
+                          <button
+                            type="button"
+                            className="btn-remove-mini"
+                            onClick={() => handleRemoveSong(song.id)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
+                </div>
 
                   {/* Available Songs */}
                   <div className="available-songs-mini">
@@ -285,20 +325,9 @@ const ServiceEditModal = ({ service, isOpen, onClose, onSave, onEditSetlist }) =
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
 
           <div className="modal-footer">
-            {service && onEditSetlist && (
-              <button
-                type="button"
-                className="btn-edit-setlist-modal"
-                onClick={handleEditSetlistClick}
-                disabled={saving}
-              >
-                Edit Setlist
-              </button>
-            )}
             <div className="modal-footer-right">
               <button
                 type="button"

@@ -280,6 +280,24 @@
   background-color: #f1f3f5;
 }
 
+.drag-handle-mini {
+  color: #adb5bd;
+  cursor: grab;
+  user-select: none;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-right: -4px;
+}
+
+.drag-handle-mini:active {
+  cursor: grabbing;
+}
+
+.selected-song-item.dragging {
+  opacity: 0.5;
+  background-color: #e9ecef;
+}
+
 .song-number-mini {
   min-width: 20px;
   height: 20px;
