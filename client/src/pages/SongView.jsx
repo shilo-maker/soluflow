@@ -53,6 +53,10 @@ const SongView = () => {
   const [notes, setNotes] = useState('');
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedFontSize, setExpandedFontSize] = useState(16);
+  const [autoFontSize, setAutoFontSize] = useState(16);
+  const contentRef = useRef(null);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true);
@@ -156,6 +160,30 @@ const SongView = () => {
 
     fetchNotes();
   }, [id, setlistContext?.serviceId, user]);
+
+  // Auto-size font in normal mode
+  useEffect(() => {
+    if (!song || isExpanded) return;
+
+    // Calculate after content is rendered
+    const timer = setTimeout(() => {
+      calculateNormalModeFontSize();
+    }, 200);
+
+    // Recalculate on window resize
+    const handleResize = () => {
+      if (!isExpanded) {
+        calculateNormalModeFontSize();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [song, isExpanded]);
 
   // Socket.IO connection for real-time sync
   useEffect(() => {
@@ -436,6 +464,181 @@ const SongView = () => {
     touchEndRef.current = null;
   };
 
+  // Toggle expanded view
+  const toggleExpanded = () => {
+    console.log('toggleExpanded called, current isExpanded:', isExpanded);
+
+    if (!isExpanded) {
+      console.log('Entering expanded mode...');
+      // Entering expanded mode - calculate optimal font size
+      setIsExpanded(true);
+
+      // Use setTimeout to allow DOM to update first
+      setTimeout(() => {
+        console.log('Calling calculateOptimalFontSize...');
+        calculateOptimalFontSize();
+      }, 100);
+    } else {
+      console.log('Exiting expanded mode...');
+      // Exiting expanded mode
+      setIsExpanded(false);
+    }
+  };
+
+  // Calculate optimal font size for normal mode
+  const calculateNormalModeFontSize = () => {
+    if (!contentRef.current || isExpanded) return;
+
+    const container = contentRef.current;
+    const chordDisplay = container.querySelector('.chordpro-display');
+    if (!chordDisplay) return;
+
+    // Get available height (container's actual height)
+    const containerHeight = container.clientHeight;
+
+    console.log('=== Normal Mode Font Size Calculation ===');
+    console.log('Container height:', containerHeight);
+
+    // Binary search for optimal font size
+    let minSize = 12;
+    let maxSize = 28; // Max font size for normal mode
+    let optimalSize = minSize;
+    const buffer = 20; // Larger buffer for normal mode
+
+    for (let i = 0; i < 20; i++) {
+      const testSize = (minSize + maxSize) / 2;
+
+      // Apply test font size
+      chordDisplay.style.fontSize = `${testSize}px`;
+
+      // Force reflow
+      void chordDisplay.offsetHeight;
+
+      // Check if content fits
+      const contentHeight = chordDisplay.scrollHeight;
+
+      console.log(`Test ${i + 1}: fontSize=${testSize.toFixed(2)}px, contentHeight=${contentHeight}px, containerHeight=${containerHeight}px`);
+
+      if (contentHeight <= containerHeight - buffer) {
+        optimalSize = testSize;
+        minSize = testSize;
+      } else {
+        maxSize = testSize;
+      }
+
+      if (maxSize - minSize < 0.5) {
+        break;
+      }
+    }
+
+    const finalSize = Math.floor(optimalSize);
+    console.log('Final normal mode font size:', finalSize);
+    console.log('=========================================');
+
+    setAutoFontSize(finalSize);
+    setFontSize(finalSize);
+  };
+
+  // Calculate optimal font size for expanded mode
+  const calculateOptimalFontSize = () => {
+    if (!contentRef.current) return;
+
+    const container = contentRef.current;
+    const chordDisplay = container.querySelector('.chordpro-display');
+    if (!chordDisplay) {
+      console.error('ChordProDisplay not found!');
+      return;
+    }
+
+    // Use viewport dimensions since we're in expanded mode (full screen)
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    // Account for padding in expanded mode
+    const isMobile = viewportWidth <= 768;
+    const isLargeScreen = viewportWidth >= 1200;
+
+    let paddingVertical, lineHeightRatio;
+
+    if (isMobile) {
+      paddingVertical = 40; // 20px top + 20px bottom
+      lineHeightRatio = 1.6;
+    } else if (isLargeScreen) {
+      paddingVertical = 120; // 60px top + 60px bottom
+      lineHeightRatio = 2.0;
+    } else {
+      paddingVertical = 80; // 40px top + 40px bottom
+      lineHeightRatio = 1.8;
+    }
+
+    const availableHeight = viewportHeight - paddingVertical;
+
+    // Count the number of actual rendered lines
+    const lineElements = chordDisplay.querySelectorAll('.line-with-notes');
+    const totalLines = lineElements.length;
+
+    console.log('=== Font Size Calculation ===');
+    console.log('Viewport dimensions:', { width: viewportWidth, height: viewportHeight });
+    console.log('Padding vertical:', paddingVertical);
+    console.log('Available height:', availableHeight);
+    console.log('Total lines in song:', totalLines);
+    console.log('Line height ratio:', lineHeightRatio);
+
+    if (totalLines === 0) {
+      console.error('No lines found in content!');
+      return;
+    }
+
+    // Calculate initial font size estimate
+    const neededLineHeight = availableHeight / totalLines;
+    const initialFontSize = neededLineHeight / lineHeightRatio;
+
+    console.log('Initial calculated font size:', initialFontSize);
+
+    // Binary search for the largest font size that doesn't cause scrolling
+    let minSize = 10;
+    let maxSize = Math.min(100, Math.floor(initialFontSize * 1.2)); // Start slightly above estimate
+    let optimalSize = minSize;
+
+    for (let i = 0; i < 20; i++) {
+      const testSize = (minSize + maxSize) / 2;
+
+      // Apply test font size
+      chordDisplay.style.fontSize = `${testSize}px`;
+
+      // Force reflow
+      void chordDisplay.offsetHeight;
+
+      // Check if content fits (no scrolling needed)
+      // Add a small buffer (10px) to ensure no cutoff
+      const contentHeight = chordDisplay.scrollHeight;
+      const containerHeight = container.clientHeight;
+      const buffer = 10;
+
+      console.log(`Test ${i + 1}: fontSize=${testSize.toFixed(2)}px, contentHeight=${contentHeight}px, containerHeight=${containerHeight}px`);
+
+      if (contentHeight <= containerHeight - buffer) {
+        // Content fits with buffer, try larger
+        optimalSize = testSize;
+        minSize = testSize;
+      } else {
+        // Content too large, try smaller
+        maxSize = testSize;
+      }
+
+      // Stop if we're very close
+      if (maxSize - minSize < 0.5) {
+        break;
+      }
+    }
+
+    console.log('Final optimal font size:', Math.floor(optimalSize));
+    console.log('===============================');
+
+    // Apply the optimal font size
+    setExpandedFontSize(Math.floor(optimalSize));
+  };
+
   // Save notes handler
   const handleSaveNotes = async () => {
     if (!setlistContext?.serviceId) return;
@@ -459,8 +662,9 @@ const SongView = () => {
   };
 
   return (
-    <div className="song-view-page">
+    <div className={`song-view-page ${isExpanded ? 'expanded-mode' : ''}`}>
       {/* Header */}
+      {!isExpanded && (
       <div className="song-view-header">
         <div className="header-top-row">
           <button className="btn-back" onClick={() => navigate(-1)}>
@@ -499,8 +703,10 @@ const SongView = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Action Buttons */}
+      {!isExpanded && (
       <div className="song-view-actions">
         <div className="transpose-controls-view">
           <button className="btn-action btn-transpose-view" onClick={transposeDown}>-</button>
@@ -529,9 +735,10 @@ const SongView = () => {
           </button>
         </div>
       </div>
+      )}
 
       {/* Navigation Buttons - Fixed position */}
-      {setlistContext && (
+      {!isExpanded && setlistContext && (
         <>
           {hasPrevious && (
             <button
@@ -554,22 +761,26 @@ const SongView = () => {
 
       {/* Song Content */}
       <div
-        className="song-view-content"
+        ref={contentRef}
+        className={`song-view-content ${isExpanded ? 'expanded' : ''}`}
+        onClick={toggleExpanded}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        style={{ cursor: 'pointer' }}
+        title={isExpanded ? 'Click to exit expanded view' : 'Click to expand view'}
       >
         <ChordProDisplay
           content={song.content}
           isLyricsOnly={isLyricsOnly}
           dir={hasHebrew ? 'rtl' : 'ltr'}
-          fontSize={fontSize}
+          fontSize={isExpanded ? expandedFontSize : fontSize}
           transposition={transposition}
         />
       </div>
 
       {/* Next Song Indicator - below song content */}
-      {nextSong && (
+      {!isExpanded && nextSong && (
         <div className="next-song-indicator">
           <span className="next-label">{isRTL ? 'הבא ←' : 'Next:'}</span>
           <span className="next-song-title">{nextSong.title}</span>
@@ -580,7 +791,7 @@ const SongView = () => {
       )}
 
       {/* Collapsible Notes Section */}
-      {isAuthenticated && !user?.isGuest && setlistContext?.serviceId && (
+      {!isExpanded && isAuthenticated && !user?.isGuest && setlistContext?.serviceId && (
         <div className="notes-section">
           <button
             className="notes-toggle"

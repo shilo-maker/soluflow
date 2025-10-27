@@ -273,6 +273,73 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+.song-view-content:hover {
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Expanded mode for song view page */
+.song-view-page.expanded-mode {
+  padding: 0;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Expanded song content */
+.song-view-content.expanded {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #fff;
+  border-radius: 0;
+  padding: 40px;
+  margin: 0;
+  box-shadow: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Font size in expanded mode is dynamically calculated */
+.song-view-content.expanded .chordpro-display {
+  width: 100%;
+  max-width: 100%;
+  text-align: right;
+  margin: 0;
+  padding: 0 20px; /* Add horizontal padding to prevent chord overflow */
+  line-height: 1.8;
+  box-sizing: border-box;
+}
+
+/* Mobile adjustments for expanded mode */
+@media (max-width: 768px) {
+  .song-view-content.expanded {
+    padding: 20px;
+  }
+
+  .song-view-content.expanded .chordpro-display {
+    line-height: 1.6;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1200px) {
+  .song-view-content.expanded {
+    padding: 60px;
+  }
+
+  .song-view-content.expanded .chordpro-display {
+    line-height: 2.0;
+  }
 }
 
 .chord-display {
