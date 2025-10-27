@@ -31,6 +31,16 @@ const WorkspaceInvitation = sequelize.define('WorkspaceInvitation', {
   expires_at: {
     type: DataTypes.DATE,
     allowNull: false
+  },
+  usage_count: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  max_uses: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 10
   }
 }, {
   tableName: 'workspace_invitations',

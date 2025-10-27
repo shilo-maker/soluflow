@@ -297,7 +297,7 @@ const generateInvite = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const { expiresInDays = 7 } = req.body;
+    const { expiresInDays = 7, maxUses = 10 } = req.body;
 
     // Get workspace
     const workspace = await Workspace.findByPk(id);
@@ -341,7 +341,9 @@ const generateInvite = async (req, res) => {
       workspace_id: id,
       token,
       created_by: userId,
-      expires_at: expiresAt
+      expires_at: expiresAt,
+      max_uses: maxUses,
+      usage_count: 0
     });
 
     // Construct the full invite link
@@ -391,6 +393,14 @@ const acceptInvite = async (req, res) => {
       });
     }
 
+    // Check if invitation has reached max uses
+    if (invitation.usage_count >= invitation.max_uses) {
+      return res.status(410).json({
+        error: 'Invite limit reached',
+        message: 'This invite link has reached its maximum number of uses'
+      });
+    }
+
     const workspace = invitation.workspace;
 
     // Check if user is already a member
@@ -427,8 +437,14 @@ const acceptInvite = async (req, res) => {
       role: 'member'
     });
 
-    // Delete the used invitation
-    await invitation.destroy();
+    // Increment usage count
+    invitation.usage_count += 1;
+    await invitation.save();
+
+    // Delete the invitation if it has reached max uses
+    if (invitation.usage_count >= invitation.max_uses) {
+      await invitation.destroy();
+    }
 
     res.status(201).json({
       message: 'Successfully joined workspace',

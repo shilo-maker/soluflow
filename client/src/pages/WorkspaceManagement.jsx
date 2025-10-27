@@ -37,6 +37,19 @@ const WorkspaceManagement = () => {
     loadWorkspaceDetails();
   }, [loadWorkspaceDetails]);
 
+  // Redirect if user is not admin or planner
+  useEffect(() => {
+    if (workspaceDetails && workspaceDetails.role) {
+      const userRole = workspaceDetails.role;
+      if (userRole !== 'admin' && userRole !== 'planner') {
+        setError('Access denied. Only admins and planners can access workspace settings.');
+        setTimeout(() => {
+          navigate('/home');
+        }, 2000);
+      }
+    }
+  }, [workspaceDetails, navigate]);
+
   const handleGenerateInvite = async () => {
     try {
       setLoading(true);
