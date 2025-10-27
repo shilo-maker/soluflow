@@ -59,7 +59,11 @@ const SongView = () => {
   const contentRef = useRef(null);
 
   // Real-time sync state
-  const [isFollowMode, setIsFollowMode] = useState(true);
+  // Persist follow mode across song navigations using sessionStorage
+  const [isFollowMode, setIsFollowMode] = useState(() => {
+    const stored = sessionStorage.getItem('followMode');
+    return stored !== null ? stored === 'true' : true;
+  });
   const [isLeader, setIsLeader] = useState(false);
 
   // Get previous and next songs from setlist
@@ -67,6 +71,11 @@ const SongView = () => {
   const hasNext = setlistContext && currentSetlistIndex < setlistContext.setlist.length - 1;
   const nextSong = hasNext ? setlistContext.setlist[currentSetlistIndex + 1] : null;
   const previousSong = hasPrevious ? setlistContext.setlist[currentSetlistIndex - 1] : null;
+
+  // Save follow mode to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem('followMode', isFollowMode.toString());
+  }, [isFollowMode]);
 
   useEffect(() => {
     const fetchSong = async () => {
@@ -248,7 +257,7 @@ const SongView = () => {
     });
 
     socketRef.current.on('sync-state', (state) => {
-      if (!userIsLeader) {
+      if (!userIsLeader && isFollowMode) {
         console.log('Syncing state from leader:', state);
         if (state.currentSongIndex !== undefined && setlistContext?.setlist) {
           const syncSong = setlistContext.setlist[state.currentSongIndex];
@@ -757,6 +766,20 @@ const SongView = () => {
             </button>
           )}
         </>
+      )}
+
+      {/* Floating Follow Button - appears only in expanded mode */}
+      {isExpanded && setlistContext?.serviceId && !isLeader && (
+        <button
+          className={`btn-follow-floating ${isFollowMode ? 'active' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering toggleExpanded
+            toggleFollowMode();
+          }}
+          title={isFollowMode ? 'Click to enable free mode' : 'Click to follow leader'}
+        >
+          {isFollowMode ? 'Follow' : 'Free'}
+        </button>
       )}
 
       {/* Song Content */}

@@ -103,6 +103,48 @@
   background-color: var(--color-primary-dark);
 }
 
+/* Floating Follow button for expanded mode */
+.btn-follow-floating {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(108, 117, 125, 0.9);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-follow-floating:hover {
+  background-color: rgba(108, 117, 125, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.btn-follow-floating.active {
+  background-color: rgba(201, 149, 110, 0.9);
+  border-color: var(--color-primary);
+}
+
+.btn-follow-floating.active:hover {
+  background-color: rgba(184, 132, 78, 1);
+}
+
+@media (max-width: 768px) {
+  .btn-follow-floating {
+    top: 10px;
+    right: 10px;
+    padding: 10px 18px;
+    font-size: 13px;
+  }
+}
+
 .song-view-title-section {
   text-align: center;
   margin-bottom: 5px;
