@@ -130,6 +130,14 @@
   user-select: none;
   font-size: 16px;
   line-height: 1;
+  padding: 8px;
+  margin: -8px;
+  touch-action: none; /* Prevent default touch behaviors */
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: var(--color-primary);
 }
 
 .song-number {
@@ -267,5 +275,31 @@
   .btn-cancel,
   .btn-save-setlist {
     width: 100%;
+  }
+
+  /* Enhanced touch support for mobile */
+  .drag-handle {
+    font-size: 20px;
+    padding: 12px;
+    margin: -12px -8px -12px -12px;
+  }
+
+  .setlist-song-item {
+    padding: 16px 12px;
+    touch-action: none; /* Disable default touch behaviors during drag */
+  }
+
+  .setlist-song-item.dragging {
+    opacity: 0.7;
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+  }
+
+  .btn-remove-song,
+  .btn-add-song {
+    width: 36px;
+    height: 36px;
+    font-size: 24px;
   }
 }

@@ -33,26 +33,64 @@
 
 .share-code-display {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .share-code-text {
   flex: 1;
-  background-color: #f8f9fa;
-  border: 2px solid #333;
-  border-radius: 8px;
-  padding: 15px 20px;
-  font-size: 28px;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  padding: 18px 22px;
+  font-size: 32px;
   font-weight: 700;
   text-align: center;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
   font-family: 'Courier New', monospace;
-  color: #333;
+  color: #1a1a1a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
 }
 
-.btn-copy-code {
+.share-code-text:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.share-code {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  padding: 18px 22px;
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 10px;
+  font-family: 'Courier New', monospace;
+  color: #1a1a1a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.share-code:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.btn-copy-code,
+.btn-copy {
   background-color: var(--color-primary);
   color: white;
   border: none;
@@ -65,7 +103,8 @@
   white-space: nowrap;
 }
 
-.btn-copy-code:hover {
+.btn-copy-code:hover,
+.btn-copy:hover {
   background-color: #b8844e;
 }
 
@@ -76,26 +115,36 @@
   font-style: italic;
 }
 
-.share-link-display {
+.share-link-display,
+.share-input-group {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
-.share-link-input {
+.share-link-input,
+.share-input {
   flex: 1;
-  padding: 10px 15px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
   font-size: 14px;
-  color: #333;
-  background-color: #f8f9fa;
+  color: #1a1a1a;
   font-family: 'Courier New', monospace;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
 }
 
-.share-link-input:focus {
+.share-link-input:focus,
+.share-input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  background-color: white;
+  border-color: rgba(212, 175, 55, 0.7);
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .btn-copy-link {
@@ -165,17 +214,20 @@
 }
 
 @media (max-width: 768px) {
-  .share-code-text {
-    font-size: 24px;
-    letter-spacing: 6px;
-    padding: 12px 15px;
+  .share-code-text,
+  .share-code {
+    font-size: 26px;
+    letter-spacing: 8px;
+    padding: 15px 18px;
   }
 
-  .share-link-display {
+  .share-link-display,
+  .share-input-group {
     flex-direction: column;
   }
 
-  .btn-copy-link {
+  .btn-copy-link,
+  .btn-copy {
     width: 100%;
   }
 

@@ -19,6 +19,8 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingSongs, setLoadingSongs] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
+  const [touchCurrentY, setTouchCurrentY] = useState(null);
 
   useEffect(() => {
     if (service) {
@@ -117,6 +119,46 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
+  };
+
+  // Touch handlers for mobile support
+  const handleTouchStart = (e, index) => {
+    const touch = e.touches[0];
+    setTouchStartY(touch.clientY);
+    setDraggedIndex(index);
+  };
+
+  const handleTouchMove = (e, index) => {
+    if (draggedIndex === null) return;
+
+    e.preventDefault(); // Prevent scrolling while dragging
+    const touch = e.touches[0];
+    setTouchCurrentY(touch.clientY);
+
+    // Find which item the touch is currently over
+    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+    const songItem = elements.find(el => el.classList.contains('selected-song-item'));
+
+    if (songItem) {
+      const allItems = Array.from(document.querySelectorAll('.selected-song-item'));
+      const hoverIndex = allItems.indexOf(songItem);
+
+      if (hoverIndex !== -1 && hoverIndex !== draggedIndex) {
+        const newSetlist = [...setlist];
+        const draggedItem = newSetlist[draggedIndex];
+        newSetlist.splice(draggedIndex, 1);
+        newSetlist.splice(hoverIndex, 0, draggedItem);
+
+        setSetlist(newSetlist);
+        setDraggedIndex(hoverIndex);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setDraggedIndex(null);
+    setTouchStartY(null);
+    setTouchCurrentY(null);
   };
 
   const filteredSongs = availableSongs.filter(song => {
@@ -267,6 +309,9 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                           onDragStart={(e) => handleDragStart(e, index)}
                           onDragOver={(e) => handleDragOver(e, index)}
                           onDragEnd={handleDragEnd}
+                          onTouchStart={(e) => handleTouchStart(e, index)}
+                          onTouchMove={(e) => handleTouchMove(e, index)}
+                          onTouchEnd={handleTouchEnd}
                         >
                           <span className="drag-handle-mini">⋮⋮</span>
                           <span className="song-number-mini">{index + 1}</span>

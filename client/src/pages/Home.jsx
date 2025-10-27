@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
@@ -9,7 +9,8 @@ import './Home.css';
 const Home = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [serviceCode, setServiceCode] = useState('');
+  const [serviceCode, setServiceCode] = useState(['', '', '', '']);
+  const codeInputsRef = useRef([]);
   const [services, setServices] = useState([]);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,12 +51,59 @@ const Home = () => {
     return serviceDate >= today;
   });
 
-  const handleJoinService = async () => {
-    if (!serviceCode.trim()) {
-      return;
+  const handleCodeChange = (index, value) => {
+    // Only allow alphanumeric characters
+    const sanitized = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    if (sanitized.length <= 1) {
+      const newCode = [...serviceCode];
+      newCode[index] = sanitized;
+      setServiceCode(newCode);
+
+      // Auto-focus next input if current is filled
+      if (sanitized && index < 3) {
+        codeInputsRef.current[index + 1]?.focus();
+      }
+    }
+  };
+
+  const handleCodeKeyDown = (index, e) => {
+    // Handle backspace to move to previous input
+    if (e.key === 'Backspace' && !serviceCode[index] && index > 0) {
+      codeInputsRef.current[index - 1]?.focus();
     }
 
-    const code = serviceCode.trim();
+    // Handle enter to submit
+    if (e.key === 'Enter') {
+      handleJoinService();
+    }
+  };
+
+  const handleCodePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const newCode = [...serviceCode];
+
+    for (let i = 0; i < Math.min(pastedData.length, 4); i++) {
+      newCode[i] = pastedData[i];
+    }
+
+    setServiceCode(newCode);
+
+    // Focus the next empty input or the last one
+    const nextEmptyIndex = newCode.findIndex(c => !c);
+    if (nextEmptyIndex !== -1) {
+      codeInputsRef.current[nextEmptyIndex]?.focus();
+    } else {
+      codeInputsRef.current[3]?.focus();
+    }
+  };
+
+  const handleJoinService = async () => {
+    const code = serviceCode.join('');
+    if (code.length !== 4) {
+      return;
+    }
 
     try {
       // Try to fetch as a service first
@@ -165,14 +213,21 @@ const Home = () => {
       <div className="join-section">
         <h3>{t('home.joinWithCode')}</h3>
         <div className="join-input-group">
-          <input
-            type="text"
-            className="code-input"
-            placeholder="X X X X"
-            value={serviceCode}
-            onChange={(e) => setServiceCode(e.target.value.toUpperCase())}
-            maxLength="4"
-          />
+          <div className="code-input-container">
+            {[0, 1, 2, 3].map((index) => (
+              <input
+                key={index}
+                ref={(el) => (codeInputsRef.current[index] = el)}
+                type="text"
+                className="code-input-box"
+                value={serviceCode[index]}
+                onChange={(e) => handleCodeChange(index, e.target.value)}
+                onKeyDown={(e) => handleCodeKeyDown(index, e)}
+                onPaste={index === 0 ? handleCodePaste : undefined}
+                maxLength="1"
+              />
+            ))}
+          </div>
           <button className="btn-join" onClick={handleJoinService}>
             {t('home.join')}
           </button>

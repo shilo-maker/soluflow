@@ -17,7 +17,8 @@ const GuestLanding = () => {
   const [fontSize, setFontSize] = useState(14);
   const [transposition, setTransposition] = useState(0);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [serviceCode, setServiceCode] = useState('');
+  const [serviceCode, setServiceCode] = useState(['', '', '', '']);
+  const codeInputsRef = useRef([]);
   const songDisplayRef = useRef(null);
 
   // Fetch all songs on component mount (guest-accessible, no workspace restriction)
@@ -126,15 +127,58 @@ const GuestLanding = () => {
     navigate(`/song/${selectedSong.id}`);
   };
 
-  const handleJoinService = () => {
-    if (serviceCode.trim()) {
-      navigate(`/service/code/${serviceCode.trim()}`);
+  const handleCodeChange = (index, value) => {
+    // Only allow alphanumeric characters
+    const sanitized = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    if (sanitized.length <= 1) {
+      const newCode = [...serviceCode];
+      newCode[index] = sanitized;
+      setServiceCode(newCode);
+
+      // Auto-focus next input if current is filled
+      if (sanitized && index < 3) {
+        codeInputsRef.current[index + 1]?.focus();
+      }
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleCodeKeyDown = (index, e) => {
+    // Handle backspace to move to previous input
+    if (e.key === 'Backspace' && !serviceCode[index] && index > 0) {
+      codeInputsRef.current[index - 1]?.focus();
+    }
+
+    // Handle enter to submit
     if (e.key === 'Enter') {
       handleJoinService();
+    }
+  };
+
+  const handleCodePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const newCode = [...serviceCode];
+
+    for (let i = 0; i < Math.min(pastedData.length, 4); i++) {
+      newCode[i] = pastedData[i];
+    }
+
+    setServiceCode(newCode);
+
+    // Focus the next empty input or the last one
+    const nextEmptyIndex = newCode.findIndex(c => !c);
+    if (nextEmptyIndex !== -1) {
+      codeInputsRef.current[nextEmptyIndex]?.focus();
+    } else {
+      codeInputsRef.current[3]?.focus();
+    }
+  };
+
+  const handleJoinService = () => {
+    const fullCode = serviceCode.join('');
+    if (fullCode.length === 4) {
+      navigate(`/service/code/${fullCode}`);
     }
   };
 
@@ -167,18 +211,19 @@ const GuestLanding = () => {
 
         {/* Actions */}
         <div className="header-actions">
-          <div className="language-switcher">
+          <div className="language-switcher-compact">
             <button
-              className={`lang-btn ${language === 'en' ? 'active' : ''}`}
+              className={`lang-option ${language === 'en' ? 'active' : ''}`}
               onClick={() => setLanguage('en')}
             >
               EN
             </button>
+            <span className="lang-divider">|</span>
             <button
-              className={`lang-btn ${language === 'he' ? 'active' : ''}`}
+              className={`lang-option ${language === 'he' ? 'active' : ''}`}
               onClick={() => setLanguage('he')}
             >
-              HE
+              עב
             </button>
           </div>
           <button className="btn-join-service" onClick={() => setShowJoinModal(true)}>
@@ -311,16 +356,22 @@ const GuestLanding = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">{t('guestLanding.accessService')}</h2>
             <p className="modal-description">{t('guestLanding.enterCode')}</p>
-            <input
-              type="text"
-              className="code-input"
-              placeholder={t('guestLanding.codePlaceholder')}
-              value={serviceCode}
-              onChange={(e) => setServiceCode(e.target.value.toUpperCase())}
-              onKeyPress={handleKeyPress}
-              maxLength="4"
-              autoFocus
-            />
+            <div className="code-input-container">
+              {[0, 1, 2, 3].map((index) => (
+                <input
+                  key={index}
+                  ref={(el) => (codeInputsRef.current[index] = el)}
+                  type="text"
+                  className="code-input-box"
+                  value={serviceCode[index]}
+                  onChange={(e) => handleCodeChange(index, e.target.value)}
+                  onKeyDown={(e) => handleCodeKeyDown(index, e)}
+                  onPaste={index === 0 ? handleCodePaste : undefined}
+                  maxLength="1"
+                  autoFocus={index === 0}
+                />
+              ))}
+            </div>
             <div className="modal-actions">
               <button className="btn-modal-cancel" onClick={() => setShowJoinModal(false)}>
                 {t('common.cancel')}

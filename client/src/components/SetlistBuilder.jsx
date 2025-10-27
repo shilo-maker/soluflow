@@ -8,6 +8,8 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
+  const [touchCurrentY, setTouchCurrentY] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -67,6 +69,46 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     setDraggedIndex(null);
   };
 
+  // Touch handlers for mobile support
+  const handleTouchStart = (e, index) => {
+    const touch = e.touches[0];
+    setTouchStartY(touch.clientY);
+    setDraggedIndex(index);
+  };
+
+  const handleTouchMove = (e, index) => {
+    if (draggedIndex === null) return;
+
+    e.preventDefault(); // Prevent scrolling while dragging
+    const touch = e.touches[0];
+    setTouchCurrentY(touch.clientY);
+
+    // Find which item the touch is currently over
+    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+    const songItem = elements.find(el => el.classList.contains('setlist-song-item'));
+
+    if (songItem) {
+      const allItems = Array.from(document.querySelectorAll('.setlist-song-item'));
+      const hoverIndex = allItems.indexOf(songItem);
+
+      if (hoverIndex !== -1 && hoverIndex !== draggedIndex) {
+        const newSetlist = [...setlist];
+        const draggedItem = newSetlist[draggedIndex];
+        newSetlist.splice(draggedIndex, 1);
+        newSetlist.splice(hoverIndex, 0, draggedItem);
+
+        setSetlist(newSetlist);
+        setDraggedIndex(hoverIndex);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setDraggedIndex(null);
+    setTouchStartY(null);
+    setTouchCurrentY(null);
+  };
+
   const handleSave = () => {
     onUpdate(setlist);
     onClose();
@@ -100,6 +142,9 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
+                    onTouchStart={(e) => handleTouchStart(e, index)}
+                    onTouchMove={(e) => handleTouchMove(e, index)}
+                    onTouchEnd={handleTouchEnd}
                   >
                     <div className="drag-handle">⋮⋮</div>
                     <div className="song-number">{index + 1}</div>
