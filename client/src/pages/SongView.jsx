@@ -466,24 +466,37 @@ const SongView = () => {
           <button className="btn-back" onClick={() => navigate(-1)}>
             ← Back
           </button>
-          {isAuthenticated && (user?.role === 'admin' || song.created_by === user?.id) && (
-            <>
-              <button className="btn-edit-header" onClick={handleEditSong}>Edit</button>
-              {user?.role === 'admin' && (
-                <button className="btn-delete-header" onClick={handleDeleteSong}>Delete</button>
-              )}
-            </>
-          )}
+          <div className="header-right-buttons">
+            {setlistContext?.serviceId && !isLeader && (
+              <button
+                className={`btn-follow-header ${isFollowMode ? 'active' : ''}`}
+                onClick={toggleFollowMode}
+                title={isFollowMode ? 'Click to enable free mode' : 'Click to follow leader'}
+              >
+                {isFollowMode ? 'Follow' : 'Free'}
+              </button>
+            )}
+            {isAuthenticated && (user?.role === 'admin' || song.created_by === user?.id) && (
+              <>
+                <button className="btn-edit-header" onClick={handleEditSong}>Edit</button>
+                {user?.role === 'admin' && (
+                  <button className="btn-delete-header" onClick={handleDeleteSong}>Delete</button>
+                )}
+              </>
+            )}
+          </div>
         </div>
         <div className="song-view-title-section">
           <h1 className="song-view-title" dir={hasHebrew ? 'rtl' : 'ltr'}>
             {song.title}
           </h1>
-          <p className="song-view-subtitle">{song.authors}</p>
-        </div>
-        <div className="song-view-controls">
-          <span className="control-info">Key: {song.key}</span>
-          {song.bpm && <span className="control-info">BPM: {song.bpm}</span>}
+          <div>
+            <span className="song-view-subtitle">{song.authors}</span>
+            <div className="song-view-controls">
+              <span className="control-info">Key: {song.key}</span>
+              {song.bpm && <span className="control-info">BPM: {song.bpm}</span>}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -515,27 +528,7 @@ const SongView = () => {
             <span className="zoom-icon-large">A</span>
           </button>
         </div>
-        {setlistContext?.serviceId && !isLeader && (
-          <button
-            className={`btn-action ${isFollowMode ? 'active' : ''}`}
-            onClick={toggleFollowMode}
-            title={isFollowMode ? 'Click to enable free mode' : 'Click to follow leader'}
-          >
-            {isFollowMode ? 'Follow' : 'Free'}
-          </button>
-        )}
       </div>
-
-      {/* Next Song Indicator - at top */}
-      {nextSong && (
-        <div className="next-song-indicator">
-          <span className="next-label">{isRTL ? 'הבא ←' : 'Next:'}</span>
-          <span className="next-song-title">{nextSong.title}</span>
-          <span className="next-song-meta">
-            {nextSong.key}{nextSong.bpm ? ` • ${nextSong.bpm} BPM` : ''}
-          </span>
-        </div>
-      )}
 
       {/* Navigation Buttons - Fixed position */}
       {setlistContext && (
@@ -574,6 +567,17 @@ const SongView = () => {
           transposition={transposition}
         />
       </div>
+
+      {/* Next Song Indicator - below song content */}
+      {nextSong && (
+        <div className="next-song-indicator">
+          <span className="next-label">{isRTL ? 'הבא ←' : 'Next:'}</span>
+          <span className="next-song-title">{nextSong.title}</span>
+          <span className="next-song-meta">
+            {nextSong.key}{nextSong.bpm ? ` • ${nextSong.bpm} BPM` : ''}
+          </span>
+        </div>
+      )}
 
       {/* Collapsible Notes Section */}
       {isAuthenticated && !user?.isGuest && setlistContext?.serviceId && (
