@@ -53,6 +53,12 @@ const workspaceService = {
   updateMemberRole: async (workspaceId, userId, role) => {
     const response = await api.put(`/workspaces/${workspaceId}/members/${userId}/role`, { role });
     return response.data;
+  },
+
+  // Get workspace members
+  getWorkspaceMembers: async (workspaceId) => {
+    const response = await api.get(`/workspaces/${workspaceId}/members`);
+    return response.data;
   }
 };
 

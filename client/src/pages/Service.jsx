@@ -4,10 +4,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import serviceService from '../services/serviceService';
+import workspaceService from '../services/workspaceService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import ServiceEditModal from '../components/ServiceEditModal';
 import SetlistBuilder from '../components/SetlistBuilder';
 import ShareModal from '../components/ShareModal';
+import PassLeadershipModal from '../components/PassLeadershipModal';
 import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTransposeDisplay, transposeChord } from '../utils/transpose';
@@ -44,11 +46,14 @@ const Service = () => {
   const [serviceToShare, setServiceToShare] = useState(null);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [serviceToMove, setServiceToMove] = useState(null);
+  const [isPassLeadershipModalOpen, setIsPassLeadershipModalOpen] = useState(false);
+  const [serviceToPassLeadership, setServiceToPassLeadership] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
   const [isLeader, setIsLeader] = useState(false);
+  const [isWorkspaceAdmin, setIsWorkspaceAdmin] = useState(false);
 
   // Drag-to-scroll state
   const [isDragging, setIsDragging] = useState(false);
@@ -139,6 +144,20 @@ const Service = () => {
     const userIsLeader = selectedService.leader_id === user.id;
     setIsLeader(userIsLeader);
 
+    // Check if user is an admin of the service's workspace
+    const checkWorkspaceAdmin = async () => {
+      try {
+        const members = await workspaceService.getWorkspaceMembers(selectedService.workspace_id);
+        const userMembership = members.find(m => m.user_id === user.id);
+        setIsWorkspaceAdmin(userMembership?.role === 'admin');
+      } catch (err) {
+        console.error('Error checking workspace admin status:', err);
+        setIsWorkspaceAdmin(false);
+      }
+    };
+
+    checkWorkspaceAdmin();
+
     // Connect to Socket.IO server
     const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5002';
     socketRef.current = io(serverUrl);
@@ -198,6 +217,32 @@ const Service = () => {
       console.log('You are now the leader of service:', serviceId);
       setIsLeader(true);
       setToastMessage('You are now the service leader');
+      setShowToast(true);
+    });
+
+    socketRef.current.on('leader-changed', ({ newLeaderId }) => {
+      console.log('Service leader changed to:', newLeaderId);
+
+      // Update selected service leader_id
+      setSelectedService(prev => prev ? { ...prev, leader_id: newLeaderId } : null);
+
+      // Update services list
+      setServices(prev => prev.map(s =>
+        s.id === selectedService.id
+          ? { ...s, leader_id: newLeaderId }
+          : s
+      ));
+
+      // Update isLeader state for current user
+      const newIsLeader = newLeaderId === user.id;
+      setIsLeader(newIsLeader);
+
+      // Show toast notification
+      if (newIsLeader) {
+        setToastMessage('You are now the service leader');
+      } else {
+        setToastMessage('Service leader has been changed');
+      }
       setShowToast(true);
     });
 
@@ -624,6 +669,51 @@ const Service = () => {
     setServiceToMove(null);
   };
 
+  const handlePassLeadership = (service) => {
+    setServiceToPassLeadership(service);
+    setIsPassLeadershipModalOpen(true);
+  };
+
+  const handleLeaderChanged = async (newLeaderId) => {
+    if (!serviceToPassLeadership) return;
+
+    try {
+      await serviceService.changeLeader(serviceToPassLeadership.id, newLeaderId);
+
+      // Update the service in the services list
+      setServices(prev => prev.map(s =>
+        s.id === serviceToPassLeadership.id
+          ? { ...s, leader_id: newLeaderId }
+          : s
+      ));
+
+      // Update selected service if it's the one being changed
+      if (selectedService?.id === serviceToPassLeadership.id) {
+        setSelectedService(prev => ({ ...prev, leader_id: newLeaderId }));
+
+        // Update leader status for current user
+        setIsLeader(newLeaderId === user.id);
+
+        // Broadcast leader change via socket
+        if (socketRef.current) {
+          socketRef.current.emit('leader-changed', {
+            serviceId: serviceToPassLeadership.id,
+            newLeaderId: newLeaderId
+          });
+        }
+      }
+
+      setToastMessage('Service leader changed successfully!');
+      setShowToast(true);
+      setIsPassLeadershipModalOpen(false);
+      setServiceToPassLeadership(null);
+    } catch (err) {
+      console.error('Error changing leader:', err);
+      // Error will be shown by the modal
+      throw err;
+    }
+  };
+
   // Drag-to-scroll handlers for song pills
   const handleMouseDown = (e) => {
     if (!songPillsRef.current) return;
@@ -742,6 +832,16 @@ const Service = () => {
                           }}
                         >
                           {t('service.move')}
+                        </button>
+                        <button
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(null);
+                            handlePassLeadership(service);
+                          }}
+                        >
+                          Pass Leadership
                         </button>
                         <button
                           className="menu-item"
@@ -967,6 +1067,17 @@ const Service = () => {
         service={serviceToShare}
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
+      />
+
+      {/* Pass Leadership Modal */}
+      <PassLeadershipModal
+        service={serviceToPassLeadership}
+        isOpen={isPassLeadershipModalOpen}
+        onClose={() => {
+          setIsPassLeadershipModalOpen(false);
+          setServiceToPassLeadership(null);
+        }}
+        onLeaderChanged={handleLeaderChanged}
       />
     </div>
   );

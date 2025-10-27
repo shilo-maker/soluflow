@@ -804,6 +804,63 @@ const moveToWorkspace = async (req, res) => {
   }
 };
 
+// Change service leader
+const changeServiceLeader = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { new_leader_id } = req.body;
+
+    if (!new_leader_id) {
+      return res.status(400).json({ error: 'new_leader_id is required' });
+    }
+
+    // Get the service
+    const service = await Service.findByPk(id);
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    // Check if user is workspace admin
+    const membership = await WorkspaceMember.findOne({
+      where: {
+        workspace_id: service.workspace_id,
+        user_id: req.user.id
+      }
+    });
+
+    if (!membership || membership.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Access denied. Only workspace admins can change service leadership.'
+      });
+    }
+
+    // Verify new leader is a member of the workspace
+    const newLeaderMembership = await WorkspaceMember.findOne({
+      where: {
+        workspace_id: service.workspace_id,
+        user_id: new_leader_id
+      }
+    });
+
+    if (!newLeaderMembership) {
+      return res.status(400).json({
+        error: 'New leader must be a member of the workspace'
+      });
+    }
+
+    // Update the leader
+    await service.update({ leader_id: new_leader_id });
+
+    res.json({
+      message: 'Service leader changed successfully',
+      service
+    });
+  } catch (error) {
+    console.error('Error changing service leader:', error);
+    res.status(500).json({ error: 'Failed to change service leader' });
+  }
+};
+
 module.exports = {
   getAllServices,
   getServiceById,
@@ -817,5 +874,6 @@ module.exports = {
   updateSongTransposition,
   acceptSharedService,
   getShareLink,
-  moveToWorkspace
+  moveToWorkspace,
+  changeServiceLeader
 };

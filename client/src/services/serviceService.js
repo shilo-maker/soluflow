@@ -81,6 +81,14 @@ const serviceService = {
       target_workspace_id: targetWorkspaceId
     });
     return response.data;
+  },
+
+  // Change service leader (admin only)
+  changeLeader: async (serviceId, newLeaderId) => {
+    const response = await api.put(`/services/${serviceId}/leader`, {
+      new_leader_id: newLeaderId
+    });
+    return response.data;
   }
 };
 

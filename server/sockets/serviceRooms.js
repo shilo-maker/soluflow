@@ -109,6 +109,50 @@ const setupServiceRooms = (io) => {
       }
     });
 
+    // Admin changes service leader
+    socket.on('leader-changed', ({ serviceId, newLeaderId }) => {
+      console.log(`Leader changed for service ${serviceId} to user ${newLeaderId}`);
+
+      // Broadcast to all users in the service room (including the sender)
+      io.to(`service-${serviceId}`).emit('leader-changed', {
+        newLeaderId
+      });
+
+      // Update room leadership if the new leader is currently connected
+      if (serviceRooms[serviceId]) {
+        // Find the socket of the new leader in the room
+        const roomSockets = io.sockets.adapter.rooms.get(`service-${serviceId}`);
+        if (roomSockets) {
+          for (const socketId of roomSockets) {
+            const clientSocket = io.sockets.sockets.get(socketId);
+            if (clientSocket && clientSocket.userId === newLeaderId) {
+              // Transfer leadership
+              const oldLeaderSocketId = serviceRooms[serviceId].leader;
+
+              // Remove old leader from leader position (make them a follower)
+              if (oldLeaderSocketId && oldLeaderSocketId !== socketId) {
+                const oldLeaderSocket = io.sockets.sockets.get(oldLeaderSocketId);
+                if (oldLeaderSocket) {
+                  oldLeaderSocket.isLeader = false;
+                  serviceRooms[serviceId].followers.push(oldLeaderSocketId);
+                }
+              }
+
+              // Set new leader
+              serviceRooms[serviceId].leader = socketId;
+              serviceRooms[serviceId].followers = serviceRooms[serviceId].followers.filter(
+                id => id !== socketId
+              );
+              clientSocket.isLeader = true;
+
+              console.log(`Socket ${socketId} promoted to leader of service ${serviceId}`);
+              break;
+            }
+          }
+        }
+      }
+    });
+
     // Handle disconnection
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);

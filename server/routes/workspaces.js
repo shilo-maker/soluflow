@@ -10,7 +10,8 @@ const {
   generateInvite,
   acceptInvite,
   leaveWorkspace,
-  updateMemberRole
+  updateMemberRole,
+  getWorkspaceMembers
 } = require('../controllers/workspaceController');
 
 // All routes require authentication
@@ -42,5 +43,8 @@ router.delete('/:id/leave', leaveWorkspace);
 
 // Update member role (admin only)
 router.put('/:id/members/:userId/role', updateMemberRole);
+
+// Get workspace members
+router.get('/:id/members', getWorkspaceMembers);
 
 module.exports = router;

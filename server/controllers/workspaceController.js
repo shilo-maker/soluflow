@@ -594,6 +594,51 @@ const updateMemberRole = async (req, res) => {
   }
 };
 
+// GET /api/workspaces/:id/members - Get all workspace members
+const getWorkspaceMembers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUserId = req.user.id;
+
+    // Get workspace
+    const workspace = await Workspace.findByPk(id);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    // Check if requesting user is a member of this workspace
+    const requestingMembership = await WorkspaceMember.findOne({
+      where: {
+        workspace_id: id,
+        user_id: requestingUserId
+      }
+    });
+
+    if (!requestingMembership) {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'You are not a member of this workspace'
+      });
+    }
+
+    // Get all members with user info
+    const members = await WorkspaceMember.findAll({
+      where: { workspace_id: id },
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'email', 'username']
+      }],
+      order: [['joined_at', 'ASC']]
+    });
+
+    res.json(members);
+  } catch (error) {
+    console.error('Get workspace members error:', error);
+    res.status(500).json({ error: 'Failed to retrieve workspace members' });
+  }
+};
+
 module.exports = {
   getAllWorkspaces,
   getWorkspaceById,
@@ -603,5 +648,6 @@ module.exports = {
   generateInvite,
   acceptInvite,
   leaveWorkspace,
-  updateMemberRole
+  updateMemberRole,
+  getWorkspaceMembers
 };

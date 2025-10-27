@@ -14,7 +14,8 @@ const {
   updateSongTransposition,
   acceptSharedService,
   getShareLink,
-  moveToWorkspace
+  moveToWorkspace,
+  changeServiceLeader
 } = require('../controllers/serviceController');
 
 // GET /api/services - Get all services (authenticated)
@@ -55,5 +56,8 @@ router.post('/accept/:code', authenticate, acceptSharedService);
 
 // PUT /api/services/:id/move - Move service to another workspace (authenticated)
 router.put('/:id/move', authenticate, moveToWorkspace);
+
+// PUT /api/services/:id/leader - Change service leader (authenticated - admin only)
+router.put('/:id/leader', authenticate, changeServiceLeader);
 
 module.exports = router;
