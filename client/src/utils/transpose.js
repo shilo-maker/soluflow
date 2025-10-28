@@ -190,3 +190,53 @@ export const stripChords = (chordProText) => {
   // Remove all chord brackets [chord]
   return chordProText.replace(/\[([^\]]+)\]/g, '');
 };
+
+/**
+ * Calculates the number of semitones needed to transpose from one key to another
+ * @param {string} fromKey - The original key (e.g., 'C', 'D#', 'Bb')
+ * @param {string} toKey - The target key
+ * @returns {number} - Number of semitones to transpose (-11 to +11)
+ */
+export const calculateTransposition = (fromKey, toKey) => {
+  const normalizedFrom = normalizeNote(fromKey);
+  const normalizedTo = normalizeNote(toKey);
+
+  const fromIndex = CHROMATIC_SCALE.indexOf(normalizedFrom);
+  const toIndex = CHROMATIC_SCALE.indexOf(normalizedTo);
+
+  if (fromIndex === -1 || toIndex === -1) {
+    return 0;
+  }
+
+  let semitones = toIndex - fromIndex;
+
+  // Normalize to range -6 to +6 (prefer smaller transpositions)
+  if (semitones > 6) {
+    semitones -= 12;
+  } else if (semitones < -6) {
+    semitones += 12;
+  }
+
+  return semitones;
+};
+
+/**
+ * Gets all available keys with their display names
+ * @returns {Array<{value: string, label: string}>} - Array of key options
+ */
+export const getAllKeys = () => {
+  return [
+    { value: 'C', label: 'C' },
+    { value: 'C#', label: 'C# / Db' },
+    { value: 'D', label: 'D' },
+    { value: 'D#', label: 'D# / Eb' },
+    { value: 'E', label: 'E' },
+    { value: 'F', label: 'F' },
+    { value: 'F#', label: 'F# / Gb' },
+    { value: 'G', label: 'G' },
+    { value: 'G#', label: 'G# / Ab' },
+    { value: 'A', label: 'A' },
+    { value: 'A#', label: 'A# / Bb' },
+    { value: 'B', label: 'B' }
+  ];
+};

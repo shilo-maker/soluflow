@@ -9,6 +9,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import NotesModal from '../components/NotesModal';
 import SongEditModal from '../components/SongEditModal';
+import KeySelectorModal from '../components/KeySelectorModal';
 import { getTransposeDisplay, transposeChord } from '../utils/transpose';
 import io from 'socket.io-client';
 import './SongView.css';
@@ -53,6 +54,7 @@ const SongView = () => {
   const [notes, setNotes] = useState('');
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedFontSize, setExpandedFontSize] = useState(16);
   const [autoFontSize, setAutoFontSize] = useState(16);
@@ -721,8 +723,8 @@ const SongView = () => {
           <button className="btn-action btn-transpose-view" onClick={transposeDown}>-</button>
           <span
             className="transpose-display"
-            onClick={resetTransposition}
-            title="Click to reset"
+            onClick={() => setShowKeySelectorModal(true)}
+            title="Click to select key"
           >
             {transposeChord(song.key, transposition)}
             {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
@@ -859,6 +861,15 @@ const SongView = () => {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveEditedSong}
+      />
+
+      {/* Key Selector Modal */}
+      <KeySelectorModal
+        isOpen={showKeySelectorModal}
+        onClose={() => setShowKeySelectorModal(false)}
+        currentKey={song.key}
+        currentTransposition={transposition}
+        onSelectKey={setTransposition}
       />
 
       {/* Confirm Delete Dialog */}
