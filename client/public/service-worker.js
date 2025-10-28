@@ -6,8 +6,11 @@ const CACHE_VERSION = Date.now();
 const CACHE_NAME = `soluflow-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `soluflow-api-v${CACHE_VERSION}`;
 
-// Assets to cache on install (EXCLUDING index.html - it should never be cached!)
+// Assets to cache on install for offline support
+// Note: We use network-first for HTML, so cached version is only used offline
 const STATIC_ASSETS = [
+  '/',
+  '/index.html',
   '/manifest.json',
   '/solu_flow_logo.png',
 ];
@@ -103,16 +106,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For HTML documents (including index.html) - ALWAYS fetch from network
+  // For HTML documents (including index.html) - Network first with cache for offline
   if (request.headers.get('accept').includes('text/html')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
+          // Cache the HTML for offline use (but always fetch fresh when online)
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
           return response;
         })
         .catch(() => {
-          // Only use cache as last resort if offline
-          return caches.match(request);
+          // Offline: serve from cache
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              console.log('[Service Worker] Serving HTML from cache (offline mode)');
+              return cachedResponse;
+            }
+            // If no cached HTML, return offline page
+            return new Response(
+              '<html><body><h1>Offline</h1><p>Please check your internet connection.</p></body></html>',
+              { headers: { 'Content-Type': 'text/html' } }
+            );
+          });
         })
     );
     return;
