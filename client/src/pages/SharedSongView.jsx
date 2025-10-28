@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import Toast from '../components/Toast';
+import KeySelectorModal from '../components/KeySelectorModal';
 import { transposeChord } from '../utils/transpose';
 import './SharedSongView.css';
 
@@ -20,6 +21,7 @@ const SharedSongView = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState('success');
+  const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
 
   useEffect(() => {
     const fetchSongByCode = async () => {
@@ -58,10 +60,6 @@ const SharedSongView = () => {
 
   const transposeDown = () => {
     setTransposition(prev => Math.max(prev - 1, -11));
-  };
-
-  const resetTransposition = () => {
-    setTransposition(0);
   };
 
   const handleAddToMyLibrary = async () => {
@@ -177,8 +175,8 @@ const SharedSongView = () => {
                 <button className="btn-transpose" onClick={transposeDown}>-</button>
                 <span
                   className="transpose-display"
-                  onClick={resetTransposition}
-                  title="Click to reset"
+                  onClick={() => setShowKeySelectorModal(true)}
+                  title="Click to select key"
                 >
                   {transposeChord(song.key, transposition)}
                   {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
@@ -212,6 +210,15 @@ const SharedSongView = () => {
           </div>
         </div>
       </div>
+
+      {/* Key Selector Modal */}
+      <KeySelectorModal
+        isOpen={showKeySelectorModal}
+        onClose={() => setShowKeySelectorModal(false)}
+        currentKey={song.key}
+        currentTransposition={transposition}
+        onSelectKey={setTransposition}
+      />
 
       {/* Toast */}
       <Toast

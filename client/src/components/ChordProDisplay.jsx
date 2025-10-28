@@ -3,7 +3,7 @@ import './ChordProDisplay.css';
 import { transpose } from '../utils/transpose';
 import InlineNoteMarker from './InlineNoteMarker';
 
-const ChordProDisplay = ({
+const ChordProDisplay = React.memo(({
   content,
   isLyricsOnly = false,
   dir = 'ltr',
@@ -16,6 +16,7 @@ const ChordProDisplay = ({
   onDeleteNote = null
 }) => {
   const contentRef = useRef(null);
+  const canvasRef = useRef(null);
   const [columnCount, setColumnCount] = useState(1);
 
   // Transpose the content if needed
@@ -48,14 +49,14 @@ const ChordProDisplay = ({
       }
     };
 
-    // Small delay to ensure DOM is fully rendered
-    const timeoutId = setTimeout(checkHeight, 10);
+    // Use requestAnimationFrame for faster, smoother checks
+    const rafId = requestAnimationFrame(checkHeight);
 
     // Recalculate on window resize (e.g., device rotation)
     window.addEventListener('resize', checkHeight);
 
     return () => {
-      clearTimeout(timeoutId);
+      cancelAnimationFrame(rafId);
       window.removeEventListener('resize', checkHeight);
     };
   }, [content, fontSize]);
@@ -274,10 +275,12 @@ const ChordProDisplay = ({
     );
   };
 
-  // Helper function to measure text width
+  // Helper function to measure text width (reuses canvas for performance)
   const measureTextWidth = (text, fontSize, fontFamily) => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas');
+    }
+    const context = canvasRef.current.getContext('2d');
     context.font = `${fontSize}px ${fontFamily}`;
     return context.measureText(text).width;
   };
@@ -374,7 +377,8 @@ const ChordProDisplay = ({
     }
   };
 
-  const parsed = parseChordPro(transposedContent);
+  // Memoize the parsed content to avoid re-parsing on every render
+  const parsed = useMemo(() => parseChordPro(transposedContent), [transposedContent]);
 
   return (
     <div
@@ -391,6 +395,8 @@ const ChordProDisplay = ({
       {renderParsedContent(parsed)}
     </div>
   );
-};
+});
+
+ChordProDisplay.displayName = 'ChordProDisplay';
 
 export default ChordProDisplay;

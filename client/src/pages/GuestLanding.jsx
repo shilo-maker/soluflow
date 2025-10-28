@@ -1,10 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
+import KeySelectorModal from '../components/KeySelectorModal';
 import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
 import './GuestLanding.css';
+
+// Memoized song card component to prevent unnecessary re-renders
+const SongCard = React.memo(({ song, isSelected, onClick }) => {
+  return (
+    <div
+      className={`song-card ${isSelected ? 'selected' : ''}`}
+      onClick={onClick}
+    >
+      <div className="song-card-content">
+        <div className="song-card-left">
+          <h3 className="song-card-title">{song.title}</h3>
+          <p className="song-card-authors">{song.authors}</p>
+        </div>
+        <div className="song-card-right">
+          <span className="song-key">Key: {song.key}</span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+SongCard.displayName = 'SongCard';
 
 const GuestLanding = () => {
   const navigate = useNavigate();
@@ -18,8 +41,14 @@ const GuestLanding = () => {
   const [transposition, setTransposition] = useState(0);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [serviceCode, setServiceCode] = useState(['', '', '', '']);
+  const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const codeInputsRef = useRef([]);
   const songDisplayRef = useRef(null);
+
+  // Reset modal state when selected song changes
+  useEffect(() => {
+    setShowKeySelectorModal(false);
+  }, [selectedSong?.id]);
 
   // Fetch all songs on component mount (guest-accessible, no workspace restriction)
   useEffect(() => {
@@ -44,9 +73,10 @@ const GuestLanding = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (selectedSong && songDisplayRef.current && !songDisplayRef.current.contains(event.target)) {
-        // Check if click is not on a song card
+        // Check if click is not on a song card or key selector modal
         const clickedSongCard = event.target.closest('.song-card');
-        if (!clickedSongCard) {
+        const clickedModal = event.target.closest('.key-selector-overlay');
+        if (!clickedSongCard && !clickedModal) {
           setSelectedSong(null);
         }
       }
@@ -93,6 +123,9 @@ const GuestLanding = () => {
   const displayedSongs = filteredSongs;
 
   const handleSongClick = (song) => {
+    // Close any open modal first
+    setShowKeySelectorModal(false);
+
     // Toggle: if clicking the same song, close it; otherwise open the new song
     if (selectedSong?.id === song.id) {
       setSelectedSong(null);
@@ -117,10 +150,6 @@ const GuestLanding = () => {
 
   const transposeDown = () => {
     setTransposition(prev => Math.max(prev - 1, -11));
-  };
-
-  const resetTransposition = () => {
-    setTransposition(0);
   };
 
   const handleOpenFullView = () => {
@@ -255,24 +284,15 @@ const GuestLanding = () => {
           <div className="songs-list">
           {displayedSongs.map(song => (
             <React.Fragment key={song.id}>
-              <div
-                className={`song-card ${selectedSong?.id === song.id ? 'selected' : ''}`}
+              <SongCard
+                song={song}
+                isSelected={selectedSong?.id === song.id}
                 onClick={() => handleSongClick(song)}
-              >
-                <div className="song-card-content">
-                  <div className="song-card-left">
-                    <h3 className="song-card-title">{song.title}</h3>
-                    <p className="song-card-authors">{song.authors}</p>
-                  </div>
-                  <div className="song-card-right">
-                    <span className="song-key">Key: {song.key}</span>
-                  </div>
-                </div>
-              </div>
+              />
 
               {/* Display selected song chord sheet inline */}
               {selectedSong?.id === song.id && (
-                <div className="song-display-inline" ref={songDisplayRef}>
+                <div className="song-display-inline" ref={songDisplayRef} onClick={(e) => e.stopPropagation()}>
           <div className="song-header-inline">
             <div className="song-info-inline">
               <h2 className="song-title-inline">{selectedSong.title}</h2>
@@ -280,22 +300,22 @@ const GuestLanding = () => {
             </div>
             <div className="song-meta-inline">
               <div className="transpose-controls-inline">
-                <button className="btn-transpose-inline" onClick={transposeDown}>-</button>
+                <button className="btn-transpose-inline" onClick={(e) => { e.stopPropagation(); transposeDown(); }}>-</button>
                 <span
                   className="transpose-display-inline"
-                  onClick={resetTransposition}
-                  title="Click to reset"
+                  onClick={(e) => { e.stopPropagation(); setShowKeySelectorModal(true); }}
+                  title="Click to select key"
                 >
                   {transposeChord(selectedSong.key, transposition)}
                   {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                 </span>
-                <button className="btn-transpose-inline" onClick={transposeUp}>+</button>
+                <button className="btn-transpose-inline" onClick={(e) => { e.stopPropagation(); transposeUp(); }}>+</button>
               </div>
               <div className="zoom-controls">
-                <button className="btn-zoom btn-zoom-out" onClick={zoomOut}>
+                <button className="btn-zoom btn-zoom-out" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>
                   <span className="zoom-icon-small">A</span>
                 </button>
-                <button className="btn-zoom btn-zoom-in" onClick={zoomIn}>
+                <button className="btn-zoom btn-zoom-in" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>
                   <span className="zoom-icon-large">A</span>
                 </button>
               </div>
@@ -317,7 +337,7 @@ const GuestLanding = () => {
 
           <div
             className="song-content-inline clickable"
-            onClick={handleOpenFullView}
+            onClick={(e) => { e.stopPropagation(); handleOpenFullView(); }}
             title="Click to open in full view"
           >
             <ChordProDisplay
@@ -382,6 +402,17 @@ const GuestLanding = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Key Selector Modal */}
+      {selectedSong && (
+        <KeySelectorModal
+          isOpen={showKeySelectorModal}
+          onClose={() => setShowKeySelectorModal(false)}
+          currentKey={selectedSong.key}
+          currentTransposition={transposition}
+          onSelectKey={setTransposition}
+        />
       )}
     </div>
   );

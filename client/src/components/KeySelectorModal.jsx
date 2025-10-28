@@ -17,9 +17,17 @@ const KeySelectorModal = ({ isOpen, onClose, currentKey, currentTransposition, o
     onClose();
   };
 
+  const handleOverlayClick = () => {
+    onClose();
+  };
+
+  const handleModalClick = (e) => {
+    e.stopPropagation();
+  };
+
   return (
-    <div className="key-selector-overlay" onClick={onClose}>
-      <div className="key-selector-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="key-selector-overlay" onClick={handleOverlayClick}>
+      <div className="key-selector-modal" onClick={handleModalClick}>
         <div className="key-selector-header">
           <h3>Select Key</h3>
           <button className="btn-close-modal" onClick={onClose}>×</button>

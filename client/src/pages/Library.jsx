@@ -12,6 +12,47 @@ import Toast from '../components/Toast';
 import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
 import './Library.css';
 
+// Memoized song card component to prevent unnecessary re-renders
+const LibrarySongCard = React.memo(({ song, isSelected, onClick, user, activeWorkspace, t }) => {
+  return (
+    <div
+      className={`song-card ${isSelected ? 'selected' : ''}`}
+      onClick={onClick}
+    >
+      <div className="song-card-content">
+        <div className="song-card-left">
+          <h3 className="song-card-title">
+            {song.title}
+            {user && song.isShared && (
+              <span className="badge-shared">Shared with me / {song.sharedBy?.username || 'Unknown'}</span>
+            )}
+            {user && !song.isShared && song.is_public && (
+              <span className="badge-public">{t('library.public')}</span>
+            )}
+            {user && !song.isShared && !song.is_public && (
+              <>
+                {song.workspace?.id === activeWorkspace?.id && song.workspace?.workspace_type === 'organization' ? (
+                  <span className="badge-workspace">{song.workspace.name}</span>
+                ) : song.created_by === user.id ? (
+                  <span className="badge-personal">{t('workspace.personal')}</span>
+                ) : user.role === 'admin' ? (
+                  <span className="badge-personal-user">{t('workspace.personal')}/{song.creator?.username || 'Unknown'}</span>
+                ) : null}
+              </>
+            )}
+          </h3>
+          <p className="song-card-authors">{song.authors}</p>
+        </div>
+        <div className="song-card-right">
+          <span className="song-key">Key: {song.key}</span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+LibrarySongCard.displayName = 'LibrarySongCard';
+
 const Library = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -33,13 +74,19 @@ const Library = () => {
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const songDisplayRef = useRef(null);
 
+  // Reset modal state when selected song changes
+  useEffect(() => {
+    setShowKeySelectorModal(false);
+  }, [selectedSong?.id]);
+
   // Close expanded song when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (selectedSong && songDisplayRef.current && !songDisplayRef.current.contains(event.target)) {
-        // Check if click is not on a song card
+        // Check if click is not on a song card or key selector modal
         const clickedSongCard = event.target.closest('.song-card');
-        if (!clickedSongCard) {
+        const clickedModal = event.target.closest('.key-selector-overlay');
+        if (!clickedSongCard && !clickedModal) {
           setSelectedSong(null);
         }
       }
@@ -107,6 +154,9 @@ const Library = () => {
   const displayedSongs = filteredSongs;
 
   const handleSongClick = (song) => {
+    // Close any open modal first
+    setShowKeySelectorModal(false);
+
     // Toggle: if clicking the same song, close it; otherwise open the new song
     if (selectedSong?.id === song.id) {
       setSelectedSong(null);
@@ -332,39 +382,14 @@ const Library = () => {
       <div className="songs-list">
         {displayedSongs.map(song => (
           <React.Fragment key={song.id}>
-            <div
-              className={`song-card ${selectedSong?.id === song.id ? 'selected' : ''}`}
+            <LibrarySongCard
+              song={song}
+              isSelected={selectedSong?.id === song.id}
               onClick={() => handleSongClick(song)}
-            >
-              <div className="song-card-content">
-                <div className="song-card-left">
-                  <h3 className="song-card-title">
-                    {song.title}
-                    {user && song.isShared && (
-                      <span className="badge-shared">Shared with me / {song.sharedBy?.username || 'Unknown'}</span>
-                    )}
-                    {user && !song.isShared && song.is_public && (
-                      <span className="badge-public">{t('library.public')}</span>
-                    )}
-                    {user && !song.isShared && !song.is_public && (
-                      <>
-                        {song.workspace?.id === activeWorkspace?.id && song.workspace?.workspace_type === 'organization' ? (
-                          <span className="badge-workspace">{song.workspace.name}</span>
-                        ) : song.created_by === user.id ? (
-                          <span className="badge-personal">{t('workspace.personal')}</span>
-                        ) : user.role === 'admin' ? (
-                          <span className="badge-personal-user">{t('workspace.personal')}/{song.creator?.username || 'Unknown'}</span>
-                        ) : null}
-                      </>
-                    )}
-                  </h3>
-                  <p className="song-card-authors">{song.authors}</p>
-                </div>
-                <div className="song-card-right">
-                  <span className="song-key">Key: {song.key}</span>
-                </div>
-              </div>
-            </div>
+              user={user}
+              activeWorkspace={activeWorkspace}
+              t={t}
+            />
 
             {/* Display selected song chord sheet right below the clicked song */}
             {selectedSong?.id === song.id && (
@@ -379,7 +404,12 @@ const Library = () => {
                 <button className="btn-transpose-inline" onClick={transposeDown}>-</button>
                 <span
                   className="transpose-display-inline"
-                  onClick={() => setShowKeySelectorModal(true)}
+                  onClick={(e) => {
+                    console.log('Transpose display clicked!');
+                    e.stopPropagation();
+                    setShowKeySelectorModal(true);
+                    console.log('Modal should open now, showKeySelectorModal:', true);
+                  }}
                   title="Click to select key"
                 >
                   {transposeChord(selectedSong.key, transposition)}

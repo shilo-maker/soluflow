@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import serviceService from '../services/serviceService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import Toast from '../components/Toast';
+import KeySelectorModal from '../components/KeySelectorModal';
 import { getTransposeDisplay, transposeChord } from '../utils/transpose';
 import io from 'socket.io-client';
 import './GuestServiceView.css';
@@ -23,6 +24,7 @@ const GuestServiceView = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState('success');
+  const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
 
   // Real-time sync state (guests are always followers)
   const [isFollowMode, setIsFollowMode] = useState(true);
@@ -154,10 +156,6 @@ const GuestServiceView = () => {
 
   const transposeDown = () => {
     setTransposition(prev => Math.max(prev - 1, -11));
-  };
-
-  const resetTransposition = () => {
-    setTransposition(0);
   };
 
   const handleAddToMyServices = async () => {
@@ -323,8 +321,8 @@ const GuestServiceView = () => {
                     <button className="btn-transpose" onClick={(e) => { e.stopPropagation(); transposeDown(); }}>-</button>
                     <span
                       className="transpose-display"
-                      onClick={(e) => { e.stopPropagation(); resetTransposition(); }}
-                      title="Click to reset"
+                      onClick={(e) => { e.stopPropagation(); setShowKeySelectorModal(true); }}
+                      title="Click to select key"
                     >
                       {transposeChord(currentSong.key, transposition)}
                       {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
@@ -360,6 +358,17 @@ const GuestServiceView = () => {
       )}
 
       {/* Toast */}
+      {/* Key Selector Modal */}
+      {currentSong && (
+        <KeySelectorModal
+          isOpen={showKeySelectorModal}
+          onClose={() => setShowKeySelectorModal(false)}
+          currentKey={currentSong.key}
+          currentTransposition={transposition}
+          onSelectKey={setTransposition}
+        />
+      )}
+
       <Toast
         message={toastMessage}
         type={toastType}
