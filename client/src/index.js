@@ -20,8 +20,23 @@ serviceWorkerRegistration.register({
     console.log('SoluFlow is now available offline!');
   },
   onUpdate: (registration) => {
-    console.log('New version available! Please refresh to update.');
-    // Optionally, you could show a toast notification here
+    console.log('New version available! Auto-updating...');
+
+    // Immediately activate the new service worker and reload
+    const waitingWorker = registration.waiting;
+
+    if (waitingWorker) {
+      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+
+      // Reload the page once the new service worker is activated
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
   },
 });
 

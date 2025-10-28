@@ -1,16 +1,13 @@
 /* eslint-disable no-restricted-globals */
 
 // Service Worker for SoluFlow - Offline Support
-const CACHE_NAME = 'soluflow-v1';
-const API_CACHE_NAME = 'soluflow-api-v1';
+// Version is updated automatically on each build
+const CACHE_VERSION = Date.now();
+const CACHE_NAME = `soluflow-v${CACHE_VERSION}`;
+const API_CACHE_NAME = `soluflow-api-v${CACHE_VERSION}`;
 
-// Assets to cache on install
+// Assets to cache on install (EXCLUDING index.html - it should never be cached!)
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/static/css/main.chunk.css',
-  '/static/js/main.chunk.js',
-  '/static/js/bundle.js',
   '/manifest.json',
   '/solu_flow_logo.png',
 ];
@@ -106,10 +103,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets - Cache first, fallback to network
+  // For HTML documents (including index.html) - ALWAYS fetch from network
+  if (request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          return response;
+        })
+        .catch(() => {
+          // Only use cache as last resort if offline
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images) - Cache first, fallback to network
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
+        // Return cached version but also fetch in background to update cache
+        fetch(request).then((response) => {
+          if (response && response.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, response);
+            });
+          }
+        });
         return cachedResponse;
       }
 
@@ -130,10 +150,8 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Return offline page for HTML requests
-          if (request.headers.get('accept').includes('text/html')) {
-            return caches.match('/index.html');
-          }
+          // Return nothing for failed static asset requests
+          return new Response('', { status: 404 });
         });
     })
   );

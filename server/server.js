@@ -71,11 +71,29 @@ app.use('/api/workspaces', workspacesRoutes);
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '../client/build');
 
-  // Serve static files
-  app.use(express.static(clientBuildPath));
+  // Serve static files with proper cache headers
+  app.use(express.static(clientBuildPath, {
+    maxAge: '1y', // Cache static assets (JS, CSS, images with hashes) for 1 year
+    setHeaders: (res, filePath) => {
+      // Never cache index.html - always fetch fresh
+      if (filePath.endsWith('index.html') || filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+      // Cache service worker for max 1 day (so updates are detected quickly)
+      else if (filePath.endsWith('service-worker.js')) {
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+      }
+    }
+  }));
 
   // Handle React routing, return all requests to React app
+  // Always set no-cache headers for HTML responses
   app.use((req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 } else {
