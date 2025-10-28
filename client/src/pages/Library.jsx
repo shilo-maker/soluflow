@@ -7,6 +7,7 @@ import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import SongEditModal from '../components/SongEditModal';
 import SongShareModal from '../components/SongShareModal';
+import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
 import './Library.css';
@@ -29,6 +30,7 @@ const Library = () => {
   const [showToast, setShowToast] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareSong, setShareSong] = useState(null);
+  const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const songDisplayRef = useRef(null);
 
   // Close expanded song when clicking outside
@@ -133,6 +135,10 @@ const Library = () => {
 
   const resetTransposition = () => {
     setTransposition(0);
+  };
+
+  const handleSelectKey = (newTransposition) => {
+    setTransposition(newTransposition);
   };
 
   const handleAddSong = () => {
@@ -373,8 +379,8 @@ const Library = () => {
                 <button className="btn-transpose-inline" onClick={transposeDown}>-</button>
                 <span
                   className="transpose-display-inline"
-                  onClick={resetTransposition}
-                  title="Click to reset"
+                  onClick={() => setShowKeySelectorModal(true)}
+                  title="Click to select key"
                 >
                   {transposeChord(selectedSong.key, transposition)}
                   {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
@@ -485,6 +491,17 @@ const Library = () => {
         isOpen={isShareModalOpen}
         onClose={handleCloseShareModal}
       />
+
+      {/* Key Selector Modal */}
+      {selectedSong && (
+        <KeySelectorModal
+          isOpen={showKeySelectorModal}
+          onClose={() => setShowKeySelectorModal(false)}
+          currentKey={selectedSong.key}
+          currentTransposition={transposition}
+          onSelectKey={handleSelectKey}
+        />
+      )}
 
       {/* Success Toast */}
       <Toast
