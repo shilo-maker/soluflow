@@ -10,6 +10,7 @@ import ServiceEditModal from '../components/ServiceEditModal';
 import SetlistBuilder from '../components/SetlistBuilder';
 import ShareModal from '../components/ShareModal';
 import PassLeadershipModal from '../components/PassLeadershipModal';
+import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTransposeDisplay, transposeChord } from '../utils/transpose';
@@ -49,6 +50,7 @@ const Service = () => {
   const [isPassLeadershipModalOpen, setIsPassLeadershipModalOpen] = useState(false);
   const [serviceToPassLeadership, setServiceToPassLeadership] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
@@ -204,9 +206,8 @@ const Service = () => {
         if (state.currentSongIndex !== undefined) {
           setSelectedSongIndex(state.currentSongIndex);
         }
-        if (state.transposition !== undefined) {
-          setTransposition(state.transposition);
-        }
+        // Don't sync transposition here - it should be loaded from database per song
+        // Transposition will be synced via leader-transposed event when leader actively changes it
         if (state.fontSize !== undefined) {
           setFontSize(state.fontSize);
         }
@@ -408,6 +409,40 @@ const Service = () => {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
         transposition: 0
+      });
+    }
+  };
+
+  const handleSelectKey = async (newTransposition) => {
+    console.log('[Service] handleSelectKey - Setting transposition to:', newTransposition);
+    setTransposition(newTransposition);
+
+    // Save transposition to database
+    if (selectedService && serviceDetails?.songs?.[selectedSongIndex]) {
+      const currentSong = serviceDetails.songs[selectedSongIndex];
+      console.log('[Service] Key selected - Saving song', currentSong.id, 'in service', selectedService.id, 'with transposition', newTransposition);
+
+      try {
+        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, newTransposition);
+        console.log('[Service] Transposition saved to database');
+
+        // Update local state to reflect the change
+        setServiceDetails(prev => ({
+          ...prev,
+          songs: prev.songs.map((song, idx) =>
+            idx === selectedSongIndex ? { ...song, transposition: newTransposition } : song
+          )
+        }));
+      } catch (error) {
+        console.error('[Service] Failed to save transposition:', error);
+      }
+    }
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && selectedService) {
+      socketRef.current.emit('leader-transpose', {
+        serviceId: selectedService.id,
+        transposition: newTransposition
       });
     }
   };
@@ -961,8 +996,8 @@ const Service = () => {
                     <button className="btn-transpose-service" onClick={(e) => { e.stopPropagation(); transposeDown(); }}>-</button>
                     <span
                       className="transpose-display-service"
-                      onClick={(e) => { e.stopPropagation(); resetTransposition(); }}
-                      title="Click to reset"
+                      onClick={(e) => { e.stopPropagation(); setShowKeySelectorModal(true); }}
+                      title="Click to select key"
                     >
                       {transposeChord(currentSong.key, transposition)}
                       {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
@@ -1079,6 +1114,17 @@ const Service = () => {
         }}
         onLeaderChanged={handleLeaderChanged}
       />
+
+      {/* Key Selector Modal */}
+      {currentSong && (
+        <KeySelectorModal
+          isOpen={showKeySelectorModal}
+          onClose={() => setShowKeySelectorModal(false)}
+          currentKey={currentSong.key}
+          currentTransposition={transposition}
+          onSelectKey={handleSelectKey}
+        />
+      )}
     </div>
   );
 };
