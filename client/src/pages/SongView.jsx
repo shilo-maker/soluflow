@@ -327,6 +327,17 @@ const SongView = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [hasNext, hasPrevious, currentSetlistIndex, setlistContext, navigate]);
 
+  // Recalculate font size when song changes in expanded mode
+  useEffect(() => {
+    if (isExpanded && song) {
+      // When navigating to a new song in expanded mode, recalculate optimal font size
+      console.log('Song changed in expanded mode, recalculating font size...');
+      setTimeout(() => {
+        calculateOptimalFontSize();
+      }, 200); // Give time for new content to render
+    }
+  }, [id, song, isExpanded]);
+
   if (loading) {
     return (
       <div className="song-view-page">
@@ -749,12 +760,15 @@ const SongView = () => {
       )}
 
       {/* Navigation Buttons - Fixed position */}
-      {!isExpanded && setlistContext && (
+      {setlistContext && (
         <>
           {hasPrevious && (
             <button
               className={`btn-nav-song ${isRTL ? 'btn-next-song' : 'btn-prev-song'}`}
-              onClick={goToPreviousSong}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering toggleExpanded in expanded mode
+                goToPreviousSong();
+              }}
             >
               ‹
             </button>
@@ -762,7 +776,10 @@ const SongView = () => {
           {hasNext && (
             <button
               className={`btn-nav-song ${isRTL ? 'btn-prev-song' : 'btn-next-song'}`}
-              onClick={goToNextSong}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering toggleExpanded in expanded mode
+                goToNextSong();
+              }}
             >
               ›
             </button>
