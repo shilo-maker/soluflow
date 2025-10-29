@@ -73,6 +73,7 @@ const Library = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareSong, setShareSong] = useState(null);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const songDisplayRef = useRef(null);
 
   // Reset modal state when selected song changes
@@ -362,6 +363,7 @@ const Library = () => {
     }
 
     try {
+      setIsGeneratingPDF(true);
       setToastMessage('Generating PDF...');
       setShowToast(true);
 
@@ -374,6 +376,8 @@ const Library = () => {
       console.error('Error generating PDF:', err);
       setToastMessage('Failed to generate PDF');
       setShowToast(true);
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -427,9 +431,10 @@ const Library = () => {
                 <button
                   className="btn-pdf-library"
                   onClick={handleDownloadPDF}
-                  title="Download PDF"
+                  disabled={isGeneratingPDF}
+                  title={isGeneratingPDF ? "Generating PDF..." : "Download PDF"}
                 >
-                  PDF
+                  {isGeneratingPDF ? 'Generating...' : 'PDF'}
                 </button>
               </div>
               <p className="song-authors-inline">{selectedSong.authors}</p>

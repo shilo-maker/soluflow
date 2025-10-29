@@ -356,11 +356,15 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
  * @param {number} fontSize - Font size for the content
  */
 export const generateSongPDF = async (song, transposition = 0, fontSize = 14) => {
-  // Create a temporary container for rendering
+  // Create a temporary container for rendering (completely hidden)
   const container = document.createElement('div');
-  container.style.position = 'absolute';
+  container.style.position = 'fixed';
   container.style.left = '-9999px';
   container.style.top = '0';
+  container.style.visibility = 'hidden';
+  container.style.opacity = '0';
+  container.style.pointerEvents = 'none';
+  container.style.zIndex = '-9999';
   document.body.appendChild(container);
 
   try {

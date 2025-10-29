@@ -322,9 +322,16 @@
   letter-spacing: 0.5px;
 }
 
-.btn-pdf-library:hover {
+.btn-pdf-library:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(255, 107, 107, 0.4);
+}
+
+.btn-pdf-library:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #999 0%, #888 100%);
+  box-shadow: none;
 }
 
 .transpose-display-inline {
