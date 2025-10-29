@@ -1,0 +1,148 @@
+/* A4 PDF View Container */
+.a4-pdf-container {
+  background-color: #f5f5f5;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+/* A4 Page - Exact dimensions 595x842px */
+.a4-page {
+  position: relative;
+  width: 595px;
+  height: 842px;
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Song Header */
+.a4-song-header {
+  margin-bottom: 6px;
+  border-bottom: 2px solid #4ECDC4;
+  padding-bottom: 6px;
+}
+
+.a4-song-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  color: #333;
+  line-height: 1.3;
+}
+
+.a4-song-authors {
+  font-size: 18px;
+  font-weight: normal;
+  color: #555;
+}
+
+.a4-song-meta {
+  font-size: 16px;
+  font-weight: normal;
+  color: #666;
+}
+
+/* Song Content Area */
+.a4-song-content {
+  position: relative;
+  width: 100%;
+  max-height: 680px;
+  overflow: visible;
+}
+
+/* Single column layout - font size will auto-adjust */
+.a4-song-content .chordpro-display {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Reduce spacing for better density */
+.a4-song-content .chord-lyric-pair {
+  margin-bottom: 3px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.a4-song-content .chord-line {
+  height: 1.1em;
+  min-height: 1.1em;
+  margin-bottom: 0;
+}
+
+.a4-song-content .lyric-line {
+  min-height: 1.1em;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+.a4-song-content .empty-line {
+  height: 0.6em;
+}
+
+.a4-song-content .section-container {
+  margin-bottom: 4px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.a4-song-content .section-header {
+  font-size: 13px;
+  margin-top: 5px;
+  margin-bottom: 3px;
+}
+
+/* PDF Stamp Overlay - Fixed Position */
+.a4-stamp-overlay {
+  position: absolute;
+  /*
+   * Positioning calculation:
+   * Page height: 842px
+   * From bottom: 43px
+   * Image height: 25px
+   * Position from top: 842 - 43 - 25 = 774px
+   */
+  top: 774px;
+  /*
+   * Centered horizontally:
+   * Page width: 595px
+   * Image width: 55px
+   * Position from left: (595 - 55) / 2 = 270px
+   */
+  left: 270px;
+  width: 55px;
+  height: 25px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.a4-stamp-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.8;
+}
+
+/* Print styles - ensure proper rendering when printing/PDF */
+@media print {
+  .a4-pdf-container {
+    background-color: white;
+    padding: 0;
+  }
+
+  .a4-page {
+    width: 595px;
+    height: 842px;
+    box-shadow: none;
+    page-break-after: always;
+  }
+
+  .a4-stamp-overlay {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
