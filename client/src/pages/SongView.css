@@ -362,6 +362,7 @@
   box-sizing: border-box;
 }
 
+
 /* Mobile adjustments for expanded mode */
 @media (max-width: 768px) {
   .song-view-content.expanded {

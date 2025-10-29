@@ -14,7 +14,7 @@ import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTransposeDisplay, transposeChord } from '../utils/transpose';
-import { generateSetlistPDF } from '../utils/pdfGenerator';
+import { generateSetlistPDF, generateSongPDF, generateMultiSongPDF } from '../utils/pdfGenerator';
 import io from 'socket.io-client';
 import './Service.css';
 
@@ -51,6 +51,7 @@ const Service = () => {
   const [serviceToPassLeadership, setServiceToPassLeadership] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
@@ -633,20 +634,22 @@ const Service = () => {
 
   const handleDownloadPDF = async () => {
     if (!selectedService || !serviceDetails || !serviceDetails.songs) {
-      setToastMessage('No setlist to download');
+      setToastMessage('No songs to download');
+      setShowToast(true);
+      return;
+    }
+
+    if (serviceDetails.songs.length === 0) {
+      setToastMessage('No songs in setlist');
       setShowToast(true);
       return;
     }
 
     try {
-      setToastMessage('Generating PDF...');
-      setShowToast(true);
+      setIsGeneratingPDF(true);
 
-      await generateSetlistPDF(
-        selectedService,
-        serviceDetails.songs,
-        { fontSize: 11 }
-      );
+      // Generate PDF for all songs in the setlist using A4PDFView format
+      await generateMultiSongPDF(selectedService, serviceDetails.songs, { fontSize });
 
       setToastMessage('PDF downloaded successfully!');
       setShowToast(true);
@@ -654,6 +657,8 @@ const Service = () => {
       console.error('Error generating PDF:', err);
       setToastMessage('Failed to generate PDF');
       setShowToast(true);
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -1124,6 +1129,41 @@ const Service = () => {
           currentTransposition={transposition}
           onSelectKey={handleSelectKey}
         />
+      )}
+
+      {/* PDF Generation Loading Overlay */}
+      {isGeneratingPDF && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          gap: '20px'
+        }}>
+          <div style={{
+            width: '60px',
+            height: '60px',
+            border: '6px solid rgba(255, 255, 255, 0.3)',
+            borderTop: '6px solid white',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <div style={{
+            color: 'white',
+            fontSize: '20px',
+            fontWeight: '600',
+            textAlign: 'center'
+          }}>
+            Generating PDF...
+          </div>
+        </div>
       )}
     </div>
   );

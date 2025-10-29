@@ -1,5 +1,7 @@
 import html2pdf from 'html2pdf.js';
-import { transpose } from './transpose';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { transpose, transposeChord } from './transpose';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
 import A4PDFView from '../components/A4PDFView';
@@ -350,6 +352,287 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
 };
 
 /**
+ * Generate a multi-song PDF using A4PDFView component for each song
+ * @param {Object} service - The service object
+ * @param {Array} songs - Array of songs in the setlist
+ * @param {Object} options - Optional settings like fontSize
+ */
+export const generateMultiSongPDF = async (service, songs, options = {}) => {
+  const { fontSize = 14 } = options;
+
+  console.log('Generating multi-song PDF for:', songs.length, 'songs');
+
+  // Format filename: [Date] - [Time] - [Venue]
+  let filename = 'SoluFlow';
+
+  if (service.date) {
+    const date = new Date(service.date);
+    const formattedDate = date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).replace(/\//g, '-');
+    filename = formattedDate;
+
+    // Add time if available
+    const formattedTime = date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    if (formattedTime !== '00:00') {
+      filename += ` - ${formattedTime}`;
+    }
+  }
+
+  // Add venue
+  if (service.venue) {
+    filename += ` - ${service.venue}`;
+  } else if (service.title) {
+    filename += ` - ${service.title}`;
+  }
+
+  filename += '.pdf';
+  console.log('PDF filename:', filename);
+  console.log('Service venue:', service.venue);
+  console.log('Service title:', service.title);
+
+  // Create the title page first
+  console.log('Creating title page...');
+
+  // Load Heebo font if not already loaded
+  if (!document.querySelector('link[href*="Heebo"]')) {
+    const fontLink = document.createElement('link');
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700&display=swap';
+    fontLink.rel = 'stylesheet';
+    document.head.appendChild(fontLink);
+    // Wait a bit for font to load
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  const titlePageContainer = document.createElement('div');
+  titlePageContainer.style.position = 'fixed';
+  titlePageContainer.style.left = '-10000px';
+  titlePageContainer.style.top = '0';
+  titlePageContainer.style.width = '595px';
+  titlePageContainer.style.height = '842px';
+  titlePageContainer.style.backgroundColor = '#ffffff';
+  titlePageContainer.style.padding = '60px 40px';
+  titlePageContainer.style.boxSizing = 'border-box';
+  titlePageContainer.style.fontFamily = "'Heebo', Arial, sans-serif";
+  document.body.appendChild(titlePageContainer);
+
+  // Format date and time for display
+  let displayDate = '';
+  let displayTime = '';
+  if (service.date) {
+    const date = new Date(service.date);
+    displayDate = date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    const time = date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    if (time !== '00:00') {
+      displayTime = time;
+    }
+  }
+
+  // Build title page HTML
+  titlePageContainer.innerHTML = `
+    <div style="text-align: center;">
+      <h1 style="font-size: 36px; font-weight: 700; margin: 0 0 20px 0; color: #333;">
+        ${service.venue || service.title || 'Service'}
+      </h1>
+      ${displayTime ? `
+        <div style="font-size: 18px; color: #666; margin-bottom: 40px; direction: rtl;">
+          האסיפה מתחילה ב ${displayTime}
+        </div>
+      ` : '<div style="margin-bottom: 40px;"></div>'}
+      <hr style="border: none; border-top: 2px solid #4ECDC4; margin: 0 0 30px 0;">
+      <h2 style="font-size: 24px; font-weight: 600; margin: 0 0 30px 0; color: #4ECDC4;">
+        רשימת שירים
+      </h2>
+    </div>
+    <div style="text-align: right; direction: rtl; font-size: 16px; line-height: 2;">
+      ${songs.map((song, index) => {
+        const metaInfo = [];
+        if (song.authors) metaInfo.push(song.authors);
+        if (song.key) {
+          const transposedKey = song.transposition || song.serviceSongTransposition || 0;
+          const finalKey = transposedKey !== 0 ? transposeChord(song.key, transposedKey) : song.key;
+          metaInfo.push(finalKey);
+        }
+        if (song.bpm) metaInfo.push(`${song.bpm} BPM`);
+
+        return `
+          <div style="margin-bottom: 12px; padding-right: 10px;">
+            ${index + 1}. <strong>${song.title}</strong>${metaInfo.length > 0 ? ` - ${metaInfo.join(' | ')}` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  // Convert title page to canvas
+  const titleCanvas = await html2canvas(titlePageContainer, {
+    scale: 2,
+    useCORS: true,
+    letterRendering: true,
+    logging: false,
+    allowTaint: true,
+    backgroundColor: '#ffffff'
+  });
+
+  const titleImgData = titleCanvas.toDataURL('image/jpeg', 0.95);
+
+  // Create PDF with title page
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  const pdfWidth = 210;
+  const pdfHeight = 297;
+  const titleImgWidth = pdfWidth;
+  const titleImgHeight = (titleCanvas.height * pdfWidth) / titleCanvas.width;
+
+  pdf.addImage(titleImgData, 'JPEG', 0, 0, titleImgWidth, Math.min(titleImgHeight, pdfHeight), undefined, 'FAST');
+
+  // Store PDF instance for adding songs
+  window.multiSongPdf = pdf;
+  window.multiSongPdfFilename = filename;
+
+  // Cleanup title page container
+  document.body.removeChild(titlePageContainer);
+  console.log('Title page created');
+
+  // Generate PDF for each song individually
+  for (let i = 0; i < songs.length; i++) {
+    const song = songs[i];
+    const songTransposition = song.transposition || song.serviceSongTransposition || 0;
+    console.log(`Processing song ${i + 1}/${songs.length}:`, song.title, 'with transposition:', songTransposition);
+
+    // Create a temporary container for rendering (off-screen but visible for rendering)
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-10000px';
+    container.style.top = '0';
+    container.style.width = '595px';
+    container.style.height = '842px';
+    container.style.zIndex = '-9999';
+    document.body.appendChild(container);
+
+    try {
+      // Render the A4PDFView component
+      const root = createRoot(container);
+
+      // Create a promise that resolves when the component is rendered
+      await new Promise((resolve) => {
+        root.render(
+          <A4PDFView
+            song={song}
+            transposition={song.transposition || song.serviceSongTransposition || 0}
+            fontSize={fontSize}
+          />
+        );
+        // Give React more time to render
+        setTimeout(resolve, 1000);
+      });
+
+      const a4Page = container.querySelector('.a4-page');
+      if (!a4Page) {
+        console.error('A4 page not found for song:', song.title);
+        console.log('Container HTML:', container.innerHTML.substring(0, 200));
+        root.unmount();
+        document.body.removeChild(container);
+        continue;
+      }
+
+      console.log('A4 page found, dimensions:', a4Page.offsetWidth, 'x', a4Page.offsetHeight);
+
+      // Configure PDF options for A4 size
+      const serviceName = service.venue || service.title?.split(' ').slice(1).join(' ') || service.title || 'Setlist';
+      const opt = {
+        margin: 0,
+        filename: `SoluFlow - ${serviceName}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          width: 595,
+          height: 842,
+          windowWidth: 595,
+          windowHeight: 842
+        },
+        jsPDF: {
+          unit: 'px',
+          format: [595, 842],
+          orientation: 'portrait',
+          hotfixes: ['px_scaling']
+        }
+      };
+
+      // Convert to canvas
+      const canvas = await html2canvas(a4Page, {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        logging: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
+      console.log('Canvas created, dimensions:', canvas.width, 'x', canvas.height);
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      console.log('Image data length:', imgData.length);
+
+      // Calculate dimensions for PDF (A4 in mm: 210 x 297)
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      console.log('PDF dimensions:', pdfWidth, 'x', pdfHeight, 'mm');
+      console.log('Image will be scaled to:', imgWidth, 'x', imgHeight, 'mm');
+
+      // Add song to existing PDF (title page is already the first page)
+      const pdf = window.multiSongPdf;
+      if (pdf) {
+        pdf.addPage('a4', 'portrait');
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pdfHeight), undefined, 'FAST');
+
+        // If this is the last song, save the PDF
+        if (i === songs.length - 1) {
+          pdf.save(window.multiSongPdfFilename || filename);
+          delete window.multiSongPdf;
+          delete window.multiSongPdfFilename;
+        }
+      }
+
+      // Cleanup
+      root.unmount();
+      document.body.removeChild(container);
+
+    } catch (error) {
+      console.error('Error generating PDF for song:', song.title, error);
+      // Cleanup on error
+      if (container.parentNode) {
+        document.body.removeChild(container);
+      }
+      // Continue with next song
+    }
+  }
+};
+
+/**
  * Generate a single-song PDF using A4PDFView component
  * @param {Object} song - The song object
  * @param {number} transposition - Current transposition value
@@ -389,7 +672,7 @@ export const generateSongPDF = async (song, transposition = 0, fontSize = 14) =>
     // A4 in mm: 210x297
     const opt = {
       margin: 0, // No margin since we control layout precisely
-      filename: `${song.title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.pdf`,
+      filename: `SoluFlow - ${song.title}.pdf`,
       image: { type: 'jpeg', quality: 0.95 },
       html2canvas: {
         scale: 2,
