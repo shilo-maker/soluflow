@@ -1,5 +1,8 @@
 import html2pdf from 'html2pdf.js';
 import { transpose } from './transpose';
+import { createRoot } from 'react-dom/client';
+import React from 'react';
+import A4PDFView from '../components/A4PDFView';
 
 /**
  * Generate a PDF from a setlist
@@ -344,4 +347,76 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
 
   // Generate PDF
   return html2pdf().set(opt).from(element).save();
+};
+
+/**
+ * Generate a single-song PDF using A4PDFView component
+ * @param {Object} song - The song object
+ * @param {number} transposition - Current transposition value
+ * @param {number} fontSize - Font size for the content
+ */
+export const generateSongPDF = async (song, transposition = 0, fontSize = 14) => {
+  // Create a temporary container for rendering
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  document.body.appendChild(container);
+
+  try {
+    // Render the A4PDFView component
+    const root = createRoot(container);
+
+    // Create a promise that resolves when the component is rendered
+    await new Promise((resolve) => {
+      root.render(
+        <A4PDFView
+          song={song}
+          transposition={transposition}
+          fontSize={fontSize}
+        />
+      );
+      // Give React time to render
+      setTimeout(resolve, 500);
+    });
+
+    // Configure PDF options for A4 size
+    // A4 in pixels at 72 DPI: 595x842
+    // A4 in mm: 210x297
+    const opt = {
+      margin: 0, // No margin since we control layout precisely
+      filename: `${song.title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        width: 595,
+        height: 842,
+        windowWidth: 595,
+        windowHeight: 842
+      },
+      jsPDF: {
+        unit: 'px',
+        format: [595, 842],
+        orientation: 'portrait',
+        hotfixes: ['px_scaling']
+      }
+    };
+
+    // Generate PDF
+    await html2pdf().set(opt).from(container.querySelector('.a4-page')).save();
+
+    // Cleanup
+    root.unmount();
+    document.body.removeChild(container);
+
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    // Cleanup on error
+    if (container.parentNode) {
+      document.body.removeChild(container);
+    }
+    throw error;
+  }
 };
