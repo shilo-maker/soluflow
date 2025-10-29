@@ -6,97 +6,112 @@ import './A4PDFView.css';
  * A4PDFView Component
  * Renders a song in A4 dimensions (595x842px) optimized for PDF export
  * Automatically scales content to maximize space usage
- *
- * A4 Page dimensions:
- * - Width: 595px
- * - Height: 842px
- *
- * pdf_stamp.png positioning:
- * - Original size: 110x50px
- * - Display size: 55x25px (half size)
- * - Position: Centered horizontally, 43px from bottom edge
- * - Calculated position: x=270px, y=774px (from top)
+ * Long songs are split into two columns, each auto-fitted independently
  */
 const A4PDFView = ({ song, transposition = 0, fontSize: initialFontSize = 14 }) => {
   const contentRef = useRef(null);
-  const [calculatedFontSize, setCalculatedFontSize] = useState(initialFontSize);
+  const leftColumnRef = useRef(null);
+  const rightColumnRef = useRef(null);
+  const [leftFontSize, setLeftFontSize] = useState(initialFontSize);
+  const [rightFontSize, setRightFontSize] = useState(initialFontSize);
+  const [singleFontSize, setSingleFontSize] = useState(initialFontSize);
 
   // Detect if song content has Hebrew characters
   const hasHebrew = (text) => /[\u0590-\u05FF]/.test(text);
-
   const contentDirection = hasHebrew(song.content) ? 'rtl' : 'ltr';
 
-  useEffect(() => {
-    if (!contentRef.current) return;
+  // Split content in half (we'll decide whether to use it based on font size)
+  const lines = song.content.split('\n');
+  const midpoint = Math.ceil(lines.length / 2);
+  const leftContent = lines.slice(0, midpoint).join('\n');
+  const rightContent = lines.slice(midpoint).join('\n');
 
-    // Find the actual ChordProDisplay element
-    const chordproDisplay = contentRef.current.querySelector('.chordpro-display');
-    if (!chordproDisplay) {
-      // If not found yet, retry after a short delay
-      setTimeout(() => {
-        const display = contentRef.current?.querySelector('.chordpro-display');
-        if (display) {
-          performAutoFit(display);
-        }
-      }, 100);
-      return;
-    }
+  const [useTwoColumns, setUseTwoColumns] = useState(false);
 
-    performAutoFit(chordproDisplay);
-  }, [song.content, transposition]);
-
-  const performAutoFit = (chordproDisplay) => {
-    // Conservative height: Account for header, padding, and stamp
-    // Page: 842px, padding: 80px, header: ~40px, stamp space: ~70px
-    // Available: ~650px to be safe
+  // Binary search for optimal font size
+  const findOptimalFontSize = (element) => {
     const maxHeight = 650;
     const minFontSize = 8;
     const maxFontSize = 18;
 
     let bestFontSize = minFontSize;
-
-    // Binary search for optimal font size
     let low = minFontSize;
     let high = maxFontSize;
-    let iterations = 0;
-    const maxIterations = 15;
 
-    while (low <= high && iterations < maxIterations) {
+    for (let i = 0; i < 15; i++) {
       const testFontSize = Math.floor((low + high) / 2);
-
-      // Apply test font size
-      chordproDisplay.style.fontSize = `${testFontSize}px`;
+      element.style.fontSize = `${testFontSize}px`;
 
       // Force reflow
       // eslint-disable-next-line no-unused-expressions
-      chordproDisplay.offsetHeight;
+      element.offsetHeight;
 
-      // Measure the actual rendered height
-      const actualHeight = chordproDisplay.scrollHeight;
-
-      console.log(`Iteration ${iterations}: fontSize=${testFontSize}px, height=${actualHeight}px, target=${maxHeight}px`);
+      const actualHeight = element.scrollHeight;
 
       if (actualHeight <= maxHeight) {
-        // Content fits, try larger
         bestFontSize = testFontSize;
         low = testFontSize + 1;
       } else {
-        // Content too large, try smaller
         high = testFontSize - 1;
       }
-
-      iterations++;
     }
 
-    console.log(`Final font size: ${bestFontSize}px`);
-    setCalculatedFontSize(bestFontSize);
+    return bestFontSize;
   };
+
+  // Auto-fit for single column layout
+  useEffect(() => {
+    if (useTwoColumns || !contentRef.current) return;
+
+    setTimeout(() => {
+      const display = contentRef.current?.querySelector('.chordpro-display');
+      if (!display) return;
+
+      const fontSize = findOptimalFontSize(display);
+      console.log(`Single column: ${fontSize}px`);
+
+      // If font is too small (< 15px), switch to two columns
+      if (fontSize < 15) {
+        console.log(`Font too small (${fontSize}px), switching to two columns`);
+        setUseTwoColumns(true);
+      } else {
+        setSingleFontSize(fontSize);
+      }
+    }, 200);
+  }, [song.content, transposition, useTwoColumns]);
+
+  // Auto-fit for left column
+  useEffect(() => {
+    if (!useTwoColumns || !leftColumnRef.current) return;
+
+    setTimeout(() => {
+      const display = leftColumnRef.current?.querySelector('.chordpro-display');
+      if (!display) return;
+
+      const fontSize = findOptimalFontSize(display);
+      console.log(`Left column: ${fontSize}px`);
+      setLeftFontSize(fontSize);
+    }, 300);
+  }, [song.content, transposition, useTwoColumns]);
+
+  // Auto-fit for right column
+  useEffect(() => {
+    if (!useTwoColumns || !rightColumnRef.current) return;
+
+    setTimeout(() => {
+      const display = rightColumnRef.current?.querySelector('.chordpro-display');
+      if (!display) return;
+
+      const fontSize = findOptimalFontSize(display);
+      console.log(`Right column: ${fontSize}px`);
+      setRightFontSize(fontSize);
+    }, 300);
+  }, [song.content, transposition, useTwoColumns]);
 
   return (
     <div className="a4-pdf-container">
-      {/* A4 Page with exact dimensions */}
       <div className="a4-page">
-        {/* Song Header - Compact single line */}
+        {/* Song Header */}
         <div className="a4-song-header">
           <h1 className="a4-song-title">
             {song.title}
@@ -108,17 +123,38 @@ const A4PDFView = ({ song, transposition = 0, fontSize: initialFontSize = 14 }) 
           </h1>
         </div>
 
-        {/* Song Content - Using ChordProDisplay */}
-        <div className="a4-song-content" ref={contentRef}>
-          <ChordProDisplay
-            content={song.content}
-            dir={contentDirection}
-            fontSize={calculatedFontSize}
-            transposition={transposition}
-          />
-        </div>
+        {/* Song Content */}
+        {useTwoColumns ? (
+          <div className="a4-two-column-container">
+            <div className="a4-column-left" ref={leftColumnRef}>
+              <ChordProDisplay
+                content={leftContent}
+                dir={contentDirection}
+                fontSize={leftFontSize}
+                transposition={transposition}
+              />
+            </div>
+            <div className="a4-column-right" ref={rightColumnRef}>
+              <ChordProDisplay
+                content={rightContent}
+                dir={contentDirection}
+                fontSize={rightFontSize}
+                transposition={transposition}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="a4-song-content" ref={contentRef}>
+            <ChordProDisplay
+              content={song.content}
+              dir={contentDirection}
+              fontSize={singleFontSize}
+              transposition={transposition}
+            />
+          </div>
+        )}
 
-        {/* PDF Stamp - Fixed overlay at bottom */}
+        {/* PDF Stamp */}
         <div className="a4-stamp-overlay">
           <img
             src="/pdf_stamp.png"

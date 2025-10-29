@@ -308,6 +308,25 @@
   box-shadow: var(--shadow-md);
 }
 
+.btn-pdf-library {
+  background: linear-gradient(135deg, #FF6B6B 0%, #EE5A52 100%);
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.btn-pdf-library:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 107, 107, 0.4);
+}
+
 .transpose-display-inline {
   min-width: 70px;
   text-align: center;

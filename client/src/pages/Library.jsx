@@ -10,6 +10,7 @@ import SongShareModal from '../components/SongShareModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
+import { generateSongPDF } from '../utils/pdfGenerator';
 import './Library.css';
 
 // Memoized song card component to prevent unnecessary re-renders
@@ -351,6 +352,31 @@ const Library = () => {
     setShareSong(null);
   };
 
+  const handleDownloadPDF = async (e) => {
+    e.stopPropagation(); // Prevent triggering song click
+
+    if (!selectedSong) {
+      setToastMessage('No song selected');
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      setToastMessage('Generating PDF...');
+      setShowToast(true);
+
+      // Generate PDF with current transposition and font size
+      await generateSongPDF(selectedSong, transposition, fontSize);
+
+      setToastMessage('PDF downloaded successfully!');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      setToastMessage('Failed to generate PDF');
+      setShowToast(true);
+    }
+  };
+
   // Detect if song content has Hebrew characters
   const hasHebrew = (text) => /[\u0590-\u05FF]/.test(text);
 
@@ -396,7 +422,16 @@ const Library = () => {
               <div className="song-display-inline" ref={songDisplayRef}>
           <div className="song-header-inline">
             <div className="song-info-inline">
-              <h2 className="song-title-inline">{selectedSong.title}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <h2 className="song-title-inline">{selectedSong.title}</h2>
+                <button
+                  className="btn-pdf-library"
+                  onClick={handleDownloadPDF}
+                  title="Download PDF"
+                >
+                  PDF
+                </button>
+              </div>
               <p className="song-authors-inline">{selectedSong.authors}</p>
             </div>
             <div className="song-meta-inline">

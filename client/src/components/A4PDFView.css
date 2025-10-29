@@ -47,7 +47,7 @@
   color: #666;
 }
 
-/* Song Content Area */
+/* Song Content Area - Single Column */
 .a4-song-content {
   position: relative;
   width: 100%;
@@ -61,36 +61,78 @@
   line-height: 1.5;
 }
 
-/* Reduce spacing for better density */
-.a4-song-content .chord-lyric-pair {
+/* Two Column Layout */
+.a4-two-column-container {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  max-height: 680px;
+}
+
+.a4-column-left,
+.a4-column-right {
+  flex: 1;
+  overflow: visible;
+}
+
+.a4-column-left .chordpro-display,
+.a4-column-right .chordpro-display {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Optional: Add a vertical separator between columns */
+.a4-column-left {
+  border-right: 1px solid #ddd;
+  padding-right: 10px;
+}
+
+.a4-column-right {
+  padding-left: 10px;
+}
+
+/* Reduce spacing for better density - applies to both single and two column layouts */
+.a4-song-content .chord-lyric-pair,
+.a4-column-left .chord-lyric-pair,
+.a4-column-right .chord-lyric-pair {
   margin-bottom: 3px;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.a4-song-content .chord-line {
+.a4-song-content .chord-line,
+.a4-column-left .chord-line,
+.a4-column-right .chord-line {
   height: 1.1em;
   min-height: 1.1em;
   margin-bottom: 0;
 }
 
-.a4-song-content .lyric-line {
+.a4-song-content .lyric-line,
+.a4-column-left .lyric-line,
+.a4-column-right .lyric-line {
   min-height: 1.1em;
   line-height: 1.5;
   margin-bottom: 0;
 }
 
-.a4-song-content .empty-line {
+.a4-song-content .empty-line,
+.a4-column-left .empty-line,
+.a4-column-right .empty-line {
   height: 0.6em;
 }
 
-.a4-song-content .section-container {
+.a4-song-content .section-container,
+.a4-column-left .section-container,
+.a4-column-right .section-container {
   margin-bottom: 4px;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.a4-song-content .section-header {
+.a4-song-content .section-header,
+.a4-column-left .section-header,
+.a4-column-right .section-header {
   font-size: 13px;
   margin-top: 5px;
   margin-bottom: 3px;
