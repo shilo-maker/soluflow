@@ -300,6 +300,25 @@ const Service = () => {
       console.log('Room update - Leader:', leaderSocketId, 'Followers:', followerCount);
     });
 
+    // Handle leader disconnection - switch to free mode
+    socketRef.current.on('leader-disconnected', ({ message }) => {
+      console.log('Leader disconnected from service');
+      if (!userIsLeader) {
+        setIsFollowMode(false); // Automatically switch to free mode
+        setToastMessage(message || 'Leader disconnected - switched to free mode');
+        setShowToast(true);
+      }
+    });
+
+    // Handle leader reconnection
+    socketRef.current.on('leader-reconnected', ({ message }) => {
+      console.log('Leader reconnected to service');
+      if (!userIsLeader) {
+        setToastMessage(message || 'Leader reconnected - you can enable follow mode');
+        setShowToast(true);
+      }
+    });
+
     // Cleanup on unmount or service change
     return () => {
       if (socketRef.current) {
@@ -319,6 +338,8 @@ const Service = () => {
         socketRef.current.off('became-leader');
         socketRef.current.off('leader-changed');
         socketRef.current.off('room-update');
+        socketRef.current.off('leader-disconnected');
+        socketRef.current.off('leader-reconnected');
 
         // Leave service room and disconnect
         socketRef.current.emit('leave-service', { serviceId: selectedService.id });

@@ -32,8 +32,18 @@ const setupServiceRooms = (io) => {
 
       // Set as leader or follower
       if (isLeader) {
+        const wasLeaderDisconnected = serviceRooms[serviceId].leader === null;
         serviceRooms[serviceId].leader = socket.id;
         socket.emit('became-leader', { serviceId });
+
+        // If leader was disconnected and is now reconnecting, notify followers
+        if (wasLeaderDisconnected) {
+          socket.to(`service-${serviceId}`).emit('leader-reconnected', {
+            serviceId,
+            message: 'Leader reconnected'
+          });
+          console.log(`Leader reconnected to service ${serviceId}`);
+        }
       } else {
         if (!serviceRooms[serviceId].followers.includes(socket.id)) {
           serviceRooms[serviceId].followers.push(socket.id);
@@ -170,23 +180,20 @@ const handleLeaveService = (socket, serviceId, io) => {
 
   socket.leave(`service-${serviceId}`);
 
-  // If leader left, promote first follower or clear room
+  // If leader left, notify followers to switch to free mode
   if (serviceRooms[serviceId].leader === socket.id) {
-    console.log(`Leader left service ${serviceId}`);
+    console.log(`Leader disconnected from service ${serviceId}`);
 
-    if (serviceRooms[serviceId].followers.length > 0) {
-      // Promote first follower to leader
-      const newLeaderId = serviceRooms[serviceId].followers.shift();
-      serviceRooms[serviceId].leader = newLeaderId;
+    // Set leader to null (don't promote anyone)
+    serviceRooms[serviceId].leader = null;
 
-      io.to(newLeaderId).emit('became-leader', { serviceId });
-      console.log(`Promoted ${newLeaderId} to leader of service ${serviceId}`);
-    } else {
-      // No one left, clean up room
-      delete serviceRooms[serviceId];
-      console.log(`Service room ${serviceId} deleted (empty)`);
-      return;
-    }
+    // Notify all followers that leader disconnected (they should switch to free mode)
+    io.to(`service-${serviceId}`).emit('leader-disconnected', {
+      serviceId,
+      message: 'Leader disconnected - switched to free mode'
+    });
+
+    console.log(`Service ${serviceId} leader disconnected, followers switched to free mode`);
   } else {
     // Remove from followers
     serviceRooms[serviceId].followers = serviceRooms[serviceId].followers.filter(
@@ -199,6 +206,12 @@ const handleLeaveService = (socket, serviceId, io) => {
     leaderSocketId: serviceRooms[serviceId].leader,
     followerCount: serviceRooms[serviceId].followers.length
   });
+
+  // Clean up room only if completely empty
+  if (!serviceRooms[serviceId].leader && serviceRooms[serviceId].followers.length === 0) {
+    delete serviceRooms[serviceId];
+    console.log(`Service room ${serviceId} deleted (empty)`);
+  }
 };
 
 module.exports = setupServiceRooms;
