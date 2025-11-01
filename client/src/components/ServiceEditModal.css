@@ -245,9 +245,10 @@
 .available-songs-list {
   border: 1px solid #dee2e6;
   border-radius: 4px;
-  max-height: 200px;
+  max-height: 500px;
   overflow-y: auto;
   background-color: #f8f9fa;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .no-songs-selected,
@@ -441,7 +442,6 @@
 
   .selected-song-item {
     padding: 12px 10px;
-    touch-action: none; /* Disable default touch behaviors during drag */
   }
 
   .selected-song-item.dragging {

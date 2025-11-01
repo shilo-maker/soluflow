@@ -10,12 +10,21 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchCurrentY, setTouchCurrentY] = useState(null);
+  const [longPressTimer, setLongPressTimer] = useState(null);
+  const [isDraggingEnabled, setIsDraggingEnabled] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setSetlist(currentSetlist || []);
       fetchAvailableSongs();
     }
+
+    // Cleanup timer on unmount
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+    };
   }, [isOpen, currentSetlist]);
 
   const fetchAvailableSongs = async () => {
@@ -69,18 +78,43 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     setDraggedIndex(null);
   };
 
-  // Touch handlers for mobile support
+  // Touch handlers for mobile support with long press
   const handleTouchStart = (e, index) => {
     const touch = e.touches[0];
     setTouchStartY(touch.clientY);
-    setDraggedIndex(index);
+
+    // Start long press timer (500ms)
+    const timer = setTimeout(() => {
+      setIsDraggingEnabled(true);
+      setDraggedIndex(index);
+      // Optional: Add haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500);
+
+    setLongPressTimer(timer);
   };
 
   const handleTouchMove = (e, index) => {
+    const touch = e.touches[0];
+
+    // If dragging hasn't been enabled yet, check if user is scrolling
+    if (!isDraggingEnabled) {
+      // If user moved more than 10px, cancel the long press timer (they're scrolling)
+      if (touchStartY && Math.abs(touch.clientY - touchStartY) > 10) {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          setLongPressTimer(null);
+        }
+      }
+      return; // Allow normal scrolling
+    }
+
+    // Only if dragging is enabled (after long press)
     if (draggedIndex === null) return;
 
     e.preventDefault(); // Prevent scrolling while dragging
-    const touch = e.touches[0];
     setTouchCurrentY(touch.clientY);
 
     // Find which item the touch is currently over
@@ -104,9 +138,16 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
   };
 
   const handleTouchEnd = () => {
+    // Clear long press timer if it's still running
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+
     setDraggedIndex(null);
     setTouchStartY(null);
     setTouchCurrentY(null);
+    setIsDraggingEnabled(false);
   };
 
   const handleSave = () => {
@@ -142,11 +183,15 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
-                    onTouchStart={(e) => handleTouchStart(e, index)}
-                    onTouchMove={(e) => handleTouchMove(e, index)}
-                    onTouchEnd={handleTouchEnd}
                   >
-                    <div className="drag-handle">⋮⋮</div>
+                    <div
+                      className="drag-handle"
+                      onTouchStart={(e) => handleTouchStart(e, index)}
+                      onTouchMove={(e) => handleTouchMove(e, index)}
+                      onTouchEnd={handleTouchEnd}
+                    >
+                      ⋮⋮
+                    </div>
                     <div className="song-number">{index + 1}</div>
                     <div className="song-details">
                       <div className="song-title">{song.title}</div>
