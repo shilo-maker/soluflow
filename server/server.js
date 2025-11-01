@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const path = require('path');
 const { testConnection, syncDatabase } = require('./models');
@@ -47,6 +49,49 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' })); // Increase limit for data import
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Enable gzip compression for all responses
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      // Don't compress responses if this header is present
+      return false;
+    }
+    // Use compression's default filter function
+    return compression.filter(req, res);
+  },
+  level: 6 // Default compression level (0-9, where 6 is a good balance)
+}));
+
+// Global rate limiting to prevent abuse
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Skip rate limiting for trusted IPs (optional)
+  skip: (req) => {
+    // You can add trusted IPs here if needed
+    return false;
+  }
+});
+
+// Apply global rate limiter to all requests
+app.use(globalLimiter);
+
+// Stricter rate limiting for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Limit each IP to 20 requests per windowMs for auth
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Security headers middleware
+const { securityHeaders } = require('./middleware/security');
+app.use(securityHeaders);
+
 // Routes
 const authRoutes = require('./routes/auth');
 const songsRoutes = require('./routes/songs');
@@ -60,7 +105,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Solu Flow API is running' });
 });
 
-app.use('/api/auth', authRoutes);
+// Apply stricter rate limiting to authentication routes
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/songs', songsRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/notes', notesRoutes);

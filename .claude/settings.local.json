@@ -12,7 +12,9 @@
       "Bash(git commit -m \"Fix render.yaml: remove region from static site\")",
       "Bash(git push)",
       "Bash(node server/test-api.js)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(ping:*)",
+      "WebFetch(domain:dorhaba.com)"
     ],
     "deny": [],
     "ask": []

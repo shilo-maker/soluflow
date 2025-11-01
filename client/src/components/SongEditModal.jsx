@@ -176,18 +176,61 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
     }, 0);
   };
 
+  const validateForm = () => {
+    // Title validation
+    if (!formData.title.trim()) {
+      return 'Title is required';
+    }
+    if (formData.title.length > 200) {
+      return 'Title must be less than 200 characters';
+    }
+
+    // Content validation
+    if (!formData.content.trim()) {
+      return 'Song content is required';
+    }
+    if (formData.content.length > 50000) {
+      return 'Song content is too long (max 50,000 characters)';
+    }
+
+    // Authors validation
+    if (formData.authors && formData.authors.length > 200) {
+      return 'Authors field must be less than 200 characters';
+    }
+
+    // URL validation
+    if (formData.listen_url && formData.listen_url.trim()) {
+      try {
+        new URL(formData.listen_url);
+      } catch {
+        return 'Listen URL must be a valid URL (e.g., https://example.com)';
+      }
+    }
+
+    // BPM validation
+    if (formData.bpm) {
+      const bpmNum = parseInt(formData.bpm);
+      if (isNaN(bpmNum) || bpmNum < 20 || bpmNum > 300) {
+        return 'BPM must be a number between 20 and 300';
+      }
+    }
+
+    // Key validation
+    if (formData.key && !COMMON_KEYS.includes(formData.key)) {
+      return 'Please select a valid key from the dropdown';
+    }
+
+    return null; // No errors
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    // Validation
-    if (!formData.title.trim()) {
-      setError('Title is required');
-      return;
-    }
-
-    if (!formData.content.trim()) {
-      setError('Song content is required');
+    // Validate form
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -238,7 +281,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
         <form onSubmit={handleSubmit} className="song-edit-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="title">Title *</label>
+              <label htmlFor="title">Title * <span className="char-count">({formData.title.length}/200)</span></label>
               <input
                 type="text"
                 id="title"
@@ -246,12 +289,13 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 value={formData.title}
                 onChange={handleChange}
                 required
+                maxLength={200}
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="authors">Authors</label>
+              <label htmlFor="authors">Authors <span className="char-count">({formData.authors.length}/200)</span></label>
               <input
                 type="text"
                 id="authors"
@@ -259,6 +303,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 value={formData.authors}
                 onChange={handleChange}
                 placeholder="e.g., John Doe"
+                maxLength={200}
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>
@@ -298,7 +343,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="bpm">BPM</label>
+              <label htmlFor="bpm">BPM (20-300)</label>
               <input
                 type="number"
                 id="bpm"
@@ -306,7 +351,8 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 value={formData.bpm}
                 onChange={handleChange}
                 placeholder="e.g., 120"
-                min="1"
+                min="20"
+                max="300"
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { Song, Service, ServiceSong, SharedService } = require('../models');
 
 // Parse a ChordPro file
@@ -96,7 +97,9 @@ async function importSongs() {
           content: songData.content,
           key: songData.key,
           authors: songData.authors,
-          created_by: 4 // Assuming user ID 4 (shilo@soluisrael.org)
+          created_by: 3, // User ID 3 (shilo)
+          is_public: true, // Import existing songs as public
+          approval_status: null // Already approved since they're being imported
         });
 
         successCount++;

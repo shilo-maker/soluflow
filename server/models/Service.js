@@ -79,6 +79,18 @@ const Service = sequelize.define('Service', {
     },
     {
       fields: ['leader_id']
+    },
+    {
+      // Composite index for listing services by workspace and date
+      fields: ['workspace_id', 'date']
+    },
+    {
+      // Composite index for filtering archived services
+      fields: ['workspace_id', 'is_archived']
+    },
+    {
+      // Index for is_public queries
+      fields: ['is_public']
     }
   ],
   hooks: {

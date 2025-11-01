@@ -1,0 +1,103 @@
+/* Loading Skeleton Styles */
+
+.loading-skeleton-container {
+  width: 100%;
+  padding: 10px 0;
+}
+
+.skeleton-item {
+  margin-bottom: 20px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Skeleton Lines */
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  animation: shimmer 2s infinite;
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 70%;
+}
+
+.skeleton-subtitle {
+  height: 18px;
+  width: 50%;
+}
+
+.skeleton-text {
+  height: 16px;
+  width: 90%;
+}
+
+/* Song Skeleton */
+.skeleton-song {
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+/* Service Skeleton */
+.skeleton-service {
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+/* Card Skeleton */
+.skeleton-card {
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+/* List Item Skeleton */
+.skeleton-list-item {
+  padding: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Pulse Animation (optional, subtle) */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .skeleton-item {
+    margin-bottom: 15px;
+  }
+
+  .skeleton-song,
+  .skeleton-service,
+  .skeleton-card {
+    padding: 12px;
+  }
+}

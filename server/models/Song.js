@@ -103,6 +103,18 @@ const Song = sequelize.define('Song', {
     },
     {
       fields: ['code']
+    },
+    {
+      // Composite index for filtering public songs within workspace
+      fields: ['workspace_id', 'is_public']
+    },
+    {
+      // Index for approval status queries
+      fields: ['approval_status']
+    },
+    {
+      // Composite index for common search queries
+      fields: ['workspace_id', 'title']
     }
   ]
 });

@@ -57,6 +57,7 @@ const Service = () => {
   const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
   const [isLeader, setIsLeader] = useState(false);
   const [isWorkspaceAdmin, setIsWorkspaceAdmin] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(true); // Track socket connection status
 
   // Drag-to-scroll state
   const [isDragging, setIsDragging] = useState(false);
@@ -169,6 +170,7 @@ const Service = () => {
 
     socketRef.current.on('connect', () => {
       console.log('Socket.IO connected:', socketRef.current.id);
+      setSocketConnected(true);
 
       // Join the service room
       socketRef.current.emit('join-service', {
@@ -177,6 +179,43 @@ const Service = () => {
         userRole: user.role,
         isLeader: userIsLeader
       });
+    });
+
+    // Handle disconnection
+    socketRef.current.on('disconnect', (reason) => {
+      console.log('Socket.IO disconnected:', reason);
+      setSocketConnected(false);
+    });
+
+    // Handle reconnection
+    socketRef.current.on('reconnect', (attemptNumber) => {
+      console.log('Socket.IO reconnected after', attemptNumber, 'attempts');
+      setSocketConnected(true);
+
+      // Rejoin the service room after reconnection
+      socketRef.current.emit('join-service', {
+        serviceId: selectedService.id,
+        userId: user.id,
+        userRole: user.role,
+        isLeader: userIsLeader
+      });
+    });
+
+    // Handle reconnection attempts
+    socketRef.current.on('reconnect_attempt', (attemptNumber) => {
+      console.log('Socket.IO reconnection attempt', attemptNumber);
+    });
+
+    // Handle reconnection errors
+    socketRef.current.on('reconnect_error', (error) => {
+      console.error('Socket.IO reconnection error:', error);
+    });
+
+    // Handle reconnection failure
+    socketRef.current.on('reconnect_failed', () => {
+      console.error('Socket.IO reconnection failed');
+      setToastMessage('Connection lost. Please refresh the page.');
+      setShowToast(true);
     });
 
     // Listen for leader events (only if not leader and in follow mode)
@@ -255,7 +294,24 @@ const Service = () => {
     // Cleanup on unmount or service change
     return () => {
       if (socketRef.current) {
-        console.log('Leaving service room');
+        console.log('Service cleaning up socket listeners');
+
+        // Remove all event listeners to prevent memory leaks
+        socketRef.current.off('connect');
+        socketRef.current.off('disconnect');
+        socketRef.current.off('reconnect');
+        socketRef.current.off('reconnect_attempt');
+        socketRef.current.off('reconnect_error');
+        socketRef.current.off('reconnect_failed');
+        socketRef.current.off('leader-navigated');
+        socketRef.current.off('leader-transposed');
+        socketRef.current.off('leader-changed-font');
+        socketRef.current.off('sync-state');
+        socketRef.current.off('became-leader');
+        socketRef.current.off('leader-changed');
+        socketRef.current.off('room-update');
+
+        // Leave service room and disconnect
         socketRef.current.emit('leave-service', { serviceId: selectedService.id });
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -952,6 +1008,11 @@ const Service = () => {
                 >
                   {isFollowMode ? 'FOLLOWING' : 'FREE MODE'}
                 </button>
+              )}
+              {!socketConnected && (
+                <div className="connection-status disconnected" title="Connection lost - attempting to reconnect">
+                  ⚠️ Disconnected
+                </div>
               )}
             </div>
           </div>

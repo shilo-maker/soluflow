@@ -27,6 +27,9 @@ const SongView = () => {
   // Store transposition per song ID to remember transposition when navigating
   const songTranspositionsRef = useRef(new Map());
 
+  // Track if we've initialized transposition for current song to prevent race conditions
+  const transpositionInitializedRef = useRef(null);
+
   // Get setlist context from navigation state
   const setlistContext = location.state || null;
   const [currentSetlistIndex, setCurrentSetlistIndex] = useState(
@@ -38,15 +41,7 @@ const SongView = () => {
   const [error, setError] = useState(null);
   const [isLyricsOnly, setIsLyricsOnly] = useState(false);
   const [fontSize, setFontSize] = useState(16);
-  const [transposition, setTransposition] = useState(() => {
-    // Initialize with transposition from setlist context
-    const initialTranspose = setlistContext?.initialTransposition || 0;
-    // Store it in the Map for this song
-    if (id) {
-      songTranspositionsRef.current.set(id, initialTranspose);
-    }
-    return initialTranspose;
-  });
+  const [transposition, setTransposition] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -67,6 +62,7 @@ const SongView = () => {
     return stored !== null ? stored === 'true' : true;
   });
   const [isLeader, setIsLeader] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(true); // Track socket connection status
 
   // Get previous and next songs from setlist
   const hasPrevious = setlistContext && currentSetlistIndex > 0;
@@ -97,49 +93,51 @@ const SongView = () => {
     fetchSong();
   }, [id]);
 
-  // Update stored transposition whenever it changes (but not when song changes)
+  // Initialize and manage transposition when song ID changes
   useEffect(() => {
-    // Only save if the song is already in the map (i.e., we're updating existing transposition)
-    // This prevents saving the previous song's transposition when navigating to a new song
-    if (id && songTranspositionsRef.current.has(id)) {
-      console.log('[SongView] Updating transposition in map for song', id, ':', transposition);
-      songTranspositionsRef.current.set(id, transposition);
+    if (!id) return;
+
+    // Check if this is a new song (different from the last initialized one)
+    if (transpositionInitializedRef.current === id) {
+      // Already initialized for this song, don't reset
+      return;
     }
-  }, [transposition]);
 
-  // Load transposition from storage when song changes
-  useEffect(() => {
-    if (id) {
-      console.log('[SongView] Loading transposition for song ID:', id);
-      console.log('[SongView] Setlist context:', setlistContext);
-      console.log('[SongView] Song transpositions map:', Array.from(songTranspositionsRef.current.entries()));
+    console.log('[SongView] Initializing transposition for song ID:', id);
 
-      if (songTranspositionsRef.current.has(id)) {
-        // Load stored transposition for this song (user changed it in SongView)
-        const storedTransposition = songTranspositionsRef.current.get(id);
-        console.log('[SongView] Found in map, using stored transposition:', storedTransposition);
-        setTransposition(storedTransposition);
-      } else {
-        // First time viewing this song - check if there's transposition in setlist
-        let initialTranspose = 0;
+    // Determine initial transposition value
+    let initialTranspose = 0;
 
-        // Look for this song in the setlist to get its saved transposition
-        if (setlistContext?.setlist) {
-          console.log('[SongView] Searching in setlist:', setlistContext.setlist.map(s => ({ id: s.id, transposition: s.transposition })));
-          const songInSetlist = setlistContext.setlist.find(s => s.id.toString() === id);
-          console.log('[SongView] Found song in setlist:', songInSetlist);
-          if (songInSetlist && songInSetlist.transposition !== undefined) {
-            initialTranspose = songInSetlist.transposition;
-            console.log('[SongView] Using transposition from setlist:', initialTranspose);
-          }
-        }
-
-        console.log('[SongView] Setting initial transposition:', initialTranspose);
-        setTransposition(initialTranspose);
-        songTranspositionsRef.current.set(id, initialTranspose);
+    // Priority 1: Check if we have a stored value for this song from previous views
+    if (songTranspositionsRef.current.has(id)) {
+      initialTranspose = songTranspositionsRef.current.get(id);
+      console.log('[SongView] Using stored transposition:', initialTranspose);
+    }
+    // Priority 2: Check if there's transposition in setlist context
+    else if (setlistContext?.setlist) {
+      const songInSetlist = setlistContext.setlist.find(s => s.id.toString() === id);
+      if (songInSetlist && songInSetlist.transposition !== undefined) {
+        initialTranspose = songInSetlist.transposition;
+        console.log('[SongView] Using setlist transposition:', initialTranspose);
       }
     }
+
+    // Set transposition and mark as initialized
+    setTransposition(initialTranspose);
+    songTranspositionsRef.current.set(id, initialTranspose);
+    transpositionInitializedRef.current = id;
+
+    console.log('[SongView] Transposition initialized to:', initialTranspose);
   }, [id, setlistContext]);
+
+  // Save transposition changes to the map (separate from initialization)
+  useEffect(() => {
+    if (id && transpositionInitializedRef.current === id) {
+      // Only update map after initialization is complete for current song
+      songTranspositionsRef.current.set(id, transposition);
+      console.log('[SongView] Saved transposition:', transposition, 'for song:', id);
+    }
+  }, [transposition, id]);
 
   // Fetch notes
   useEffect(() => {
@@ -213,6 +211,7 @@ const SongView = () => {
 
     socketRef.current.on('connect', () => {
       console.log('SongView Socket.IO connected:', socketRef.current.id);
+      setSocketConnected(true);
 
       // Join the service room
       const userId = user?.id || `guest-${socketRef.current.id}`;
@@ -223,6 +222,44 @@ const SongView = () => {
         userRole: user?.role || 'guest',
         isLeader: userIsLeader
       });
+    });
+
+    // Handle disconnection
+    socketRef.current.on('disconnect', (reason) => {
+      console.log('Socket.IO disconnected:', reason);
+      setSocketConnected(false);
+    });
+
+    // Handle reconnection
+    socketRef.current.on('reconnect', (attemptNumber) => {
+      console.log('Socket.IO reconnected after', attemptNumber, 'attempts');
+      setSocketConnected(true);
+
+      // Rejoin the service room after reconnection
+      const userId = user?.id || `guest-${socketRef.current.id}`;
+      socketRef.current.emit('join-service', {
+        serviceId: setlistContext.serviceId,
+        userId: userId,
+        userRole: user?.role || 'guest',
+        isLeader: userIsLeader
+      });
+    });
+
+    // Handle reconnection attempts
+    socketRef.current.on('reconnect_attempt', (attemptNumber) => {
+      console.log('Socket.IO reconnection attempt', attemptNumber);
+    });
+
+    // Handle reconnection errors
+    socketRef.current.on('reconnect_error', (error) => {
+      console.error('Socket.IO reconnection error:', error);
+    });
+
+    // Handle reconnection failure
+    socketRef.current.on('reconnect_failed', () => {
+      console.error('Socket.IO reconnection failed');
+      setToastMessage('Connection lost. Please refresh the page.');
+      setShowToast(true);
     });
 
     // Listen for leader events (only if not leader and in follow mode)
@@ -286,10 +323,25 @@ const SongView = () => {
       console.log('Room update - Leader:', leaderSocketId, 'Followers:', followerCount);
     });
 
-    // Cleanup on unmount
+    // Cleanup on unmount or when dependencies change
     return () => {
       if (socketRef.current) {
-        console.log('SongView leaving service room');
+        console.log('SongView cleaning up socket listeners');
+
+        // Remove all event listeners to prevent memory leaks
+        socketRef.current.off('connect');
+        socketRef.current.off('disconnect');
+        socketRef.current.off('reconnect');
+        socketRef.current.off('reconnect_attempt');
+        socketRef.current.off('reconnect_error');
+        socketRef.current.off('reconnect_failed');
+        socketRef.current.off('leader-navigated');
+        socketRef.current.off('leader-transposed');
+        socketRef.current.off('leader-changed-font');
+        socketRef.current.off('sync-state');
+        socketRef.current.off('room-update');
+
+        // Leave service room and disconnect
         socketRef.current.emit('leave-service', { serviceId: setlistContext.serviceId });
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -701,6 +753,11 @@ const SongView = () => {
               >
                 {isFollowMode ? 'Follow' : 'Free'}
               </button>
+            )}
+            {setlistContext?.serviceId && !socketConnected && (
+              <div className="connection-status disconnected" title="Connection lost - attempting to reconnect">
+                ⚠️ Disconnected
+              </div>
             )}
             {isAuthenticated && (user?.role === 'admin' || song.created_by === user?.id) && (
               <>

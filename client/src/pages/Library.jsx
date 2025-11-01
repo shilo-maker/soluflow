@@ -9,8 +9,10 @@ import SongEditModal from '../components/SongEditModal';
 import SongShareModal from '../components/SongShareModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
 import { generateSongPDF } from '../utils/pdfGenerator';
+import { getFriendlyErrorMessage, getSuccessMessage } from '../utils/errorMessages';
 import './Library.css';
 
 // Memoized song card component to prevent unnecessary re-renders
@@ -19,6 +21,16 @@ const LibrarySongCard = React.memo(({ song, isSelected, onClick, user, activeWor
     <div
       className={`song-card ${isSelected ? 'selected' : ''}`}
       onClick={onClick}
+      role="listitem"
+      tabIndex={0}
+      aria-label={`Song: ${song.title} by ${song.authors}, Key: ${song.key}`}
+      aria-pressed={isSelected}
+      onKeyPress={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <div className="song-card-content">
         <div className="song-card-left">
@@ -63,6 +75,7 @@ const Library = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedSong, setSelectedSong] = useState(null);
   const [fontSize, setFontSize] = useState(14);
   const [transposition, setTransposition] = useState(0);
@@ -75,6 +88,15 @@ const Library = () => {
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const songDisplayRef = useRef(null);
+
+  // Debounce search query for better performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Reset modal state when selected song changes
   useEffect(() => {
@@ -112,7 +134,7 @@ const Library = () => {
         setError(null);
       } catch (err) {
         console.error('Error fetching songs:', err);
-        setError('Failed to load songs. Please try again.');
+        setError(getFriendlyErrorMessage(err));
       } finally {
         setLoading(false);
       }
@@ -122,7 +144,7 @@ const Library = () => {
   }, []); // Empty dependency array - fetch once on mount
 
   const filteredSongs = songs.filter(song => {
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     const titleMatch = song.title.toLowerCase().includes(query);
     const authorsMatch = song.authors && song.authors.toLowerCase().includes(query);
 
@@ -133,7 +155,7 @@ const Library = () => {
     return titleMatch || authorsMatch || contentMatch;
   }).map(song => {
     // Assign priority based on what matched (lower number = higher priority)
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     const titleMatch = song.title.toLowerCase().includes(query);
     const strippedContent = stripChords(song.content || '').toLowerCase();
     const contentMatch = strippedContent.includes(query);
@@ -261,7 +283,7 @@ const Library = () => {
       setModalSong(null);
     } catch (err) {
       console.error('Error saving song:', err);
-      throw new Error(err.error || 'Failed to save song');
+      throw new Error(getFriendlyErrorMessage(err));
     }
   };
 
@@ -311,7 +333,7 @@ const Library = () => {
       setShowToast(true);
     } catch (err) {
       console.error('Error making song public:', err);
-      setToastMessage('Failed to make song public. Please try again.');
+      setToastMessage(getFriendlyErrorMessage(err));
       setShowToast(true);
     }
   };
@@ -338,7 +360,7 @@ const Library = () => {
       setShowToast(true);
     } catch (err) {
       console.error('Error deleting song:', err);
-      setToastMessage('Failed to delete song. Please try again.');
+      setToastMessage(getFriendlyErrorMessage(err));
       setShowToast(true);
     }
   };
@@ -374,7 +396,7 @@ const Library = () => {
       setShowToast(true);
     } catch (err) {
       console.error('Error generating PDF:', err);
-      setToastMessage('Failed to generate PDF');
+      setToastMessage(getFriendlyErrorMessage(err));
       setShowToast(true);
     } finally {
       setIsGeneratingPDF(false);
@@ -396,20 +418,32 @@ const Library = () => {
             setSearchQuery(e.target.value);
             setSelectedSong(null); // Clear selection when searching
           }}
+          aria-label="Search songs by title, author, or key"
+          role="searchbox"
         />
-        <button className="btn-add" onClick={handleAddSong}>{t('library.add')}</button>
+        <button
+          className="btn-add"
+          onClick={handleAddSong}
+          aria-label="Add new song to library"
+        >
+          {t('library.add')}
+        </button>
       </div>
 
       {loading && (
-        <div className="loading-state">Loading songs...</div>
+        <div className="loading-state" role="status" aria-live="polite" aria-label="Loading songs">
+          <LoadingSkeleton type="song" count={5} />
+        </div>
       )}
 
       {error && (
-        <div className="error-state">{error}</div>
+        <div className="error-state" role="alert" aria-live="assertive">
+          {error}
+        </div>
       )}
 
       {!loading && !error && (
-      <div className="songs-list">
+      <div className="songs-list" role="list" aria-label="Songs library">
         {displayedSongs.map(song => (
           <React.Fragment key={song.id}>
             <LibrarySongCard

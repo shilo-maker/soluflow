@@ -43,22 +43,45 @@ const preferFlats = (originalChord) => {
 };
 
 /**
- * Parses a chord into root note and suffix
- * @param {string} chord - The chord to parse (e.g., 'Am7', 'C#maj7', 'Bbm')
- * @returns {object} - {root: string, suffix: string}
+ * Parses a chord into root note, suffix, and optional bass note (for slash chords)
+ * @param {string} chord - The chord to parse (e.g., 'Am7', 'C#maj7', 'C/G', 'D/F#')
+ * @returns {object} - {root: string, suffix: string, bass: string|null}
  */
 const parseChord = (chord) => {
-  // Match root note (can be 1-2 characters: C, C#, Db, etc.)
+  // Check for slash chord (e.g., C/G, Am7/E)
+  const slashIndex = chord.indexOf('/');
+
+  if (slashIndex !== -1) {
+    // Split into main chord and bass note
+    const mainChord = chord.substring(0, slashIndex);
+    const bassNote = chord.substring(slashIndex + 1);
+
+    // Parse the main chord part
+    const match = mainChord.match(/^([A-G][#b]?)(.*)/);
+
+    if (!match) {
+      return { root: chord, suffix: '', bass: null };
+    }
+
+    return {
+      root: match[1],
+      suffix: match[2],
+      bass: bassNote
+    };
+  }
+
+  // No slash - standard chord
   const match = chord.match(/^([A-G][#b]?)(.*)/);
 
   if (!match) {
     // If we can't parse it, return as-is
-    return { root: chord, suffix: '' };
+    return { root: chord, suffix: '', bass: null };
   }
 
   return {
     root: match[1],
-    suffix: match[2]
+    suffix: match[2],
+    bass: null
   };
 };
 
@@ -96,7 +119,8 @@ const transposeNote = (note, semitones, useFlats = false) => {
 
 /**
  * Transposes a chord by a given number of semitones
- * @param {string} chord - The chord to transpose (e.g., 'Am7', 'C#maj7')
+ * Supports slash chords (e.g., C/G, Am7/E)
+ * @param {string} chord - The chord to transpose (e.g., 'Am7', 'C#maj7', 'C/G')
  * @param {number} semitones - Number of semitones to transpose (can be negative)
  * @returns {string} - Transposed chord
  */
@@ -105,9 +129,15 @@ export const transposeChord = (chord, semitones) => {
     return chord;
   }
 
-  const { root, suffix } = parseChord(chord);
+  const { root, suffix, bass } = parseChord(chord);
   const useFlats = preferFlats(chord);
   const transposedRoot = transposeNote(root, semitones, useFlats);
+
+  // If there's a bass note (slash chord), transpose it too
+  if (bass) {
+    const transposedBass = transposeNote(bass, semitones, useFlats);
+    return `${transposedRoot}${suffix}/${transposedBass}`;
+  }
 
   return transposedRoot + suffix;
 };

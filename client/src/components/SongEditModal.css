@@ -120,6 +120,13 @@
   margin-bottom: 6px;
 }
 
+.song-edit-modal .char-count {
+  font-size: 12px;
+  font-weight: 400;
+  color: #6c757d;
+  margin-left: 5px;
+}
+
 /* ALL Form Inputs, Selects, Textareas */
 .song-edit-modal .form-group > input,
 .song-edit-modal .form-group > textarea,

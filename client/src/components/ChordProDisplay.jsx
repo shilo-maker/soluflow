@@ -28,38 +28,62 @@ const ChordProDisplay = React.memo(({
   useEffect(() => {
     if (!contentRef.current) return;
 
+    let rafId = null;
+
     // Wait for render to complete
     const checkHeight = () => {
-      const contentHeight = contentRef.current.scrollHeight;
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
-
-      // Never use 2 columns on mobile (768px or less)
-      if (viewportWidth <= 768) {
-        setColumnCount(1);
-        return;
+      // Cancel any pending RAF to avoid stacking up requests
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
       }
 
-      // Use 2 columns if content would require scrolling (leave 200px buffer for headers/controls)
-      // This means if content is taller than viewport, we go to 2 columns
-      if (contentHeight > viewportHeight - 200) {
-        setColumnCount(2);
-      } else {
-        setColumnCount(1);
-      }
+      rafId = requestAnimationFrame(() => {
+        if (!contentRef.current) return;
+
+        const contentHeight = contentRef.current.scrollHeight;
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+
+        // Never use 2 columns on mobile (768px or less)
+        if (viewportWidth <= 768) {
+          setColumnCount(1);
+          return;
+        }
+
+        // Use 2 columns if content would require scrolling (leave 200px buffer for headers/controls)
+        // This means if content is taller than viewport, we go to 2 columns
+        if (contentHeight > viewportHeight - 200) {
+          setColumnCount(2);
+        } else {
+          setColumnCount(1);
+        }
+
+        rafId = null;
+      });
     };
 
-    // Use requestAnimationFrame for faster, smoother checks
-    const rafId = requestAnimationFrame(checkHeight);
+    // Initial check
+    checkHeight();
 
     // Recalculate on window resize (e.g., device rotation)
     window.addEventListener('resize', checkHeight);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
       window.removeEventListener('resize', checkHeight);
     };
-  }, [content, fontSize]);
+  }, [content, fontSize, transposition]);
+
+  // Cleanup canvas on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (canvasRef.current) {
+        canvasRef.current = null;
+      }
+    };
+  }, []);
 
   const parseChordPro = (text) => {
     const lines = text.split('\n');

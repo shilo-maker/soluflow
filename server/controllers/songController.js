@@ -1,5 +1,6 @@
 const { Song, User, Workspace, SongWorkspace, WorkspaceMember, SharedSong } = require('../models');
 const { Op } = require('sequelize');
+const { songCache, invalidateCache } = require('../middleware/cache');
 
 // Get all songs for a workspace with visibility filtering
 const getAllSongs = async (req, res) => {
@@ -65,6 +66,7 @@ const getAllSongs = async (req, res) => {
       };
     }
 
+    // Optimized: Single query with LEFT JOIN to include SharedSongs
     const songs = await Song.findAll({
       where: whereClause,
       include: [
@@ -77,44 +79,37 @@ const getAllSongs = async (req, res) => {
           model: Workspace,
           as: 'workspace',
           attributes: ['id', 'name', 'workspace_type']
+        },
+        {
+          model: SharedSong,
+          as: 'sharedWith',
+          required: false, // LEFT JOIN
+          where: userId ? { user_id: userId } : undefined,
+          include: [
+            {
+              model: User,
+              as: 'sharer',
+              attributes: ['id', 'username', 'email']
+            }
+          ]
         }
       ],
       order: [['title', 'ASC']]
     });
 
-    // Fix N+1 query: Fetch all SharedSongs for this user in one query
-    let sharedSongsMap = new Map();
-    if (userId && songs.length > 0) {
-      const songIds = songs.map(s => s.id);
-      const sharedSongs = await SharedSong.findAll({
-        where: {
-          song_id: { [Op.in]: songIds },
-          user_id: userId
-        },
-        include: [
-          {
-            model: User,
-            as: 'sharer',
-            attributes: ['id', 'username', 'email']
-          }
-        ]
-      });
-
-      // Create a Map for O(1) lookup
-      sharedSongs.forEach(ss => {
-        sharedSongsMap.set(ss.song_id, ss);
-      });
-    }
-
-    // Map songs with share info (no async needed now)
+    // Map songs with share info (single pass, no extra queries)
     const songsWithShareInfo = songs.map(song => {
       const songData = song.toJSON();
 
-      if (userId && sharedSongsMap.has(song.id)) {
-        const sharedSong = sharedSongsMap.get(song.id);
+      // Check if song was shared with this user
+      if (songData.sharedWith && songData.sharedWith.length > 0) {
+        const sharedSong = songData.sharedWith[0];
         songData.isShared = true;
         songData.sharedBy = sharedSong.sharer;
       }
+
+      // Clean up - remove the sharedWith array from response
+      delete songData.sharedWith;
 
       return songData;
     });
@@ -342,6 +337,9 @@ const createSong = async (req, res) => {
       await SongWorkspace.bulkCreate(songWorkspaceEntries);
     }
 
+    // Invalidate song cache (new song affects all lists)
+    invalidateCache(songCache, 'songs:');
+
     res.status(201).json(song);
   } catch (error) {
     console.error('Error creating song:', error);
@@ -425,6 +423,9 @@ const updateSong = async (req, res) => {
 
     console.log('Song after update - is_public:', song.is_public);
 
+    // Invalidate song cache (updated song affects lists and detail views)
+    invalidateCache(songCache, 'songs:');
+
     res.json(song);
   } catch (error) {
     console.error('Error updating song:', error);
@@ -453,6 +454,9 @@ const deleteSong = async (req, res) => {
     }
 
     await song.destroy();
+
+    // Invalidate song cache (deleted song affects all lists)
+    invalidateCache(songCache, 'songs:');
 
     res.json({ message: 'Song deleted successfully' });
   } catch (error) {

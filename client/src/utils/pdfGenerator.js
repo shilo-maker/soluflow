@@ -512,6 +512,10 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
   document.body.removeChild(titlePageContainer);
   console.log('Title page created');
 
+  // Track errors during PDF generation
+  const errors = [];
+  let successCount = 0;
+
   // Generate PDF for each song individually
   for (let i = 0; i < songs.length; i++) {
     const song = songs[i];
@@ -620,9 +624,18 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
       // Cleanup
       root.unmount();
       document.body.removeChild(container);
+      successCount++;
 
     } catch (error) {
       console.error('Error generating PDF for song:', song.title, error);
+
+      // Track the error
+      errors.push({
+        songTitle: song.title,
+        songIndex: i + 1,
+        error: error.message || 'Unknown error'
+      });
+
       // Cleanup on error
       if (container.parentNode) {
         document.body.removeChild(container);
@@ -630,6 +643,25 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
       // Continue with next song
     }
   }
+
+  // After processing all songs, check if there were any errors
+  if (errors.length > 0) {
+    const errorSummary = `PDF generation completed with errors:\n` +
+      `- Successfully generated: ${successCount}/${songs.length} songs\n` +
+      `- Failed songs:\n${errors.map(e => `  • ${e.songTitle} (${e.error})`).join('\n')}`;
+
+    console.error(errorSummary);
+
+    // If all songs failed, throw an error
+    if (successCount === 0) {
+      throw new Error(`Failed to generate PDF for all songs. ${errors[0].error}`);
+    } else {
+      // If some songs succeeded, throw a warning error
+      throw new Error(`PDF generated but ${errors.length} song(s) failed:\n${errors.map(e => e.songTitle).join(', ')}`);
+    }
+  }
+
+  console.log(`✅ PDF generation completed successfully for ${successCount} songs`);
 };
 
 /**
@@ -699,11 +731,15 @@ export const generateSongPDF = async (song, transposition = 0, fontSize = 14) =>
     document.body.removeChild(container);
 
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('Error generating PDF for song:', song.title, error);
+
     // Cleanup on error
     if (container.parentNode) {
       document.body.removeChild(container);
     }
-    throw error;
+
+    // Throw a more descriptive error
+    const errorMessage = error.message || 'Unknown error occurred';
+    throw new Error(`Failed to generate PDF for "${song.title}": ${errorMessage}`);
   }
 };

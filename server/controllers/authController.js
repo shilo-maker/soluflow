@@ -1,21 +1,26 @@
 const crypto = require('crypto');
-const { User, Service, Workspace, WorkspaceMember } = require('../models');
+const { sequelize, User, Service, Workspace, WorkspaceMember } = require('../models');
 const { generateAccessToken, generateGuestToken } = require('../utils/jwt');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
 
 // POST /api/auth/register
 const register = async (req, res) => {
+  // Use transaction to ensure all operations succeed or fail together
+  const transaction = await sequelize.transaction();
+
   try {
     const { email, password, username, workspaceId, role } = req.body;
 
     // Validate required fields
     if (!email || !password || !username) {
+      await transaction.rollback();
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await User.findOne({ where: { email }, transaction });
     if (existingUser) {
+      await transaction.rollback();
       return res.status(409).json({ error: 'Email already registered' });
     }
 
@@ -24,8 +29,9 @@ const register = async (req, res) => {
 
     // If workspaceId is provided, verify it exists
     if (finalWorkspaceId) {
-      const workspace = await Workspace.findByPk(finalWorkspaceId);
+      const workspace = await Workspace.findByPk(finalWorkspaceId, { transaction });
       if (!workspace) {
+        await transaction.rollback();
         return res.status(400).json({ error: 'Invalid workspace ID' });
       }
     } else {
@@ -39,7 +45,7 @@ const register = async (req, res) => {
         slug: workspaceSlug,
         workspace_type: 'personal',
         created_by: null // Will update after user is created
-      });
+      }, { transaction });
 
       finalWorkspaceId = createdWorkspace.id;
     }
@@ -59,11 +65,11 @@ const register = async (req, res) => {
       email_verified: false,
       verification_token: verificationToken,
       verification_token_expires: verificationTokenExpires
-    });
+    }, { transaction });
 
     // Update workspace created_by if we created it
     if (createdWorkspace) {
-      await createdWorkspace.update({ created_by: user.id });
+      await createdWorkspace.update({ created_by: user.id }, { transaction });
     }
 
     // Create workspace membership - creator is always admin of their workspace
@@ -71,9 +77,13 @@ const register = async (req, res) => {
       workspace_id: finalWorkspaceId,
       user_id: user.id,
       role: 'admin'
-    });
+    }, { transaction });
+
+    // Commit transaction - all operations succeeded
+    await transaction.commit();
 
     // Send verification email (don't await - let it happen in background)
+    // This happens AFTER transaction commit, so email failure won't affect registration
     sendVerificationEmail(email, verificationToken, username).catch(error => {
       console.error('Failed to send verification email:', error);
     });
@@ -84,6 +94,8 @@ const register = async (req, res) => {
       emailSent: true
     });
   } catch (error) {
+    // Rollback transaction on any error
+    await transaction.rollback();
     console.error('Register error:', error);
     res.status(500).json({ error: 'Failed to register user' });
   }

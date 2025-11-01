@@ -1,30 +1,47 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WorkspaceProvider } from './contexts/WorkspaceContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import PrivateRoute from './components/PrivateRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Header from './components/layout/Header';
 import BottomNav from './components/layout/BottomNav';
 import FullscreenButton from './components/FullscreenButton';
 import OfflineIndicator from './components/OfflineIndicator';
-import Home from './pages/Home';
-import Service from './pages/Service';
-import GuestServiceView from './pages/GuestServiceView';
-import SharedSongView from './pages/SharedSongView';
-import GuestLanding from './pages/GuestLanding';
-import Library from './pages/Library';
-import SongView from './pages/SongView';
-import UserManagement from './pages/UserManagement';
-import UserSettings from './pages/UserSettings';
-import WorkspaceManagement from './pages/WorkspaceManagement';
-import AcceptInvite from './pages/AcceptInvite';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import VerifyEmail from './pages/VerifyEmail';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 import './App.css';
+
+// Lazy load pages for code splitting
+const Home = lazy(() => import('./pages/Home'));
+const Service = lazy(() => import('./pages/Service'));
+const GuestServiceView = lazy(() => import('./pages/GuestServiceView'));
+const SharedSongView = lazy(() => import('./pages/SharedSongView'));
+const GuestLanding = lazy(() => import('./pages/GuestLanding'));
+const Library = lazy(() => import('./pages/Library'));
+const SongView = lazy(() => import('./pages/SongView'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
+const UserSettings = lazy(() => import('./pages/UserSettings'));
+const WorkspaceManagement = lazy(() => import('./pages/WorkspaceManagement'));
+const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+
+// Loading component for Suspense fallback
+const LoadingFallback = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '18px',
+    color: '#666'
+  }}>
+    Loading...
+  </div>
+);
 
 function AppContent() {
   const { user, logout, isAuthenticated, loading } = useAuth();
@@ -77,34 +94,36 @@ function AppContent() {
       )}
 
       <main className={isAuthPage || isGuestPage ? "auth-content" : "app-content"}>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/service/code/:code" element={<GuestServiceView />} />
-          <Route path="/song/code/:code" element={<SharedSongView />} />
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/service/code/:code" element={<GuestServiceView />} />
+            <Route path="/song/code/:code" element={<SharedSongView />} />
 
-          {/* Root route - conditional based on auth */}
-          <Route path="/" element={
-            isAuthenticated ? <Navigate to="/home" replace /> : <GuestLanding />
-          } />
+            {/* Root route - conditional based on auth */}
+            <Route path="/" element={
+              isAuthenticated ? <Navigate to="/home" replace /> : <GuestLanding />
+            } />
 
-          {/* Song view - public for guests */}
-          <Route path="/song/:id" element={<SongView />} />
+            {/* Song view - public for guests */}
+            <Route path="/song/:id" element={<SongView />} />
 
-          {/* Protected routes */}
-          <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/service" element={<PrivateRoute><Service /></PrivateRoute>} />
-          <Route path="/service/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
-          <Route path="/library" element={<PrivateRoute><Library /></PrivateRoute>} />
-          <Route path="/users" element={<PrivateRoute><UserManagement /></PrivateRoute>} />
-          <Route path="/settings" element={<PrivateRoute><UserSettings /></PrivateRoute>} />
-          <Route path="/workspace/settings" element={<PrivateRoute><WorkspaceManagement /></PrivateRoute>} />
-          <Route path="/workspace/invite/:token" element={<PrivateRoute><AcceptInvite /></PrivateRoute>} />
-        </Routes>
+            {/* Protected routes */}
+            <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+            <Route path="/service" element={<PrivateRoute><Service /></PrivateRoute>} />
+            <Route path="/service/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
+            <Route path="/library" element={<PrivateRoute><Library /></PrivateRoute>} />
+            <Route path="/users" element={<PrivateRoute><UserManagement /></PrivateRoute>} />
+            <Route path="/settings" element={<PrivateRoute><UserSettings /></PrivateRoute>} />
+            <Route path="/workspace/settings" element={<PrivateRoute><WorkspaceManagement /></PrivateRoute>} />
+            <Route path="/workspace/invite/:token" element={<PrivateRoute><AcceptInvite /></PrivateRoute>} />
+          </Routes>
+        </Suspense>
       </main>
 
       {isAuthenticated && !isAuthPage && !isGuestPage && <BottomNav />}
@@ -117,15 +136,17 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <LanguageProvider>
-          <WorkspaceProvider>
-            <AppContent />
-          </WorkspaceProvider>
-        </LanguageProvider>
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <LanguageProvider>
+            <WorkspaceProvider>
+              <AppContent />
+            </WorkspaceProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
