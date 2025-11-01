@@ -805,8 +805,8 @@ const SongView = () => {
           <div>
             <span className="song-view-subtitle">{song.authors}</span>
             <div className="song-view-controls">
-              <span className="control-info">Key: {song.key}</span>
-              {song.bpm && <span className="control-info">BPM: {song.bpm}</span>}
+              <span className="control-info" dir="ltr">Key: {transposeChord(song.key, transposition)}</span>
+              {song.bpm && <span className="control-info" dir="ltr">BPM: {song.bpm}</span>}
             </div>
           </div>
         </div>
