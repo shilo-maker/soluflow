@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
@@ -21,12 +21,14 @@ import './Service.css';
 const Service = () => {
   console.log('[Service] Component render - VERSION 2.0');
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const { user } = useAuth();
   const { t } = useLanguage();
   const { workspaces, activeWorkspace } = useWorkspace();
   const songPillsRef = useRef(null);
   const socketRef = useRef(null);
+  const previousServiceIdRef = useRef(null);
 
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -97,15 +99,22 @@ const Service = () => {
     fetchServices();
   }, [id, user]);
 
-  // Fetch service details (with set list) when selected service changes
+  // Fetch service details (with set list) when selected service changes or when navigating back
   useEffect(() => {
     const fetchServiceDetails = async () => {
       if (!selectedService) return;
 
       try {
+        console.log('[Service] Fetching fresh service details for service:', selectedService.id);
         const details = await serviceService.getServiceById(selectedService.id);
         setServiceDetails(details);
-        setSelectedSongIndex(0);
+
+        // Only reset song index if the service changed, not on navigation back
+        const serviceChanged = previousServiceIdRef.current !== selectedService.id;
+        if (serviceChanged) {
+          setSelectedSongIndex(0);
+          previousServiceIdRef.current = selectedService.id;
+        }
         // Don't reset transposition - it will be loaded from saved state
       } catch (err) {
         console.error('Error fetching service details:', err);
@@ -114,7 +123,7 @@ const Service = () => {
     };
 
     fetchServiceDetails();
-  }, [selectedService]);
+  }, [selectedService, location.key]); // Added location.key to refetch when navigating back
 
   // Load saved transposition when song changes
   useEffect(() => {

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
+import serviceService from '../services/serviceService';
 import noteService from '../services/noteService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -138,6 +139,34 @@ const SongView = () => {
       console.log('[SongView] Saved transposition:', transposition, 'for song:', id);
     }
   }, [transposition, id]);
+
+  // Save transposition to database when changed (if opened from a service)
+  useEffect(() => {
+    const saveTranspositionToDatabase = async () => {
+      // Only save if:
+      // 1. Song is part of a service (has serviceId)
+      // 2. Transposition has been initialized for this song
+      // 3. We have valid IDs
+      if (!setlistContext?.serviceId || !id || transpositionInitializedRef.current !== id) {
+        return;
+      }
+
+      try {
+        await serviceService.updateServiceSong(setlistContext.serviceId, id, {
+          transposition: transposition
+        });
+        console.log('[SongView] Saved transposition to database:', transposition, 'for song:', id, 'in service:', setlistContext.serviceId);
+      } catch (error) {
+        console.error('[SongView] Failed to save transposition to database:', error);
+        // Don't show error to user - this is a background operation
+      }
+    };
+
+    // Small delay to avoid saving during initialization
+    const saveTimer = setTimeout(saveTranspositionToDatabase, 300);
+
+    return () => clearTimeout(saveTimer);
+  }, [transposition, id, setlistContext?.serviceId]);
 
   // Fetch notes
   useEffect(() => {
