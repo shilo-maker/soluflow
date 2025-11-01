@@ -8,21 +8,20 @@
   max-width: 800px;
   margin: 0 auto;
   min-height: 100vh;
-  background-color: #fafafa;
+  background-color: transparent;
 }
 
 .service-selector {
-  background-color: white;
-  border: none;
-  border-radius: var(--border-radius-lg);
+  background-color: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-base);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .service-selector:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .selector-header {
@@ -673,12 +672,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
 }
 
 .modal-content {

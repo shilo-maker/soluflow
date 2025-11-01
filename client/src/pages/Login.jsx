@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t, setLanguage } = useLanguage();
+
+  // Set language to Hebrew by default on mount
+  useEffect(() => {
+    setLanguage('he');
+  }, [setLanguage]);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -59,11 +66,11 @@ const Login = () => {
     <div className="login-page">
       <div className="login-container">
         <button className="btn-back-to-songs" onClick={() => navigate('/')}>
-          ← Browse Songs
+          ← {t('login.browseSongs')}
         </button>
         <div className="login-header">
           <img src="/new_logo.png" alt="SoluFlow" className="login-logo" />
-          <p>Worship Service Planning & Chord Sheets</p>
+          <p>{t('login.subtitle')}</p>
         </div>
 
         <div className="login-card">
@@ -71,33 +78,33 @@ const Login = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">{t('login.emailLabel')}</label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="your@email.com"
+                placeholder={t('login.emailPlaceholder')}
                 autoComplete="email"
                 disabled={loading}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">{t('login.passwordLabel')}</label>
               <input
                 type="password"
                 id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Enter your password"
+                placeholder={t('login.passwordPlaceholder')}
                 autoComplete="current-password"
                 disabled={loading}
               />
               <div className="forgot-password-link">
-                <Link to="/forgot-password">Forgot password?</Link>
+                <Link to="/forgot-password">{t('login.forgotPassword')}</Link>
               </div>
             </div>
 
@@ -106,13 +113,13 @@ const Login = () => {
               className="btn-login"
               disabled={loading}
             >
-              {loading ? 'Loading...' : 'Login'}
+              {loading ? t('login.loggingIn') : t('login.loginButton')}
             </button>
           </form>
 
           <div className="login-footer">
             <p>
-              Don't have an account? <Link to="/register">Register here</Link>
+              {t('login.noAccount')} <Link to="/register">{t('login.registerLink')}</Link>
             </p>
           </div>
         </div>

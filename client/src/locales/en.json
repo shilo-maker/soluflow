@@ -36,7 +36,8 @@
     "noAccount": "Don't have an account?",
     "registerLink": "Register here",
     "browseSongs": "Browse Songs",
-    "guestAccess": "Have a service code? Access as guest"
+    "guestAccess": "Have a service code? Access as guest",
+    "forgotPassword": "Forgot password?"
   },
   "register": {
     "title": "Create your account",

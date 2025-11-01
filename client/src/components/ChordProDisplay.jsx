@@ -13,7 +13,8 @@ const ChordProDisplay = React.memo(({
   isEditMode = false,
   onAddNote = null,
   onUpdateNote = null,
-  onDeleteNote = null
+  onDeleteNote = null,
+  disableColumnCalculation = false
 }) => {
   const contentRef = useRef(null);
   const canvasRef = useRef(null);
@@ -26,7 +27,7 @@ const ChordProDisplay = React.memo(({
 
   // Calculate if we need 2 columns based on content height
   useEffect(() => {
-    if (!contentRef.current) return;
+    if (!contentRef.current || disableColumnCalculation) return;
 
     let rafId = null;
 

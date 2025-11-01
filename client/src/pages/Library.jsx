@@ -185,6 +185,7 @@ const Library = () => {
     if (selectedSong?.id === song.id) {
       setSelectedSong(null);
     } else {
+      // Update immediately for instant feedback
       setSelectedSong(song);
       setFontSize(14); // Reset font size when selecting new song
       setTransposition(0); // Reset transposition when selecting new song
@@ -525,6 +526,7 @@ const Library = () => {
               dir={hasHebrew(selectedSong.content) ? 'rtl' : 'ltr'}
               fontSize={fontSize}
               transposition={transposition}
+              disableColumnCalculation={true}
             />
           </div>
 

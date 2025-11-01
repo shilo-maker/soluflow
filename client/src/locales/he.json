@@ -26,17 +26,18 @@
   },
   "login": {
     "title": "ברוך שובך",
-    "subtitle": "תכנון שירותי תפילה ואקורדים",
+    "subtitle": "תכנון צוותי הלל ואקורדים",
     "emailLabel": "אימייל",
     "emailPlaceholder": "your@email.com",
-    "passwordLabel": "סיסמה",
-    "passwordPlaceholder": "הכנס את הסיסמה",
+    "passwordLabel": "סיסמא",
+    "passwordPlaceholder": "הכנס סיסמא",
     "loginButton": "התחבר",
     "loggingIn": "מתחבר...",
     "noAccount": "אין לך חשבון?",
     "registerLink": "הירשם כאן",
     "browseSongs": "עיין בשירים",
-    "guestAccess": "יש לך קוד שירות? גישה כאורח"
+    "guestAccess": "יש לך קוד שירות? גישה כאורח",
+    "forgotPassword": "שכחת את הסיסמא?"
   },
   "register": {
     "title": "צור את החשבון שלך",

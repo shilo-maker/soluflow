@@ -258,15 +258,9 @@ const GuestLanding = () => {
           <button className="btn-join-service" onClick={() => setShowJoinModal(true)}>
             {t('guestLanding.accessService')}
           </button>
-          <div className="auth-links-inline">
-            <button className="btn-auth-link" onClick={() => navigate('/login')}>
-              {t('common.login')}
-            </button>
-            <span className="separator">|</span>
-            <button className="btn-auth-link" onClick={() => navigate('/register')}>
-              {t('common.register')}
-            </button>
-          </div>
+          <button className="btn-auth-link" onClick={() => navigate('/login')}>
+            {t('common.login')}
+          </button>
         </div>
       </div>
 
