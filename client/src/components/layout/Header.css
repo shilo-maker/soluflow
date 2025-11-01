@@ -4,11 +4,11 @@
   left: 0;
   right: 0;
   height: 60px;
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(15px);
   border-bottom: none;
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .header-content {

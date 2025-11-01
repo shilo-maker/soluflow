@@ -14,31 +14,9 @@ root.render(
   </React.StrictMode>
 );
 
-// Register service worker for offline support
-serviceWorkerRegistration.register({
-  onSuccess: () => {
-    console.log('SoluFlow is now available offline!');
-  },
-  onUpdate: (registration) => {
-    console.log('New version available! Auto-updating...');
-
-    // Immediately activate the new service worker and reload
-    const waitingWorker = registration.waiting;
-
-    if (waitingWorker) {
-      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
-
-      // Reload the page once the new service worker is activated
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
-      });
-    }
-  },
-});
+// Unregister service worker during development to prevent caching issues
+// Re-enable for production builds
+serviceWorkerRegistration.unregister();
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
