@@ -21,7 +21,12 @@ const allowedOrigins = [
   'https://soluflow.onrender.com',
   'http://localhost:3001',
   'http://localhost:3000',
-  'http://localhost:3002'
+  'http://localhost:3002',
+  'http://localhost:3003', // SoluEvents local dev
+  'http://10.100.102.27:3000',
+  'http://10.100.102.27:3001',
+  'http://10.100.102.27:3003', // SoluEvents network access
+  process.env.SOLU_EVENTS_URL // For future production SoluEvents
 ].filter(Boolean);
 
 const io = socketIo(server, {
@@ -99,6 +104,7 @@ const servicesRoutes = require('./routes/services');
 const notesRoutes = require('./routes/notes');
 const usersRoutes = require('./routes/users');
 const workspacesRoutes = require('./routes/workspaces');
+const integrationRoutes = require('./routes/integration');
 
 // API routes
 app.get('/api/health', (req, res) => {
@@ -112,6 +118,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/workspaces', workspacesRoutes);
+app.use('/api/integration', integrationRoutes); // Integration API for external apps
 
 // Serve static files from React app in production
 if (process.env.NODE_ENV === 'production') {
