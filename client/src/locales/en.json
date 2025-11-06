@@ -39,6 +39,24 @@
     "guestAccess": "Have a service code? Access as guest",
     "forgotPassword": "Forgot password?"
   },
+  "verifyEmail": {
+    "verifying": "Verifying your email...",
+    "verifyingMessage": "Please wait while we verify your email address.",
+    "successTitle": "Email Verified!",
+    "goToLogin": "Go to Login",
+    "errorTitle": "Verification Failed",
+    "resendTitle": "Need a new verification link?",
+    "resendMessage": "Enter your email address and we'll send you a new one.",
+    "emailPlaceholder": "your@email.com",
+    "resendButton": "Resend Verification Email",
+    "sending": "Sending...",
+    "noToken": "No verification token found in the URL.",
+    "verifiedSuccess": "Email verified successfully!",
+    "verificationFailed": "Failed to verify email. The link may have expired.",
+    "resendSuccess": "Verification email sent! Please check your inbox.",
+    "resendFailed": "Failed to resend verification email",
+    "enterEmail": "Please enter your email address"
+  },
   "register": {
     "title": "Create your account",
     "emailLabel": "Email *",

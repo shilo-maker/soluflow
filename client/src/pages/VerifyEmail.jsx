@@ -20,7 +20,7 @@ const VerifyEmail = () => {
 
       if (!token) {
         setStatus('error');
-        setMessage('No verification token found in the URL.');
+        setMessage(t('verifyEmail.noToken'));
         return;
       }
 
@@ -33,32 +33,32 @@ const VerifyEmail = () => {
       try {
         const response = await api.get(`/auth/verify-email?token=${token}`);
         setStatus('success');
-        setMessage(response.data.message || 'Email verified successfully!');
+        setMessage(response.data.message || t('verifyEmail.verifiedSuccess'));
       } catch (error) {
         setStatus('error');
         setMessage(
           error.response?.data?.error ||
           error.response?.data?.message ||
-          'Failed to verify email. The link may have expired.'
+          t('verifyEmail.verificationFailed')
         );
       }
     };
 
     verifyToken();
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const handleResendVerification = async () => {
     if (!email) {
-      alert('Please enter your email address');
+      alert(t('verifyEmail.enterEmail'));
       return;
     }
 
     setResending(true);
     try {
       await api.post('/auth/resend-verification', { email });
-      alert('Verification email sent! Please check your inbox.');
+      alert(t('verifyEmail.resendSuccess'));
     } catch (error) {
-      alert(error.response?.data?.error || 'Failed to resend verification email');
+      alert(error.response?.data?.error || t('verifyEmail.resendFailed'));
     } finally {
       setResending(false);
     }
@@ -71,18 +71,18 @@ const VerifyEmail = () => {
           {status === 'verifying' && (
             <>
               <div className="spinner"></div>
-              <h2>Verifying your email...</h2>
-              <p>Please wait while we verify your email address.</p>
+              <h2>{t('verifyEmail.verifying')}</h2>
+              <p>{t('verifyEmail.verifyingMessage')}</p>
             </>
           )}
 
           {status === 'success' && (
             <>
               <div className="success-icon">✓</div>
-              <h2>Email Verified!</h2>
+              <h2>{t('verifyEmail.successTitle')}</h2>
               <p>{message}</p>
               <button className="btn-primary" onClick={() => navigate('/login')}>
-                Go to Login
+                {t('verifyEmail.goToLogin')}
               </button>
             </>
           )}
@@ -90,17 +90,17 @@ const VerifyEmail = () => {
           {status === 'error' && (
             <>
               <div className="error-icon">✗</div>
-              <h2>Verification Failed</h2>
+              <h2>{t('verifyEmail.errorTitle')}</h2>
               <p>{message}</p>
 
               <div className="resend-section">
-                <h3>Need a new verification link?</h3>
-                <p>Enter your email address and we'll send you a new one.</p>
+                <h3>{t('verifyEmail.resendTitle')}</h3>
+                <p>{t('verifyEmail.resendMessage')}</p>
                 <div className="resend-form">
                   <input
                     type="email"
                     className="resend-input"
-                    placeholder="your@email.com"
+                    placeholder={t('verifyEmail.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -109,13 +109,13 @@ const VerifyEmail = () => {
                     onClick={handleResendVerification}
                     disabled={resending}
                   >
-                    {resending ? 'Sending...' : 'Resend Verification Email'}
+                    {resending ? t('verifyEmail.sending') : t('verifyEmail.resendButton')}
                   </button>
                 </div>
               </div>
 
               <button className="btn-secondary" onClick={() => navigate('/login')}>
-                Go to Login
+                {t('verifyEmail.goToLogin')}
               </button>
             </>
           )}

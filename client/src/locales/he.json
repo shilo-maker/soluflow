@@ -39,6 +39,24 @@
     "guestAccess": "יש לך קוד שירות? גישה כאורח",
     "forgotPassword": "שכחת את הסיסמא?"
   },
+  "verifyEmail": {
+    "verifying": "...מאמת את האימייל שלך",
+    "verifyingMessage": ".אנא המתן בזמן שאנו מאמתים את כתובת האימייל שלך",
+    "successTitle": "!האימייל אומת",
+    "goToLogin": "מעבר להתחברות",
+    "errorTitle": "האימות נכשל",
+    "resendTitle": "?צריך קישור אימות חדש",
+    "resendMessage": ".הזן את כתובת האימייל שלך ונשלח לך אחד חדש",
+    "emailPlaceholder": "your@email.com",
+    "resendButton": "שלח מחדש אימייל אימות",
+    "sending": "...שולח",
+    "noToken": ".לא נמצא אסימון אימות בכתובת האתר",
+    "verifiedSuccess": "!האימייל אומת בהצלחה",
+    "verificationFailed": ".אימות האימייל נכשל. הקישור עשוי להיות פג תוקף",
+    "resendSuccess": "!אימייל האימות נשלח! אנא בדוק את תיבת הדואר הנכנס שלך",
+    "resendFailed": "שליחת מחדש של אימייל האימות נכשלה",
+    "enterEmail": "אנא הזן את כתובת האימייל שלך"
+  },
   "register": {
     "title": "צור את החשבון שלך",
     "emailLabel": "אימייל *",
