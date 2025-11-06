@@ -128,6 +128,8 @@ const updateUser = async (req, res) => {
 
 // Delete user (admin only)
 const deleteUser = async (req, res) => {
+  const { sequelize } = require('../config/database');
+
   try {
     const { id } = req.params;
     const userRole = req.user?.role;
@@ -148,12 +150,87 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    await user.destroy();
+    // Use transaction to ensure all deletions succeed or none
+    await sequelize.transaction(async (transaction) => {
+      // Delete user's notes
+      await sequelize.query('DELETE FROM notes WHERE user_id = ?', {
+        replacements: [id],
+        transaction
+      });
+
+      // Delete shared songs (where user is recipient or sharer)
+      await sequelize.query('DELETE FROM shared_songs WHERE user_id = ? OR shared_by = ?', {
+        replacements: [id, id],
+        transaction
+      });
+
+      // Delete shared services (where user is recipient)
+      await sequelize.query('DELETE FROM shared_services WHERE user_id = ?', {
+        replacements: [id],
+        transaction
+      });
+
+      // Delete workspace invitations
+      await sequelize.query('DELETE FROM workspace_invitations WHERE email = ? OR invited_by = ?', {
+        replacements: [user.email, id],
+        transaction
+      });
+
+      // Update services where user is leader (set leader_id to NULL)
+      await sequelize.query('UPDATE services SET leader_id = NULL WHERE leader_id = ?', {
+        replacements: [id],
+        transaction
+      });
+
+      // Update songs created by user (set created_by to NULL)
+      await sequelize.query('UPDATE songs SET created_by = NULL WHERE created_by = ?', {
+        replacements: [id],
+        transaction
+      });
+
+      // Update services created by user (set created_by to NULL)
+      await sequelize.query('UPDATE services SET created_by = NULL WHERE created_by = ?', {
+        replacements: [id],
+        transaction
+      });
+
+      // Delete workspace memberships
+      await sequelize.query('DELETE FROM workspace_members WHERE user_id = ?', {
+        replacements: [id],
+        transaction
+      });
+
+      // Update other users who have this workspace as active (set to NULL)
+      await sequelize.query('UPDATE users SET active_workspace_id = NULL WHERE active_workspace_id IN (SELECT id FROM workspaces WHERE id IN (SELECT workspace_id FROM workspace_members WHERE user_id = ?))', {
+        replacements: [id],
+        transaction
+      });
+
+      // Delete workspaces owned by user (personal workspaces where they're the only member)
+      // This will cascade delete services and songs in those workspaces
+      await sequelize.query(`
+        DELETE FROM workspaces
+        WHERE id IN (
+          SELECT w.id FROM workspaces w
+          WHERE NOT EXISTS (
+            SELECT 1 FROM workspace_members wm
+            WHERE wm.workspace_id = w.id AND wm.user_id != ?
+          )
+        )
+      `, {
+        replacements: [id],
+        transaction
+      });
+
+      // Finally, delete the user
+      await user.destroy({ transaction });
+    });
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
-    res.status(500).json({ error: 'Failed to delete user' });
+    console.error('Error details:', error.message);
+    res.status(500).json({ error: 'Failed to delete user', details: error.message });
   }
 };
 
