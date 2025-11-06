@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Register.css';
 
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { t } = useLanguage();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -27,23 +29,23 @@ const Register = () => {
 
   const validateForm = () => {
     if (!formData.email.trim()) {
-      setError('Email is required');
+      setError(t('register.errorEmailRequired'));
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Please enter a valid email address');
+      setError(t('register.errorEmailInvalid'));
       return false;
     }
     if (!formData.password) {
-      setError('Password is required');
+      setError(t('register.errorPasswordRequired'));
       return false;
     }
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('register.errorPasswordLength'));
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('register.errorPasswordMismatch'));
       return false;
     }
     return true;
@@ -74,7 +76,7 @@ const Register = () => {
       setRegistrationSuccess(true);
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      setError(err.response?.data?.error || t('register.errorRegistrationFailed'));
     } finally {
       setLoading(false);
     }
@@ -84,28 +86,28 @@ const Register = () => {
     <div className="register-page">
       <div className="register-container">
         <button className="btn-back-to-songs" onClick={() => navigate('/')}>
-          ← Browse Songs
+          ← {t('register.browseSongs')}
         </button>
         <div className="register-header">
           <img src="/new_logo.png" alt="SoluFlow" className="register-logo" />
-          <p>Create your account</p>
+          <p>{t('register.title')}</p>
         </div>
 
         <div className="register-card">
           {registrationSuccess ? (
             <div className="registration-success">
               <div className="success-icon">✓</div>
-              <h2>Registration Successful!</h2>
-              <p>Please check your email to verify your account.</p>
-              <p>We've sent a verification link to <strong>{formData.email}</strong></p>
+              <h2>{t('register.successTitle')}</h2>
+              <p>{t('register.successMessage')}</p>
+              <p>{t('register.successEmailSent')} <strong>{formData.email}</strong></p>
               <p className="verification-note">
-                The link will expire in 24 hours. Once verified, you can log in to your account.
+                {t('register.successNote')}
               </p>
               <button className="btn-go-to-login" onClick={() => navigate('/login')}>
-                Go to Login
+                {t('register.goToLogin')}
               </button>
               <div className="resend-info">
-                <p>Didn't receive the email? Check your spam folder or <Link to="/login">login</Link> and request a new verification email.</p>
+                <p>{t('register.resendInfo')} <Link to="/login">{t('register.resendLink')}</Link> {t('register.resendInfoEnd')}</p>
               </div>
             </div>
           ) : (
@@ -114,42 +116,42 @@ const Register = () => {
 
               <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="email">Email *</label>
+              <label htmlFor="email">{t('register.emailLabel')}</label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="your@email.com"
+                placeholder={t('register.emailPlaceholder')}
                 autoComplete="email"
                 disabled={loading}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password *</label>
+              <label htmlFor="password">{t('register.passwordLabel')}</label>
               <input
                 type="password"
                 id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="At least 6 characters"
+                placeholder={t('register.passwordPlaceholder')}
                 autoComplete="new-password"
                 disabled={loading}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password *</label>
+              <label htmlFor="confirmPassword">{t('register.confirmPasswordLabel')}</label>
               <input
                 type="password"
                 id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Re-enter your password"
+                placeholder={t('register.confirmPasswordPlaceholder')}
                 autoComplete="new-password"
                 disabled={loading}
               />
@@ -160,13 +162,13 @@ const Register = () => {
               className="btn-register"
               disabled={loading}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? t('register.creatingAccount') : t('register.registerButton')}
             </button>
           </form>
 
           <div className="register-footer">
             <p>
-              Already have an account? <Link to="/login">Login here</Link>
+              {t('register.haveAccount')} <Link to="/login">{t('register.loginLink')}</Link>
             </p>
           </div>
             </>

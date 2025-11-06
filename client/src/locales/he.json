@@ -51,7 +51,21 @@
     "creatingAccount": "יוצר חשבון...",
     "haveAccount": "כבר יש לך חשבון?",
     "loginLink": "התחבר כאן",
-    "browseSongs": "עיין בשירים"
+    "browseSongs": "עיין בשירים",
+    "errorEmailRequired": "נדרש אימייל",
+    "errorEmailInvalid": "נא להזין כתובת אימייל תקינה",
+    "errorPasswordRequired": "נדרשת סיסמה",
+    "errorPasswordLength": "הסיסמה חייבת להיות לפחות 6 תווים",
+    "errorPasswordMismatch": "הסיסמאות אינן תואמות",
+    "errorRegistrationFailed": "ההרשמה נכשלה. נסה שוב.",
+    "successTitle": "ההרשמה הושלמה בהצלחה!",
+    "successMessage": "אנא בדוק את האימייל שלך כדי לאמת את החשבון.",
+    "successEmailSent": "שלחנו קישור אימות לכתובת",
+    "successNote": "הקישור יפוג בעוד 24 שעות. לאחר האימות, תוכל להתחבר לחשבון שלך.",
+    "goToLogin": "מעבר להתחברות",
+    "resendInfo": "לא קיבלת את האימייל? בדוק את תיקיית הספאם או",
+    "resendLink": "התחבר",
+    "resendInfoEnd": "ובקש אימייל אימות חדש."
   },
   "guestLanding": {
     "welcome": "ברוכים הבאים ל",

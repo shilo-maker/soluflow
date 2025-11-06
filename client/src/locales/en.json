@@ -51,7 +51,21 @@
     "creatingAccount": "Creating Account...",
     "haveAccount": "Already have an account?",
     "loginLink": "Login here",
-    "browseSongs": "Browse Songs"
+    "browseSongs": "Browse Songs",
+    "errorEmailRequired": "Email is required",
+    "errorEmailInvalid": "Please enter a valid email address",
+    "errorPasswordRequired": "Password is required",
+    "errorPasswordLength": "Password must be at least 6 characters long",
+    "errorPasswordMismatch": "Passwords do not match",
+    "errorRegistrationFailed": "Registration failed. Please try again.",
+    "successTitle": "Registration Successful!",
+    "successMessage": "Please check your email to verify your account.",
+    "successEmailSent": "We've sent a verification link to",
+    "successNote": "The link will expire in 24 hours. Once verified, you can log in to your account.",
+    "goToLogin": "Go to Login",
+    "resendInfo": "Didn't receive the email? Check your spam folder or",
+    "resendLink": "login",
+    "resendInfoEnd": "and request a new verification email."
   },
   "guestLanding": {
     "welcome": "Welcome to",
