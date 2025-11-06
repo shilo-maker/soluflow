@@ -4,6 +4,7 @@ services:
     name: soluflow
     runtime: node
     plan: free
+    region: frankfurt
     buildCommand: cd client && npm install && npm run build
     startCommand: bash start.sh
     envVars:
@@ -53,3 +54,4 @@ databases:
   - name: soluflow-db
     databaseName: soluflow
     plan: free
+    region: frankfurt
