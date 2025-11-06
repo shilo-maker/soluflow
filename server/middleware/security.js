@@ -6,13 +6,17 @@
 const securityHeaders = (req, res, next) => {
   // Content Security Policy
   // This restricts which sources can load resources (scripts, styles, images, etc.)
+
+  // Get the client URL from environment variable (without trailing slash)
+  const clientUrl = (process.env.CLIENT_URL || 'https://soluflow.app').replace(/\/$/, '');
+
   const cspDirectives = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.socket.io",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' ws: wss: https://soluflow.app https://soluflow.onrender.com http://localhost:* https://i.ytimg.com https://www.youtube.com",
+    `connect-src 'self' ws: wss: ${clientUrl} https://soluflow.app http://localhost:* https://i.ytimg.com https://www.youtube.com`,
     "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
     "object-src 'none'",
     "base-uri 'self'",
