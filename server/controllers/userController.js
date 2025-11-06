@@ -170,9 +170,9 @@ const deleteUser = async (req, res) => {
         transaction
       });
 
-      // Delete workspace invitations
-      await sequelize.query('DELETE FROM workspace_invitations WHERE email = ? OR invited_by = ?', {
-        replacements: [user.email, id],
+      // Delete workspace invitations created by this user
+      await sequelize.query('DELETE FROM workspace_invitations WHERE created_by = ?', {
+        replacements: [id],
         transaction
       });
 
