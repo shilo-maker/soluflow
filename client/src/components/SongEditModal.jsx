@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import './SongEditModal.css';
 
 // Chord mappings for each key (diatonic chords)
@@ -32,6 +33,7 @@ const COMMON_KEYS = [
 
 const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
   const { workspaces, activeWorkspace } = useWorkspace();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     title: '',
     authors: '',
@@ -179,23 +181,23 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
   const validateForm = () => {
     // Title validation
     if (!formData.title.trim()) {
-      return 'Title is required';
+      return t('songEdit.errorTitleRequired');
     }
     if (formData.title.length > 200) {
-      return 'Title must be less than 200 characters';
+      return t('songEdit.errorTitleTooLong');
     }
 
     // Content validation
     if (!formData.content.trim()) {
-      return 'Song content is required';
+      return t('songEdit.errorContentRequired');
     }
     if (formData.content.length > 50000) {
-      return 'Song content is too long (max 50,000 characters)';
+      return t('songEdit.errorContentTooLong');
     }
 
     // Authors validation
     if (formData.authors && formData.authors.length > 200) {
-      return 'Authors field must be less than 200 characters';
+      return t('songEdit.errorAuthorsTooLong');
     }
 
     // URL validation
@@ -203,7 +205,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
       try {
         new URL(formData.listen_url);
       } catch {
-        return 'Listen URL must be a valid URL (e.g., https://example.com)';
+        return t('songEdit.errorInvalidUrl');
       }
     }
 
@@ -211,13 +213,13 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
     if (formData.bpm) {
       const bpmNum = parseInt(formData.bpm);
       if (isNaN(bpmNum) || bpmNum < 20 || bpmNum > 300) {
-        return 'BPM must be a number between 20 and 300';
+        return t('songEdit.errorInvalidBpm');
       }
     }
 
     // Key validation
     if (formData.key && !COMMON_KEYS.includes(formData.key)) {
-      return 'Please select a valid key from the dropdown';
+      return t('songEdit.errorInvalidKey');
     }
 
     return null; // No errors
@@ -253,7 +255,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
       onClose();
     } catch (err) {
       console.error('Error saving song:', err);
-      setError(err.message || 'Failed to save song. Please try again.');
+      setError(err.message || t('songEdit.errorSaveFailed'));
     } finally {
       setSaving(false);
     }
@@ -270,7 +272,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
     <div className="song-edit-modal modal-overlay" onClick={handleClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{isEditMode ? 'Edit Song' : 'Add New Song'}</h2>
+          <h2>{isEditMode ? t('songEdit.titleEdit') : t('songEdit.titleAdd')}</h2>
           <button className="modal-close-btn" onClick={handleClose}>×</button>
         </div>
 
@@ -281,7 +283,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
         <form onSubmit={handleSubmit} className="song-edit-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="title">Title * <span className="char-count">({formData.title.length}/200)</span></label>
+              <label htmlFor="title">{t('songEdit.fieldTitle')} {t('songEdit.required')} <span className="char-count">({formData.title.length}/200)</span></label>
               <input
                 type="text"
                 id="title"
@@ -295,14 +297,14 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="authors">Authors <span className="char-count">({formData.authors.length}/200)</span></label>
+              <label htmlFor="authors">{t('songEdit.fieldAuthors')} <span className="char-count">({formData.authors.length}/200)</span></label>
               <input
                 type="text"
                 id="authors"
                 name="authors"
                 value={formData.authors}
                 onChange={handleChange}
-                placeholder="e.g., John Doe"
+                placeholder={t('songEdit.placeholderAuthors')}
                 maxLength={200}
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
@@ -311,14 +313,14 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="listen_url">Listen URL (YouTube, Spotify, etc.)</label>
+              <label htmlFor="listen_url">{t('songEdit.fieldListenUrl')}</label>
               <input
                 type="url"
                 id="listen_url"
                 name="listen_url"
                 value={formData.listen_url}
                 onChange={handleChange}
-                placeholder="e.g., https://www.youtube.com/watch?v=..."
+                placeholder={t('songEdit.placeholderListenUrl')}
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>
@@ -326,7 +328,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
 
           <div className="form-row three-cols">
             <div className="form-group">
-              <label htmlFor="key">Key *</label>
+              <label htmlFor="key">{t('songEdit.fieldKey')} {t('songEdit.required')}</label>
               <select
                 id="key"
                 name="key"
@@ -335,7 +337,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                 required
                 style={{ width: '100%', boxSizing: 'border-box' }}
               >
-                <option value="">Select Key</option>
+                <option value="">{t('songEdit.selectKey')}</option>
                 {COMMON_KEYS.map(key => (
                   <option key={key} value={key}>{key}</option>
                 ))}
@@ -343,14 +345,14 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="bpm">BPM (20-300)</label>
+              <label htmlFor="bpm">{t('songEdit.fieldBpm')}</label>
               <input
                 type="number"
                 id="bpm"
                 name="bpm"
                 value={formData.bpm}
                 onChange={handleChange}
-                placeholder="e.g., 120"
+                placeholder={t('songEdit.placeholderBpm')}
                 min="20"
                 max="300"
                 style={{ width: '100%', boxSizing: 'border-box' }}
@@ -358,7 +360,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="timeSig">Time Signature</label>
+              <label htmlFor="timeSig">{t('songEdit.fieldTimeSig')}</label>
               <select
                 id="timeSig"
                 name="timeSig"
@@ -375,7 +377,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
           {/* Workspace Selection */}
           {!isEditMode && workspaces && workspaces.length > 1 && (
             <div className="form-group workspace-selection">
-              <label>Also make song visible in these workspaces (optional):</label>
+              <label>{t('songEdit.workspaceSelection')}</label>
               <div className="workspace-checkboxes">
                 {workspaces
                   .filter(ws => ws.id !== activeWorkspace?.id)
@@ -391,20 +393,20 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                   ))}
               </div>
               <div className="workspace-hint">
-                This song will be created in your current workspace ({activeWorkspace?.name}). You can optionally make it visible in other workspaces too.
+                {t('songEdit.workspaceHint').replace('{workspace}', activeWorkspace?.name || '')}
               </div>
             </div>
           )}
 
           <div className="form-group full-width">
-            <label htmlFor="content">Lyrics & Chords *</label>
+            <label htmlFor="content">{t('songEdit.fieldContent')} {t('songEdit.required')}</label>
             <div className="editor-helpers">
               <div className="chord-helper">
                 <div className="chord-input-row">
                   <input
                     type="text"
                     className="chord-input"
-                    placeholder="Or type custom chord"
+                    placeholder={t('songEdit.chordInputPlaceholder')}
                     value={chordInput}
                     onChange={(e) => setChordInput(e.target.value)}
                     onKeyPress={(e) => {
@@ -420,13 +422,13 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                     onClick={() => insertChord()}
                     title="Insert chord at cursor position"
                   >
-                    Add
+                    {t('songEdit.btnAddChord')}
                   </button>
                 </div>
                 <div className="suggested-chords">
                   {formData.key ? (
                     <>
-                      <span className="helper-label">Chords in {formData.key}:</span>
+                      <span className="helper-label">{t('songEdit.labelChordsIn')} {formData.key}:</span>
                       {getSuggestedChords().map(chord => (
                         <button
                           key={chord}
@@ -440,17 +442,17 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
                       ))}
                     </>
                   ) : (
-                    <span className="helper-label-muted">Select a key above to see suggested chords</span>
+                    <span className="helper-label-muted">{t('songEdit.labelSelectKeyFirst')}</span>
                   )}
                 </div>
               </div>
               <div className="section-helpers">
-                <span className="helper-label">Sections:</span>
-                <button type="button" className="btn-section" onClick={() => insertSection('Verse 1')}>Verse</button>
-                <button type="button" className="btn-section" onClick={() => insertSection('Chorus')}>Chorus</button>
-                <button type="button" className="btn-section" onClick={() => insertSection('Bridge')}>Bridge</button>
-                <button type="button" className="btn-section" onClick={() => insertSection('Intro')}>Intro</button>
-                <button type="button" className="btn-section" onClick={() => insertSection('Outro')}>Outro</button>
+                <span className="helper-label">{t('songEdit.labelSections')}</span>
+                <button type="button" className="btn-section" onClick={() => insertSection('Verse 1')}>{t('songEdit.btnVerse')}</button>
+                <button type="button" className="btn-section" onClick={() => insertSection('Chorus')}>{t('songEdit.btnChorus')}</button>
+                <button type="button" className="btn-section" onClick={() => insertSection('Bridge')}>{t('songEdit.btnBridge')}</button>
+                <button type="button" className="btn-section" onClick={() => insertSection('Intro')}>{t('songEdit.btnIntro')}</button>
+                <button type="button" className="btn-section" onClick={() => insertSection('Outro')}>{t('songEdit.btnOutro')}</button>
               </div>
             </div>
             <textarea
@@ -463,20 +465,10 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
               rows="15"
               className="lyrics-textarea-rtl"
               style={{ width: '100%', boxSizing: 'border-box' }}
-              placeholder="הקלד את מילות השיר כאן. השתמש בכפתורים למעלה כדי להוסיף אקורדים וקטעים.
-
-דוגמה:
-[Verse 1]
-אלוהים עוז וחוסן
-מבטחי ומגיני
-
-Example in English:
-[Verse 1]
-Amazing grace how sweet the sound
-That saved a wretch like me"
+              placeholder={t('songEdit.placeholderContent')}
             />
             <div className="editor-hint">
-              Tip: Click on a chord button to insert it at your cursor position, or type a custom chord and click Add
+              {t('songEdit.editorHint')}
             </div>
           </div>
 
@@ -487,14 +479,14 @@ That saved a wretch like me"
               onClick={handleClose}
               disabled={saving}
             >
-              Cancel
+              {t('songEdit.btnCancel')}
             </button>
             <button
               type="submit"
               className="btn-save"
               disabled={saving}
             >
-              {saving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Song')}
+              {saving ? t('songEdit.btnSaving') : (isEditMode ? t('songEdit.btnSave') : t('songEdit.btnCreate'))}
             </button>
           </div>
         </form>

@@ -381,8 +381,10 @@ const GuestLanding = () => {
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   onKeyDown={(e) => handleCodeKeyDown(index, e)}
                   onPaste={index === 0 ? handleCodePaste : undefined}
+                  onClick={() => codeInputsRef.current[0]?.focus()}
                   maxLength="1"
                   autoFocus={index === 0}
+                  dir="ltr"
                 />
               ))}
             </div>

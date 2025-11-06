@@ -224,7 +224,9 @@ const Home = () => {
                 onChange={(e) => handleCodeChange(index, e.target.value)}
                 onKeyDown={(e) => handleCodeKeyDown(index, e)}
                 onPaste={index === 0 ? handleCodePaste : undefined}
+                onClick={() => codeInputsRef.current[0]?.focus()}
                 maxLength="1"
+                dir="ltr"
               />
             ))}
           </div>
