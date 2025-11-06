@@ -6,6 +6,7 @@ const { body, param, query, validationResult } = require('express-validator');
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Validation errors:', JSON.stringify(errors.array(), null, 2));
     return res.status(400).json({
       error: 'Validation failed',
       details: errors.array().map(err => ({
@@ -41,26 +42,26 @@ const songValidation = {
       .isLength({ max: 100000 })
       .withMessage('Content must not exceed 100,000 characters'),
     body('key')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .matches(/^[A-G][#b]?m?$/)
       .withMessage('Invalid musical key format (e.g., C, Am, F#, Bb)'),
     body('bpm')
-      .optional()
+      .optional({ values: 'falsy' })
       .isInt({ min: 30, max: 300 })
       .withMessage('BPM must be between 30 and 300'),
     body('time_signature')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .matches(/^\d+\/\d+$/)
       .withMessage('Time signature must be in format like 4/4 or 3/4'),
     body('authors')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .isLength({ max: 500 })
       .withMessage('Authors must not exceed 500 characters'),
     body('copyright_info')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .isLength({ max: 1000 })
       .withMessage('Copyright info must not exceed 1000 characters'),
@@ -69,7 +70,7 @@ const songValidation = {
       .isBoolean()
       .withMessage('is_public must be a boolean'),
     body('listen_url')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .isURL()
       .withMessage('Listen URL must be a valid URL')
@@ -101,21 +102,21 @@ const songValidation = {
       .matches(/^[A-G][#b]?m?$/)
       .withMessage('Invalid musical key format'),
     body('bpm')
-      .optional()
+      .optional({ values: 'falsy' })
       .isInt({ min: 30, max: 300 })
       .withMessage('BPM must be between 30 and 300'),
     body('time_signature')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .matches(/^\d+\/\d+$/)
       .withMessage('Time signature must be in format like 4/4 or 3/4'),
     body('authors')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .isLength({ max: 500 })
       .withMessage('Authors must not exceed 500 characters'),
     body('copyright_info')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .isLength({ max: 1000 })
       .withMessage('Copyright info must not exceed 1000 characters'),
