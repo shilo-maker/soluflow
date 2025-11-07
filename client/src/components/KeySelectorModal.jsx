@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { getAllKeys, transposeChord, calculateTransposition } from '../utils/transpose';
+import { playChordProgression } from '../utils/audioUtils';
 import './KeySelectorModal.css';
 
 const KeySelectorModal = ({ isOpen, onClose, currentKey, currentTransposition, onSelectKey }) => {
+  const [playingKey, setPlayingKey] = useState(null);
+
   if (!isOpen) return null;
 
   const keys = getAllKeys();
@@ -23,6 +26,14 @@ const KeySelectorModal = ({ isOpen, onClose, currentKey, currentTransposition, o
 
   const handleModalClick = (e) => {
     e.stopPropagation();
+  };
+
+  const handlePlayKey = (e, key) => {
+    e.stopPropagation();
+    setPlayingKey(key);
+    const progressionDuration = playChordProgression(key, 0.8, 0.25);
+    // Reset playing state after progression finishes
+    setTimeout(() => setPlayingKey(null), progressionDuration * 1000);
   };
 
   return (
@@ -47,13 +58,21 @@ const KeySelectorModal = ({ isOpen, onClose, currentKey, currentTransposition, o
                                  (key.value === 'A#' && transposedKey === 'Bb');
 
             return (
-              <button
-                key={key.value}
-                className={`key-button ${isCurrentKey ? 'active' : ''}`}
-                onClick={() => handleKeySelect(key.value)}
-              >
-                {key.label}
-              </button>
+              <div key={key.value} className="key-button-wrapper">
+                <button
+                  className={`key-button ${isCurrentKey ? 'active' : ''}`}
+                  onClick={() => handleKeySelect(key.value)}
+                >
+                  {key.label}
+                </button>
+                <button
+                  className={`play-key-button ${playingKey === key.value ? 'playing' : ''}`}
+                  onClick={(e) => handlePlayKey(e, key.value)}
+                  title={`Play ${key.label} chord progression (I-V-vi-IV)`}
+                >
+                  🔊
+                </button>
+              </div>
             );
           })}
         </div>

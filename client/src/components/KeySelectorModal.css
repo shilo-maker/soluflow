@@ -88,7 +88,14 @@
   gap: 12px;
 }
 
+.key-button-wrapper {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
 .key-button {
+  flex: 1;
   background-color: #f8f9fa;
   border: 2px solid #dee2e6;
   border-radius: 8px;
@@ -118,6 +125,69 @@
   border-color: var(--color-primary-dark);
 }
 
+.play-key-button {
+  background-color: #f8f9fa;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+}
+
+.play-key-button:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+  transform: scale(1.1);
+}
+
+.play-key-button.playing {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  animation: pulse 3.2s ease;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  /* First chord */
+  12.5% {
+    transform: scale(1.15);
+  }
+  18.75% {
+    transform: scale(1);
+  }
+  /* Second chord */
+  37.5% {
+    transform: scale(1.15);
+  }
+  43.75% {
+    transform: scale(1);
+  }
+  /* Third chord */
+  62.5% {
+    transform: scale(1.15);
+  }
+  68.75% {
+    transform: scale(1);
+  }
+  /* Fourth chord */
+  87.5% {
+    transform: scale(1.15);
+  }
+  93.75% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
   .key-selector-modal {
@@ -134,9 +204,19 @@
     gap: 10px;
   }
 
+  .key-button-wrapper {
+    gap: 4px;
+  }
+
   .key-button {
     padding: 12px;
     font-size: 14px;
+  }
+
+  .play-key-button {
+    min-width: 38px;
+    font-size: 16px;
+    padding: 6px;
   }
 
   .key-selector-info {
