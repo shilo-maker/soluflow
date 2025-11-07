@@ -37,18 +37,7 @@ body {
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(
-    -45deg,
-    #ee7752,
-    #e73c7e,
-    #23a6d5,
-    #23d5ab,
-    #4ECDC4
-  );
-  background-size: 400% 400%;
-  background-attachment: fixed;
-  min-height: 100vh;
-  animation: gradientShift 10s ease infinite;
+  /* Background gradient is now managed by ThemeContext */
 }
 
 @keyframes gradientShift {

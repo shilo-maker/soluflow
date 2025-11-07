@@ -169,7 +169,20 @@
     "saveChanges": "Save Changes",
     "saving": "Saving...",
     "successMessage": "Settings saved successfully",
-    "errorMessage": "Failed to save settings"
+    "errorMessage": "Failed to save settings",
+    "themeCustomization": "Theme Customization",
+    "gradientPreset": "Background Gradient Theme",
+    "textColor": "Text Color",
+    "chordColor": "Chord Color",
+    "chordSize": "Chord Size",
+    "preview": "Live Preview",
+    "previewLyrics1": "Amazing grace how sweet the sound",
+    "previewLyrics2": "That saved a wretch like me",
+    "resetTheme": "Reset to Default",
+    "saveTheme": "Save Theme",
+    "themeSuccessMessage": "Theme saved successfully",
+    "themeErrorMessage": "Failed to save theme",
+    "themeResetMessage": "Theme reset to default"
   },
   "workspace": {
     "switchWorkspace": "Switch Workspace",

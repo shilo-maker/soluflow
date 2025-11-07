@@ -2,12 +2,48 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { GRADIENT_PRESETS } from '../contexts/ThemeContext';
 import './Login.css';
+
+// Helper function to convert hex color to CSS filter
+const getColorFilter = (hexColor) => {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const hue = getHueRotate(r, g, b);
+  return `brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(${hue}deg)`;
+};
+
+const getHueRotate = (r, g, b) => {
+  const rNorm = r / 255;
+  const gNorm = g / 255;
+  const bNorm = b / 255;
+  const max = Math.max(rNorm, gNorm, bNorm);
+  const min = Math.min(rNorm, gNorm, bNorm);
+  const delta = max - min;
+  let hue = 0;
+  if (delta !== 0) {
+    if (max === rNorm) {
+      hue = 60 * (((gNorm - bNorm) / delta) % 6);
+    } else if (max === gNorm) {
+      hue = 60 * (((bNorm - rNorm) / delta) + 2);
+    } else {
+      hue = 60 * (((rNorm - gNorm) / delta) + 4);
+    }
+  }
+  return Math.round(hue);
+};
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { t, setLanguage } = useLanguage();
+  const { theme } = useTheme();
+
+  // Get current theme accent color
+  const currentPreset = GRADIENT_PRESETS[theme?.gradientPreset] || GRADIENT_PRESETS.professional;
 
   // Set language to Hebrew by default on mount
   useEffect(() => {
@@ -69,7 +105,12 @@ const Login = () => {
           ← {t('login.browseSongs')}
         </button>
         <div className="login-header">
-          <img src="/new_logo.png" alt="SoluFlow" className="login-logo" />
+          <img
+            src="/neutral_logo.png"
+            alt="SoluFlow"
+            className="login-logo"
+            style={{ filter: getColorFilter(currentPreset.accentColor) }}
+          />
           <p>{t('login.subtitle')}</p>
         </div>
 

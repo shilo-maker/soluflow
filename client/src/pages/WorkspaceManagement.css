@@ -115,12 +115,12 @@
 }
 
 .workspace-type-badge.personal {
-  background: linear-gradient(135deg, var(--color-badge-personal) 0%, #0d8fa3 100%);
+  background: linear-gradient(135deg, var(--color-badge-personal) 0%, color-mix(in srgb, var(--color-badge-personal) 70%, black) 100%);
   color: white;
 }
 
 .workspace-type-badge.organization {
-  background: linear-gradient(135deg, var(--color-badge-workspace) 0%, var(--color-info-light) 100%);
+  background: linear-gradient(135deg, var(--color-badge-workspace) 0%, color-mix(in srgb, var(--color-badge-workspace) 60%, black) 100%);
   color: white;
 }
 

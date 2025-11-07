@@ -234,9 +234,100 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// Get user theme preferences
+const getThemePreferences = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findByPk(userId, {
+      attributes: [
+        'theme_gradient_preset',
+        'theme_text_color',
+        'theme_chord_color',
+        'theme_chord_size'
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Return theme preferences with defaults if not set
+    const themePreferences = {
+      gradientPreset: user.theme_gradient_preset || 'professional',
+      textColor: user.theme_text_color || '#000000',
+      chordColor: user.theme_chord_color || '#667eea',
+      chordSize: parseFloat(user.theme_chord_size) || 1.0
+    };
+
+    res.json(themePreferences);
+  } catch (error) {
+    console.error('Error fetching theme preferences:', error);
+    res.status(500).json({ error: 'Failed to fetch theme preferences' });
+  }
+};
+
+// Update user theme preferences
+const updateThemePreferences = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { gradientPreset, textColor, chordColor, chordSize } = req.body;
+
+    // Validation
+    const hexColorRegex = /^#[0-9A-F]{6}$/i;
+    const validPresets = ['professional', 'warm', 'nature', 'elegant'];
+
+    if (gradientPreset && !validPresets.includes(gradientPreset)) {
+      return res.status(400).json({ error: 'Invalid gradient preset. Must be one of: ' + validPresets.join(', ') });
+    }
+
+    if (textColor && !hexColorRegex.test(textColor)) {
+      return res.status(400).json({ error: 'Invalid text color format. Use hex format (#RRGGBB)' });
+    }
+
+    if (chordColor && !hexColorRegex.test(chordColor)) {
+      return res.status(400).json({ error: 'Invalid chord color format. Use hex format (#RRGGBB)' });
+    }
+
+    if (chordSize && (chordSize < 0.5 || chordSize > 3.0)) {
+      return res.status(400).json({ error: 'Chord size must be between 0.5 and 3.0' });
+    }
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update theme preferences
+    const updates = {};
+    if (gradientPreset !== undefined) updates.theme_gradient_preset = gradientPreset;
+    if (textColor !== undefined) updates.theme_text_color = textColor;
+    if (chordColor !== undefined) updates.theme_chord_color = chordColor;
+    if (chordSize !== undefined) updates.theme_chord_size = chordSize;
+
+    await user.update(updates);
+
+    res.json({
+      message: 'Theme preferences updated successfully',
+      themePreferences: {
+        gradientPreset: user.theme_gradient_preset,
+        textColor: user.theme_text_color,
+        chordColor: user.theme_chord_color,
+        chordSize: parseFloat(user.theme_chord_size)
+      }
+    });
+  } catch (error) {
+    console.error('Error updating theme preferences:', error);
+    res.status(500).json({ error: 'Failed to update theme preferences' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   updateUser,
-  deleteUser
+  deleteUser,
+  getThemePreferences,
+  updateThemePreferences
 };

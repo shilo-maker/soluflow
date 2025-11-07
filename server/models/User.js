@@ -77,6 +77,31 @@ const User = sequelize.define('User', {
   reset_password_expires: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  theme_background_color: {
+    type: DataTypes.STRING(7),
+    allowNull: true,
+    defaultValue: '#ffffff'
+  },
+  theme_gradient_preset: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    defaultValue: 'professional'
+  },
+  theme_text_color: {
+    type: DataTypes.STRING(7),
+    allowNull: true,
+    defaultValue: '#000000'
+  },
+  theme_chord_color: {
+    type: DataTypes.STRING(7),
+    allowNull: true,
+    defaultValue: '#667eea'
+  },
+  theme_chord_size: {
+    type: DataTypes.DECIMAL(3, 2),
+    allowNull: true,
+    defaultValue: 1.0
   }
 }, {
   tableName: 'users',

@@ -5,11 +5,17 @@ const {
   getAllUsers,
   getUserById,
   updateUser,
-  deleteUser
+  deleteUser,
+  getThemePreferences,
+  updateThemePreferences
 } = require('../controllers/userController');
 
 // All routes require authentication
 router.use(authenticate);
+
+// Theme preferences routes (any authenticated user)
+router.get('/theme/preferences', getThemePreferences);
+router.put('/theme/preferences', updateThemePreferences);
 
 // Get all users (admin only)
 router.get('/', getAllUsers);

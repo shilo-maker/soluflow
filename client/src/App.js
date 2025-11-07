@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WorkspaceProvider } from './contexts/WorkspaceContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import PrivateRoute from './components/PrivateRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import Header from './components/layout/Header';
@@ -139,11 +140,13 @@ function App() {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
-          <LanguageProvider>
-            <WorkspaceProvider>
-              <AppContent />
-            </WorkspaceProvider>
-          </LanguageProvider>
+          <ThemeProvider>
+            <LanguageProvider>
+              <WorkspaceProvider>
+                <AppContent />
+              </WorkspaceProvider>
+            </LanguageProvider>
+          </ThemeProvider>
         </AuthProvider>
       </Router>
     </ErrorBoundary>

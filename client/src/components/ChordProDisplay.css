@@ -1,7 +1,8 @@
 .chordpro-display {
   font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
   line-height: 1.8;
-  color: #333;
+  color: var(--theme-text-color, #333);
+  background-color: var(--theme-background-color, #ffffff);
   /* Column properties are now set dynamically via inline styles */
 }
 
@@ -41,23 +42,24 @@
 .chord-line {
   position: relative;
   height: 1.4em;
-  color: var(--color-primary);
+  color: var(--theme-chord-color, var(--color-primary));
   font-weight: 600;
-  font-size: 0.93em; /* Relative to parent font size (13/14 = 0.93) */
+  font-size: calc(0.93em * var(--theme-chord-size, 1)); /* Relative to parent font size with theme multiplier */
   direction: ltr;
   font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
 }
 
 .chord {
-  color: var(--color-primary);
+  color: var(--theme-chord-color, var(--color-primary));
   font-weight: 700;
+  font-size: calc(1em * var(--theme-chord-size, 1)); /* Apply theme chord size */
   direction: ltr;
   unicode-bidi: embed;
   font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
 }
 
 .lyric-line {
-  color: #333;
+  color: var(--theme-text-color, #333);
   min-height: 1.2em;
   white-space: pre-wrap;
 }

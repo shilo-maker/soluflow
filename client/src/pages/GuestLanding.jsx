@@ -1,11 +1,56 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { GRADIENT_PRESETS } from '../contexts/ThemeContext';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import KeySelectorModal from '../components/KeySelectorModal';
-import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
+import { transposeChord, stripChords } from '../utils/transpose';
 import './GuestLanding.css';
+
+// Helper function to convert hex color to CSS filter
+const getColorFilter = (hexColor) => {
+  // Remove the # if present
+  const hex = hexColor.replace('#', '');
+
+  // Convert hex to RGB
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  // Calculate hue rotation
+  const hue = getHueRotate(r, g, b);
+
+  // Better filter for colorizing: invert to white, then apply color
+  return `brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(${hue}deg)`;
+};
+
+// Calculate hue rotation based on RGB values
+const getHueRotate = (r, g, b) => {
+  // Normalize RGB values
+  const rNorm = r / 255;
+  const gNorm = g / 255;
+  const bNorm = b / 255;
+
+  const max = Math.max(rNorm, gNorm, bNorm);
+  const min = Math.min(rNorm, gNorm, bNorm);
+  const delta = max - min;
+
+  let hue = 0;
+
+  if (delta !== 0) {
+    if (max === rNorm) {
+      hue = 60 * (((gNorm - bNorm) / delta) % 6);
+    } else if (max === gNorm) {
+      hue = 60 * (((bNorm - rNorm) / delta) + 2);
+    } else {
+      hue = 60 * (((rNorm - gNorm) / delta) + 4);
+    }
+  }
+
+  return Math.round(hue);
+};
 
 // Memoized song card component to prevent unnecessary re-renders
 const SongCard = React.memo(({ song, isSelected, onClick }) => {
@@ -32,6 +77,7 @@ SongCard.displayName = 'SongCard';
 const GuestLanding = () => {
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
+  const { theme } = useTheme();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,6 +90,9 @@ const GuestLanding = () => {
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const codeInputsRef = useRef([]);
   const songDisplayRef = useRef(null);
+
+  // Get current theme accent color
+  const currentPreset = GRADIENT_PRESETS[theme?.gradientPreset] || GRADIENT_PRESETS.professional;
 
   // Reset modal state when selected song changes
   useEffect(() => {
@@ -220,8 +269,13 @@ const GuestLanding = () => {
       <div className="guest-sticky-header">
         {/* App Name Group */}
         <div className="header-name-group">
-          <img src="/new_logo.png" alt="SoluFlow" className="guest-logo" />
-          <h1 className="app-name">SoluFlow</h1>
+          <img
+            src="/neutral_logo.png"
+            alt="SoluFlow"
+            className="guest-logo"
+            style={{ filter: getColorFilter(currentPreset.accentColor) }}
+          />
+          <h1 className="app-name" style={{ color: currentPreset.accentColor }}>SoluFlow</h1>
         </div>
 
         {/* Search Row */}

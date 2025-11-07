@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap');
+
 .guest-landing-page {
   padding: 0;
   min-height: 100vh;
@@ -65,12 +67,14 @@
 }
 
 .app-name {
-  font-size: 24px;
-  font-weight: 700;
+  font-family: 'Cherry Bomb One', cursive;
+  font-size: 32px;
+  font-weight: 400;
   color: #333;
   margin: 0;
   white-space: nowrap;
   flex-shrink: 0;
+  letter-spacing: 0.05em;
 }
 
 .app-subtitle {
@@ -688,7 +692,7 @@
   }
 
   .app-name {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .app-subtitle {

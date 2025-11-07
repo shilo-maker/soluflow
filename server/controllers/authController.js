@@ -9,7 +9,7 @@ const register = async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const { email, password, username, workspaceId, role } = req.body;
+    const { email, password, username, workspaceId, role, language } = req.body;
 
     // Validate required fields
     if (!email || !password || !username) {
@@ -62,6 +62,7 @@ const register = async (req, res) => {
       workspace_id: finalWorkspaceId,
       active_workspace_id: finalWorkspaceId,
       role: role || 'member',
+      language: language || 'en', // Save user's language preference
       email_verified: false,
       verification_token: verificationToken,
       verification_token_expires: verificationTokenExpires
@@ -84,7 +85,7 @@ const register = async (req, res) => {
 
     // Send verification email (don't await - let it happen in background)
     // This happens AFTER transaction commit, so email failure won't affect registration
-    sendVerificationEmail(email, verificationToken, username).catch(error => {
+    sendVerificationEmail(email, verificationToken, username, user.language).catch(error => {
       console.error('Failed to send verification email:', error);
     });
 
@@ -106,7 +107,10 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('Login attempt for email:', email);
+
     if (!email || !password) {
+      console.log('Missing email or password');
       return res.status(400).json({ error: 'Email and password required' });
     }
 
@@ -123,18 +127,26 @@ const login = async (req, res) => {
     });
 
     if (!user) {
+      console.log('User not found');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    console.log('User found:', user.email);
+
     // Check if user is active
     if (!user.is_active) {
+      console.log('User is inactive');
       return res.status(403).json({ error: 'Account is inactive' });
     }
 
+    console.log('User is active');
+
     // Validate password
     const isValidPassword = await user.validPassword(password);
+    console.log('Password validation result:', isValidPassword);
 
     if (!isValidPassword) {
+      console.log('Invalid password');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -391,8 +403,8 @@ const resendVerification = async (req, res) => {
       verification_token_expires: verificationTokenExpires
     });
 
-    // Send verification email
-    await sendVerificationEmail(email, verificationToken, user.username);
+    // Send verification email using user's language preference
+    await sendVerificationEmail(email, verificationToken, user.username, user.language || 'en');
 
     res.json({ message: 'Verification email sent. Please check your inbox.' });
   } catch (error) {

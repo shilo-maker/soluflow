@@ -3,7 +3,7 @@
   max-width: 900px;
   margin: 0 auto;
   min-height: 100vh;
-  background-color: #fff;
+  background-color: var(--theme-background-color, #fff);
   display: flex;
   flex-direction: column;
 }
@@ -391,7 +391,7 @@
   line-height: 1.8;
   margin: 0;
   white-space: pre-wrap;
-  color: #333;
+  color: var(--theme-text-color, #333);
   max-width: 100%;
   overflow-x: auto;
 }

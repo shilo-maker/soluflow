@@ -169,7 +169,20 @@
     "saveChanges": "שמור שינויים",
     "saving": "שומר...",
     "successMessage": "ההגדרות נשמרו בהצלחה",
-    "errorMessage": "שמירת ההגדרות נכשלה"
+    "errorMessage": "שמירת ההגדרות נכשלה",
+    "themeCustomization": "התאמה אישית של ערכת נושא",
+    "gradientPreset": "ערכת גרדיאנט רקע",
+    "textColor": "צבע טקסט",
+    "chordColor": "צבע אקורדים",
+    "chordSize": "גודל אקורדים",
+    "preview": "תצוגה מקדימה",
+    "previewLyrics1": "אלוהים עוז וחוסן",
+    "previewLyrics2": "מבטחי ומגיני",
+    "resetTheme": "איפוס לברירת מחדל",
+    "saveTheme": "שמור ערכת נושא",
+    "themeSuccessMessage": "ערכת הנושא נשמרה בהצלחה",
+    "themeErrorMessage": "שמירת ערכת הנושא נכשלה",
+    "themeResetMessage": "ערכת הנושא אופסה לברירת מחדל"
   },
   "workspace": {
     "switchWorkspace": "החלף סביבת עבודה",
