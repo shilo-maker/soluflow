@@ -86,7 +86,7 @@ const User = sequelize.define('User', {
   theme_gradient_preset: {
     type: DataTypes.STRING(20),
     allowNull: true,
-    defaultValue: 'professional'
+    defaultValue: 'nature'
   },
   theme_text_color: {
     type: DataTypes.STRING(7),
@@ -96,7 +96,7 @@ const User = sequelize.define('User', {
   theme_chord_color: {
     type: DataTypes.STRING(7),
     allowNull: true,
-    defaultValue: '#667eea'
+    defaultValue: '#38b2ac'
   },
   theme_chord_size: {
     type: DataTypes.DECIMAL(3, 2),

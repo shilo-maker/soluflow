@@ -44,17 +44,17 @@ async function addThemePreferences() {
     await sequelize.query(`
       ALTER TABLE users
       ADD COLUMN theme_background_color VARCHAR(7) DEFAULT '#ffffff',
-      ADD COLUMN theme_gradient_preset VARCHAR(20) DEFAULT 'professional',
+      ADD COLUMN theme_gradient_preset VARCHAR(20) DEFAULT 'nature',
       ADD COLUMN theme_text_color VARCHAR(7) DEFAULT '#000000',
-      ADD COLUMN theme_chord_color VARCHAR(7) DEFAULT '#667eea',
+      ADD COLUMN theme_chord_color VARCHAR(7) DEFAULT '#38b2ac',
       ADD COLUMN theme_chord_size DECIMAL(3,2) DEFAULT 1.0
     `);
 
     console.log('✓ Added theme preference columns:');
     console.log('  - theme_background_color (default: #ffffff)');
-    console.log('  - theme_gradient_preset (default: professional)');
+    console.log('  - theme_gradient_preset (default: nature)');
     console.log('  - theme_text_color (default: #000000)');
-    console.log('  - theme_chord_color (default: #667eea)');
+    console.log('  - theme_chord_color (default: #38b2ac)');
     console.log('  - theme_chord_size (default: 1.0)');
     console.log('\n✓ Migration completed successfully!');
 

@@ -41,9 +41,9 @@ export const GRADIENT_PRESETS = {
 };
 
 const defaultTheme = {
-  gradientPreset: 'professional',
+  gradientPreset: 'nature',
   textColor: '#000000',
-  chordColor: '#667eea',
+  chordColor: '#38b2ac',
   chordSize: 1.0
 };
 
