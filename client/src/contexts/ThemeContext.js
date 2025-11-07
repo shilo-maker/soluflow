@@ -56,7 +56,21 @@ const guestTheme = {
 
 export const ThemeProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
-  const [theme, setTheme] = useState(guestTheme); // Start with guest theme
+
+  // Initialize theme: try localStorage first, fallback to defaultTheme (not guest theme)
+  const getInitialTheme = () => {
+    const cachedTheme = localStorage.getItem('userTheme');
+    if (cachedTheme) {
+      try {
+        return JSON.parse(cachedTheme);
+      } catch (e) {
+        return defaultTheme;
+      }
+    }
+    return defaultTheme; // Start with professional theme instead of guest theme
+  };
+
+  const [theme, setTheme] = useState(getInitialTheme);
   const [loading, setLoading] = useState(true);
 
   // Load theme preferences when user logs in
@@ -65,15 +79,21 @@ export const ThemeProvider = ({ children }) => {
       if (isAuthenticated && user && !user.isGuest) {
         try {
           const response = await api.get('/users/theme/preferences');
-          setTheme(response.data);
+          const userTheme = response.data;
+          setTheme(userTheme);
+          // Cache in localStorage for instant loading next time
+          localStorage.setItem('userTheme', JSON.stringify(userTheme));
         } catch (error) {
           console.error('Error loading theme preferences:', error);
           // Use default theme if there's an error
           setTheme(defaultTheme);
+          localStorage.setItem('userTheme', JSON.stringify(defaultTheme));
         }
       } else {
         // Use Nature theme for guests (not authenticated)
         setTheme(guestTheme);
+        // Clear any cached user theme when logged out
+        localStorage.removeItem('userTheme');
       }
       setLoading(false);
     };
@@ -114,7 +134,10 @@ export const ThemeProvider = ({ children }) => {
   const updateTheme = async (newTheme) => {
     try {
       const response = await api.put('/users/theme/preferences', newTheme);
-      setTheme(response.data.themePreferences);
+      const updatedTheme = response.data.themePreferences;
+      setTheme(updatedTheme);
+      // Cache the updated theme in localStorage
+      localStorage.setItem('userTheme', JSON.stringify(updatedTheme));
       return response.data;
     } catch (error) {
       console.error('Error updating theme preferences:', error);
