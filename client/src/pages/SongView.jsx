@@ -113,7 +113,7 @@ const SongView = () => {
     if (!isLeader && isFollowMode && leaderCommandReceivedRef.current) {
       console.log('[SongView] Skipping initialization - waiting for leader command');
       transpositionInitializedRef.current = id;
-      leaderCommandReceivedRef.current = false;
+      // Don't clear the flag here - let the timeout handle it
       return;
     }
 
@@ -310,13 +310,14 @@ const SongView = () => {
         // Set flag to skip initialization (we'll wait for leader-transpose event)
         leaderCommandReceivedRef.current = true;
 
-        // Failsafe: clear the flag after 1.5 seconds if leader-transpose doesn't arrive
+        // Failsafe: clear the flag after 2.5 seconds if leader-transpose doesn't arrive
+        // Longer timeout for production network conditions
         setTimeout(() => {
           if (leaderCommandReceivedRef.current) {
             console.log('[SongView] Failsafe: clearing leaderCommandReceivedRef after timeout');
             leaderCommandReceivedRef.current = false;
           }
-        }, 1500);
+        }, 2500);
 
         // Navigate to the new song
         const newSong = setlistContext.setlist[songIndex];
@@ -337,6 +338,9 @@ const SongView = () => {
         console.log('[SongView] Follower received leader-transposed:', newTransposition);
         setTransposition(newTransposition);
         songTranspositionsRef.current.set(id, newTransposition);
+
+        // Mark this song as initialized with leader's transposition
+        transpositionInitializedRef.current = id;
 
         // Clear the flag after applying leader's transposition
         // Use timeout to ensure flag gets cleared even if multiple events arrive
@@ -615,6 +619,7 @@ const SongView = () => {
       const nextSongTransposition = nextSong.transposition || 0;
       console.log('[SongView] Leader will emit transposition for next song:', nextSongTransposition);
 
+      // Triple retry with staggered timing for maximum reliability
       // First emission after 400ms
       setTimeout(() => {
         if (socketRef.current?.connected) {
@@ -626,16 +631,27 @@ const SongView = () => {
         }
       }, 400);
 
-      // Second emission after 700ms (retry for reliability)
+      // Second emission after 700ms
       setTimeout(() => {
         if (socketRef.current?.connected) {
-          console.log('[SongView] Leader emitting transposition (2nd retry):', nextSongTransposition);
+          console.log('[SongView] Leader emitting transposition (2nd):', nextSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: nextSongTransposition
           });
         }
       }, 700);
+
+      // Third emission after 1000ms (final retry before failsafe)
+      setTimeout(() => {
+        if (socketRef.current?.connected) {
+          console.log('[SongView] Leader emitting transposition (3rd):', nextSongTransposition);
+          socketRef.current.emit('leader-transpose', {
+            serviceId: setlistContext.serviceId,
+            transposition: nextSongTransposition
+          });
+        }
+      }, 1000);
     }
 
     navigate(`/song/${nextSongId}`, {
@@ -668,6 +684,7 @@ const SongView = () => {
       const prevSongTransposition = prevSong.transposition || 0;
       console.log('[SongView] Leader will emit transposition for previous song:', prevSongTransposition);
 
+      // Triple retry with staggered timing for maximum reliability
       // First emission after 400ms
       setTimeout(() => {
         if (socketRef.current?.connected) {
@@ -679,16 +696,27 @@ const SongView = () => {
         }
       }, 400);
 
-      // Second emission after 700ms (retry for reliability)
+      // Second emission after 700ms
       setTimeout(() => {
         if (socketRef.current?.connected) {
-          console.log('[SongView] Leader emitting transposition (2nd retry):', prevSongTransposition);
+          console.log('[SongView] Leader emitting transposition (2nd):', prevSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: prevSongTransposition
           });
         }
       }, 700);
+
+      // Third emission after 1000ms (final retry before failsafe)
+      setTimeout(() => {
+        if (socketRef.current?.connected) {
+          console.log('[SongView] Leader emitting transposition (3rd):', prevSongTransposition);
+          socketRef.current.emit('leader-transpose', {
+            serviceId: setlistContext.serviceId,
+            transposition: prevSongTransposition
+          });
+        }
+      }, 1000);
     }
 
     navigate(`/song/${prevSongId}`, {
