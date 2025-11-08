@@ -310,6 +310,14 @@ const SongView = () => {
         // Set flag to skip initialization (we'll wait for leader-transpose event)
         leaderCommandReceivedRef.current = true;
 
+        // Failsafe: clear the flag after 1.5 seconds if leader-transpose doesn't arrive
+        setTimeout(() => {
+          if (leaderCommandReceivedRef.current) {
+            console.log('[SongView] Failsafe: clearing leaderCommandReceivedRef after timeout');
+            leaderCommandReceivedRef.current = false;
+          }
+        }, 1500);
+
         // Navigate to the new song
         const newSong = setlistContext.setlist[songIndex];
         if (newSong && newSong.id.toString() !== id) {
@@ -329,8 +337,12 @@ const SongView = () => {
         console.log('[SongView] Follower received leader-transposed:', newTransposition);
         setTransposition(newTransposition);
         songTranspositionsRef.current.set(id, newTransposition);
+
         // Clear the flag after applying leader's transposition
-        leaderCommandReceivedRef.current = false;
+        // Use timeout to ensure flag gets cleared even if multiple events arrive
+        setTimeout(() => {
+          leaderCommandReceivedRef.current = false;
+        }, 100);
       }
     });
 
@@ -599,18 +611,31 @@ const SongView = () => {
         songIndex: newIndex
       });
 
-      // Emit the transposition for this song after follower has time to navigate and initialize
+      // Emit the transposition for this song - use multiple emissions to ensure delivery in production
       const nextSongTransposition = nextSong.transposition || 0;
       console.log('[SongView] Leader will emit transposition for next song:', nextSongTransposition);
+
+      // First emission after 400ms
       setTimeout(() => {
-        if (socketRef.current && socketRef.current.connected) {
-          console.log('[SongView] Leader emitting transposition NOW:', nextSongTransposition);
+        if (socketRef.current?.connected) {
+          console.log('[SongView] Leader emitting transposition (1st):', nextSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: nextSongTransposition
           });
         }
-      }, 300);
+      }, 400);
+
+      // Second emission after 700ms (retry for reliability)
+      setTimeout(() => {
+        if (socketRef.current?.connected) {
+          console.log('[SongView] Leader emitting transposition (2nd retry):', nextSongTransposition);
+          socketRef.current.emit('leader-transpose', {
+            serviceId: setlistContext.serviceId,
+            transposition: nextSongTransposition
+          });
+        }
+      }, 700);
     }
 
     navigate(`/song/${nextSongId}`, {
@@ -639,18 +664,31 @@ const SongView = () => {
         songIndex: newIndex
       });
 
-      // Emit the transposition for this song after follower has time to navigate and initialize
+      // Emit the transposition for this song - use multiple emissions to ensure delivery in production
       const prevSongTransposition = prevSong.transposition || 0;
       console.log('[SongView] Leader will emit transposition for previous song:', prevSongTransposition);
+
+      // First emission after 400ms
       setTimeout(() => {
-        if (socketRef.current && socketRef.current.connected) {
-          console.log('[SongView] Leader emitting transposition NOW:', prevSongTransposition);
+        if (socketRef.current?.connected) {
+          console.log('[SongView] Leader emitting transposition (1st):', prevSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: prevSongTransposition
           });
         }
-      }, 300);
+      }, 400);
+
+      // Second emission after 700ms (retry for reliability)
+      setTimeout(() => {
+        if (socketRef.current?.connected) {
+          console.log('[SongView] Leader emitting transposition (2nd retry):', prevSongTransposition);
+          socketRef.current.emit('leader-transpose', {
+            serviceId: setlistContext.serviceId,
+            transposition: prevSongTransposition
+          });
+        }
+      }, 700);
     }
 
     navigate(`/song/${prevSongId}`, {
