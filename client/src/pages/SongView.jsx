@@ -31,6 +31,9 @@ const SongView = () => {
   // Track if we've initialized transposition for current song to prevent race conditions
   const transpositionInitializedRef = useRef(null);
 
+  // Track if we just received a leader command (to prevent initialization override)
+  const leaderCommandReceivedRef = useRef(false);
+
   // Get setlist context from navigation state
   const setlistContext = location.state || null;
   const [currentSetlistIndex, setCurrentSetlistIndex] = useState(
@@ -106,6 +109,14 @@ const SongView = () => {
 
     console.log('[SongView] Initializing transposition for song ID:', id);
 
+    // If we just received a leader command, skip initialization to avoid override
+    if (!isLeader && isFollowMode && leaderCommandReceivedRef.current) {
+      console.log('[SongView] Skipping initialization - waiting for leader command');
+      transpositionInitializedRef.current = id;
+      leaderCommandReceivedRef.current = false;
+      return;
+    }
+
     // Determine initial transposition value
     let initialTranspose = 0;
 
@@ -129,19 +140,7 @@ const SongView = () => {
     transpositionInitializedRef.current = id;
 
     console.log('[SongView] Transposition initialized to:', initialTranspose);
-
-    // Broadcast to followers if user is leader (so they load the same transposition)
-    // Use a small timeout to ensure socket is connected
-    setTimeout(() => {
-      if (isLeader && socketRef.current && setlistContext?.serviceId) {
-        console.log('[SongView] Leader broadcasting initial transposition to followers:', initialTranspose);
-        socketRef.current.emit('leader-transpose', {
-          serviceId: setlistContext.serviceId,
-          transposition: initialTranspose
-        });
-      }
-    }, 100);
-  }, [id, setlistContext, isLeader]);
+  }, [id, setlistContext, isLeader, isFollowMode]);
 
   // Save transposition changes to the map (separate from initialization)
   useEffect(() => {
@@ -306,7 +305,10 @@ const SongView = () => {
     // Listen for leader events (only if not leader and in follow mode)
     socketRef.current.on('leader-navigated', ({ songId, songIndex }) => {
       if (!userIsLeader && isFollowMode && setlistContext?.setlist) {
-        console.log('Leader navigated to song:', songId, songIndex);
+        console.log('[SongView] Follower received leader-navigated:', songId, songIndex);
+
+        // Set flag to skip initialization (we'll wait for leader-transpose event)
+        leaderCommandReceivedRef.current = true;
 
         // Navigate to the new song
         const newSong = setlistContext.setlist[songIndex];
@@ -324,8 +326,11 @@ const SongView = () => {
 
     socketRef.current.on('leader-transposed', ({ transposition: newTransposition }) => {
       if (!userIsLeader && isFollowMode) {
-        console.log('Leader transposed to:', newTransposition);
+        console.log('[SongView] Follower received leader-transposed:', newTransposition);
         setTransposition(newTransposition);
+        songTranspositionsRef.current.set(id, newTransposition);
+        // Clear the flag after applying leader's transposition
+        leaderCommandReceivedRef.current = false;
       }
     });
 
@@ -457,7 +462,7 @@ const SongView = () => {
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
-      socketRef.current.emit('leader-change-font', {
+      socketRef.current.emit('leader-font-size', {
         serviceId: setlistContext.serviceId,
         fontSize: newFontSize
       });
@@ -470,7 +475,7 @@ const SongView = () => {
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
-      socketRef.current.emit('leader-change-font', {
+      socketRef.current.emit('leader-font-size', {
         serviceId: setlistContext.serviceId,
         fontSize: newFontSize
       });
@@ -594,15 +599,18 @@ const SongView = () => {
         songIndex: newIndex
       });
 
-      // Also emit the transposition for this song immediately after navigation
+      // Emit the transposition for this song after follower has time to navigate and initialize
       const nextSongTransposition = nextSong.transposition || 0;
-      console.log('[SongView] Leader emitting transposition for next song:', nextSongTransposition);
+      console.log('[SongView] Leader will emit transposition for next song:', nextSongTransposition);
       setTimeout(() => {
-        socketRef.current.emit('leader-transpose', {
-          serviceId: setlistContext.serviceId,
-          transposition: nextSongTransposition
-        });
-      }, 150);
+        if (socketRef.current && socketRef.current.connected) {
+          console.log('[SongView] Leader emitting transposition NOW:', nextSongTransposition);
+          socketRef.current.emit('leader-transpose', {
+            serviceId: setlistContext.serviceId,
+            transposition: nextSongTransposition
+          });
+        }
+      }, 300);
     }
 
     navigate(`/song/${nextSongId}`, {
@@ -631,15 +639,18 @@ const SongView = () => {
         songIndex: newIndex
       });
 
-      // Also emit the transposition for this song immediately after navigation
+      // Emit the transposition for this song after follower has time to navigate and initialize
       const prevSongTransposition = prevSong.transposition || 0;
-      console.log('[SongView] Leader emitting transposition for previous song:', prevSongTransposition);
+      console.log('[SongView] Leader will emit transposition for previous song:', prevSongTransposition);
       setTimeout(() => {
-        socketRef.current.emit('leader-transpose', {
-          serviceId: setlistContext.serviceId,
-          transposition: prevSongTransposition
-        });
-      }, 150);
+        if (socketRef.current && socketRef.current.connected) {
+          console.log('[SongView] Leader emitting transposition NOW:', prevSongTransposition);
+          socketRef.current.emit('leader-transpose', {
+            serviceId: setlistContext.serviceId,
+            transposition: prevSongTransposition
+          });
+        }
+      }, 300);
     }
 
     navigate(`/song/${prevSongId}`, {
