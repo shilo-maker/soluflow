@@ -580,17 +580,29 @@ const SongView = () => {
   // Navigate to next song in setlist
   const goToNextSong = () => {
     if (!hasNext) return;
-    const nextSongId = setlistContext.setlist[currentSetlistIndex + 1].id;
+    const nextSong = setlistContext.setlist[currentSetlistIndex + 1];
+    const nextSongId = nextSong.id;
     const newIndex = currentSetlistIndex + 1;
     setCurrentSetlistIndex(newIndex);
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      console.log('[SongView] Leader navigating to next song, emitting navigation');
       socketRef.current.emit('leader-navigate', {
         serviceId: setlistContext.serviceId,
         songId: nextSongId,
         songIndex: newIndex
       });
+
+      // Also emit the transposition for this song immediately after navigation
+      const nextSongTransposition = nextSong.transposition || 0;
+      console.log('[SongView] Leader emitting transposition for next song:', nextSongTransposition);
+      setTimeout(() => {
+        socketRef.current.emit('leader-transpose', {
+          serviceId: setlistContext.serviceId,
+          transposition: nextSongTransposition
+        });
+      }, 150);
     }
 
     navigate(`/song/${nextSongId}`, {
@@ -605,17 +617,29 @@ const SongView = () => {
   // Navigate to previous song in setlist
   const goToPreviousSong = () => {
     if (!hasPrevious) return;
-    const prevSongId = setlistContext.setlist[currentSetlistIndex - 1].id;
+    const prevSong = setlistContext.setlist[currentSetlistIndex - 1];
+    const prevSongId = prevSong.id;
     const newIndex = currentSetlistIndex - 1;
     setCurrentSetlistIndex(newIndex);
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      console.log('[SongView] Leader navigating to previous song, emitting navigation');
       socketRef.current.emit('leader-navigate', {
         serviceId: setlistContext.serviceId,
         songId: prevSongId,
         songIndex: newIndex
       });
+
+      // Also emit the transposition for this song immediately after navigation
+      const prevSongTransposition = prevSong.transposition || 0;
+      console.log('[SongView] Leader emitting transposition for previous song:', prevSongTransposition);
+      setTimeout(() => {
+        socketRef.current.emit('leader-transpose', {
+          serviceId: setlistContext.serviceId,
+          transposition: prevSongTransposition
+        });
+      }, 150);
     }
 
     navigate(`/song/${prevSongId}`, {
