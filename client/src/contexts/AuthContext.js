@@ -25,17 +25,60 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = authService.getToken();
       if (token) {
-        // Verify token is still valid by fetching user data
+        // Check if we're offline
+        if (!navigator.onLine) {
+          // Offline: Try to load cached user data from localStorage
+          const cachedUser = localStorage.getItem('user');
+          if (cachedUser) {
+            try {
+              const parsedUser = JSON.parse(cachedUser);
+              console.log('[Auth] Offline mode: Using cached user data');
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+              setLoading(false);
+              return;
+            } catch (e) {
+              console.warn('[Auth] Failed to parse cached user data');
+            }
+          }
+          // If no cached data, still allow access with token
+          console.log('[Auth] Offline mode: Token exists but no cached user data');
+          setUser({ id: 'offline', username: 'Offline User' });
+          setIsAuthenticated(true);
+          setLoading(false);
+          return;
+        }
+
+        // Online: Verify token is still valid by fetching user data
         const data = await authService.getMe();
         setUser(data.user);
         setIsAuthenticated(true);
+        // Cache user data for offline use
+        localStorage.setItem('user', JSON.stringify(data.user));
       } else {
         setUser(null);
         setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      // Token is invalid or expired
+
+      // If we're offline and have a token, don't log out
+      if (!navigator.onLine && authService.getToken()) {
+        console.log('[Auth] Offline: Keeping existing authentication');
+        const cachedUser = localStorage.getItem('user');
+        if (cachedUser) {
+          try {
+            setUser(JSON.parse(cachedUser));
+            setIsAuthenticated(true);
+            setLoading(false);
+            return;
+          } catch (e) {
+            // Continue to logout if parsing fails
+          }
+        }
+      }
+
+      // Token is invalid or expired (when online)
       authService.logout();
       setUser(null);
       setIsAuthenticated(false);
@@ -49,6 +92,8 @@ export const AuthProvider = ({ children }) => {
       const data = await authService.login(email, password);
       setUser(data.user);
       setIsAuthenticated(true);
+      // Cache user data for offline use
+      localStorage.setItem('user', JSON.stringify(data.user));
       return data;
     } catch (error) {
       console.error('Login error:', error);
@@ -61,6 +106,8 @@ export const AuthProvider = ({ children }) => {
       const data = await authService.register(email, password, username, workspaceId, language);
       setUser(data.user);
       setIsAuthenticated(true);
+      // Cache user data for offline use
+      localStorage.setItem('user', JSON.stringify(data.user));
       return data;
     } catch (error) {
       console.error('Register error:', error);
@@ -89,13 +136,20 @@ export const AuthProvider = ({ children }) => {
     authService.logout();
     setUser(null);
     setIsAuthenticated(false);
+    // Clear cached user data
+    localStorage.removeItem('user');
   };
 
   const updateUser = (updatedUserData) => {
-    setUser(prevUser => ({
-      ...prevUser,
-      ...updatedUserData
-    }));
+    setUser(prevUser => {
+      const newUser = {
+        ...prevUser,
+        ...updatedUserData
+      };
+      // Cache updated user data for offline use
+      localStorage.setItem('user', JSON.stringify(newUser));
+      return newUser;
+    });
   };
 
   const value = {

@@ -7,6 +7,8 @@ const getAllWorkspaces = async (req, res) => {
   try {
     const userId = req.user.id;
 
+    console.log(`[GetWorkspaces] User ${userId} requesting workspaces, active_workspace_id: ${req.user.active_workspace_id}`);
+
     // Get all workspaces the user is a member of
     const workspaces = await Workspace.findAll({
       include: [{
@@ -19,9 +21,13 @@ const getAllWorkspaces = async (req, res) => {
       order: [['created_at', 'ASC']]
     });
 
+    console.log(`[GetWorkspaces] Found ${workspaces.length} workspaces for user ${userId}`);
+
     // Transform the response to include user's role and flatten structure
     const workspacesWithRole = workspaces.map(ws => {
       const wsData = ws.toJSON();
+      const isActive = req.user.active_workspace_id === wsData.id;
+      console.log(`[GetWorkspaces] Workspace ${wsData.id} (${wsData.name}): is_active=${isActive}`);
       return {
         id: wsData.id,
         name: wsData.name,
@@ -30,7 +36,7 @@ const getAllWorkspaces = async (req, res) => {
         created_at: wsData.created_at,
         role: wsData.members[0].role,
         joined_at: wsData.members[0].joined_at,
-        is_active: req.user.active_workspace_id === wsData.id
+        is_active: isActive
       };
     });
 
@@ -655,6 +661,105 @@ const getWorkspaceMembers = async (req, res) => {
   }
 };
 
+// Remove member from workspace (admin only)
+const removeMember = async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const requestingUserId = req.user.id;
+
+    // Get workspace
+    const workspace = await Workspace.findByPk(id);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    // Cannot remove members from personal workspace
+    if (workspace.workspace_type === 'personal') {
+      return res.status(403).json({
+        error: 'Cannot remove members from personal workspace',
+        message: 'Personal workspaces cannot have members removed'
+      });
+    }
+
+    // Check if requesting user is admin
+    const requestingMembership = await WorkspaceMember.findOne({
+      where: { workspace_id: id, user_id: requestingUserId }
+    });
+
+    if (!requestingMembership || requestingMembership.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'Only admins can remove members'
+      });
+    }
+
+    // Cannot remove yourself
+    if (parseInt(userId) === requestingUserId) {
+      return res.status(400).json({
+        error: 'Cannot remove yourself',
+        message: 'Use leave workspace instead'
+      });
+    }
+
+    // Check if user is a member
+    const memberToRemove = await WorkspaceMember.findOne({
+      where: { workspace_id: id, user_id: userId }
+    });
+
+    if (!memberToRemove) {
+      return res.status(404).json({
+        error: 'Member not found',
+        message: 'User is not a member of this workspace'
+      });
+    }
+
+    // Get the user being removed
+    const userBeingRemoved = await User.findByPk(userId);
+
+    console.log(`[RemoveMember] Removing user ${userId} from workspace ${id}`);
+    console.log(`[RemoveMember] User's current active_workspace_id: ${userBeingRemoved?.active_workspace_id}`);
+
+    // If they were using this workspace as active, switch them to their personal workspace
+    if (userBeingRemoved && userBeingRemoved.active_workspace_id === parseInt(id)) {
+      console.log(`[RemoveMember] User was using workspace ${id} as active, switching to personal workspace...`);
+
+      // Find their personal workspace
+      const personalWorkspaceMembership = await WorkspaceMember.findOne({
+        where: { user_id: userId },
+        include: [{
+          model: Workspace,
+          as: 'workspace',
+          where: { workspace_type: 'personal' }
+        }]
+      });
+
+      console.log(`[RemoveMember] Found personal workspace:`, personalWorkspaceMembership?.workspace?.id);
+
+      if (personalWorkspaceMembership && personalWorkspaceMembership.workspace) {
+        await userBeingRemoved.update({
+          active_workspace_id: personalWorkspaceMembership.workspace.id
+        });
+        console.log(`[RemoveMember] ✓ Switched user ${userId} to their personal workspace (${personalWorkspaceMembership.workspace.id})`);
+      } else {
+        console.log(`[RemoveMember] ❌ Could not find personal workspace for user ${userId}`);
+      }
+    } else {
+      console.log(`[RemoveMember] User was not using workspace ${id} as active, no switch needed`);
+    }
+
+    // Remove the member
+    await memberToRemove.destroy();
+
+    res.json({
+      success: true,
+      message: 'Member removed successfully'
+    });
+  } catch (error) {
+    console.error('Remove member error:', error);
+    res.status(500).json({ error: 'Failed to remove member' });
+  }
+};
+
 module.exports = {
   getAllWorkspaces,
   getWorkspaceById,
@@ -665,5 +770,6 @@ module.exports = {
   acceptInvite,
   leaveWorkspace,
   updateMemberRole,
-  getWorkspaceMembers
+  getWorkspaceMembers,
+  removeMember
 };

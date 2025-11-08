@@ -86,9 +86,13 @@ const WorkspaceSwitcher = () => {
     }
   };
 
-  if (!activeWorkspace || workspaces.length === 0) {
+  // Don't show switcher if no workspaces at all
+  if (workspaces.length === 0) {
     return null;
   }
+
+  // If no active workspace but we have workspaces, try to use the first one
+  const displayWorkspace = activeWorkspace || workspaces[0];
 
   return (
     <div className="workspace-switcher" ref={dropdownRef}>
@@ -97,9 +101,9 @@ const WorkspaceSwitcher = () => {
         onClick={() => setIsOpen(!isOpen)}
         disabled={loading}
       >
-        <span className="workspace-name">{formatWorkspaceName(activeWorkspace)}</span>
-        <span className={`workspace-type-badge ${activeWorkspace.workspace_type}`}>
-          {activeWorkspace.workspace_type === 'personal' ? (
+        <span className="workspace-name">{formatWorkspaceName(displayWorkspace)}</span>
+        <span className={`workspace-type-badge ${displayWorkspace.workspace_type}`}>
+          {displayWorkspace.workspace_type === 'personal' ? (
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 8c1.66 0 3-1.34 3-3S9.66 2 8 2 5 3.34 5 5s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V15h14v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
             </svg>

@@ -232,6 +232,41 @@
   cursor: not-allowed;
 }
 
+.member-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.btn-remove-member {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: linear-gradient(135deg, var(--color-danger) 0%, #c62828 100%);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-md);
+  font-weight: var(--font-bold);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-danger);
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-remove-member:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-danger-hover);
+}
+
+.btn-remove-member:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .member-role.member {
   background: linear-gradient(135deg, var(--color-text-medium) 0%, #757575 100%);
   color: white;

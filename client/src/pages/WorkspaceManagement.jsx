@@ -122,6 +122,25 @@ const WorkspaceManagement = () => {
     }
   };
 
+  const handleRemoveMember = async (userId, username) => {
+    if (!window.confirm(`Are you sure you want to remove ${username} from this workspace?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      await workspaceService.removeMember(activeWorkspace.id, userId);
+      // Reload workspace details to reflect the change
+      await loadWorkspaceDetails();
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+      setError(err.message || 'Failed to remove member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!activeWorkspace) {
     return (
       <div className="workspace-management">
@@ -180,23 +199,35 @@ const WorkspaceManagement = () => {
                   <span className="member-username">{member.username}</span>
                   <span className="member-email">{member.email}</span>
                 </div>
-                {workspaceDetails.role === 'admin' && !isPersonalWorkspace && member.id !== user?.id ? (
-                  <select
-                    className="member-role-select"
-                    value={member.role || 'member'}
-                    onChange={(e) => handleRoleChange(member.id, e.target.value)}
-                    disabled={loading}
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="planner">Planner</option>
-                    <option value="leader">Leader</option>
-                    <option value="member">Member</option>
-                  </select>
-                ) : (
-                  <span className={`member-role ${member.role}`}>
-                    {member.role || 'member'}
-                  </span>
-                )}
+                <div className="member-actions">
+                  {workspaceDetails.role === 'admin' && !isPersonalWorkspace && member.id !== user?.id ? (
+                    <>
+                      <select
+                        className="member-role-select"
+                        value={member.role || 'member'}
+                        onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                        disabled={loading}
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="planner">Planner</option>
+                        <option value="leader">Leader</option>
+                        <option value="member">Member</option>
+                      </select>
+                      <button
+                        className="btn-remove-member"
+                        onClick={() => handleRemoveMember(member.id, member.username)}
+                        disabled={loading}
+                        title="Remove member"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  ) : (
+                    <span className={`member-role ${member.role}`}>
+                      {member.role || 'member'}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>

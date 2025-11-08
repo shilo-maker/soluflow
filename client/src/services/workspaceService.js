@@ -55,6 +55,12 @@ const workspaceService = {
     return response.data;
   },
 
+  // Remove member from workspace (admin only)
+  removeMember: async (workspaceId, userId) => {
+    const response = await api.delete(`/workspaces/${workspaceId}/members/${userId}`);
+    return response.data;
+  },
+
   // Get workspace members
   getWorkspaceMembers: async (workspaceId) => {
     const response = await api.get(`/workspaces/${workspaceId}/members`);

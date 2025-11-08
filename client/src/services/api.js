@@ -28,7 +28,7 @@ api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
     if (error.response) {
       // Server responded with error
       if (error.response.status === 401) {
@@ -49,6 +49,44 @@ api.interceptors.response.use(
         if (!isGuestPage && !isAuthPage && !isAuthRequest) {
           localStorage.removeItem('token');
           window.location.href = '/login';
+        }
+      } else if (error.response.status === 403) {
+        // Forbidden - check if it's a workspace access error
+        const errorData = error.response.data;
+        const isWorkspaceAccessError =
+          errorData?.message?.includes('not a member of this workspace') ||
+          errorData?.message?.includes('do not have access to this service') ||
+          errorData?.error === 'Access denied';
+
+        if (isWorkspaceAccessError) {
+          console.log('[API] Workspace access denied, switching to personal workspace...');
+
+          // Dispatch custom event for WorkspaceContext to handle
+          window.dispatchEvent(new CustomEvent('workspace-access-denied'));
+
+          // Try to switch to personal workspace automatically
+          try {
+            const token = localStorage.getItem('token');
+            if (token) {
+              // Get all workspaces
+              const workspacesResponse = await api.get('/workspaces');
+              const workspaces = workspacesResponse.data;
+
+              // Find personal workspace
+              const personalWorkspace = workspaces.find(ws => ws.workspace_type === 'personal');
+
+              if (personalWorkspace && !personalWorkspace.is_active) {
+                // Switch to personal workspace
+                await api.post(`/workspaces/${personalWorkspace.id}/switch`);
+                console.log('[API] Switched to personal workspace');
+
+                // Reload the page to reflect new workspace
+                window.location.reload();
+              }
+            }
+          } catch (switchError) {
+            console.error('[API] Failed to auto-switch workspace:', switchError);
+          }
         }
       }
       return Promise.reject(error.response.data);

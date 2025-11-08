@@ -11,7 +11,8 @@ const {
   acceptInvite,
   leaveWorkspace,
   updateMemberRole,
-  getWorkspaceMembers
+  getWorkspaceMembers,
+  removeMember
 } = require('../controllers/workspaceController');
 
 // All routes require authentication
@@ -43,6 +44,9 @@ router.delete('/:id/leave', leaveWorkspace);
 
 // Update member role (admin only)
 router.put('/:id/members/:userId/role', updateMemberRole);
+
+// Remove member from workspace (admin only)
+router.delete('/:id/members/:userId', removeMember);
 
 // Get workspace members
 router.get('/:id/members', getWorkspaceMembers);
