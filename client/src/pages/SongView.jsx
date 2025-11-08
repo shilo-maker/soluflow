@@ -129,7 +129,19 @@ const SongView = () => {
     transpositionInitializedRef.current = id;
 
     console.log('[SongView] Transposition initialized to:', initialTranspose);
-  }, [id, setlistContext]);
+
+    // Broadcast to followers if user is leader (so they load the same transposition)
+    // Use a small timeout to ensure socket is connected
+    setTimeout(() => {
+      if (isLeader && socketRef.current && setlistContext?.serviceId) {
+        console.log('[SongView] Leader broadcasting initial transposition to followers:', initialTranspose);
+        socketRef.current.emit('leader-transpose', {
+          serviceId: setlistContext.serviceId,
+          transposition: initialTranspose
+        });
+      }
+    }, 100);
+  }, [id, setlistContext, isLeader]);
 
   // Save transposition changes to the map (separate from initialization)
   useEffect(() => {
@@ -440,23 +452,79 @@ const SongView = () => {
   const hasHebrew = /[\u0590-\u05FF]/.test(song.content);
 
   const zoomIn = () => {
-    setFontSize(prev => Math.min(prev + 2, 28));
+    const newFontSize = Math.min(fontSize + 2, 28);
+    setFontSize(newFontSize);
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      socketRef.current.emit('leader-change-font', {
+        serviceId: setlistContext.serviceId,
+        fontSize: newFontSize
+      });
+    }
   };
 
   const zoomOut = () => {
-    setFontSize(prev => Math.max(prev - 2, 12));
+    const newFontSize = Math.max(fontSize - 2, 12);
+    setFontSize(newFontSize);
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      socketRef.current.emit('leader-change-font', {
+        serviceId: setlistContext.serviceId,
+        fontSize: newFontSize
+      });
+    }
   };
 
   const transposeUp = () => {
-    setTransposition(prev => Math.min(prev + 1, 11));
+    const newTransposition = Math.min(transposition + 1, 11);
+    setTransposition(newTransposition);
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      socketRef.current.emit('leader-transpose', {
+        serviceId: setlistContext.serviceId,
+        transposition: newTransposition
+      });
+    }
   };
 
   const transposeDown = () => {
-    setTransposition(prev => Math.max(prev - 1, -11));
+    const newTransposition = Math.max(transposition - 1, -11);
+    setTransposition(newTransposition);
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      socketRef.current.emit('leader-transpose', {
+        serviceId: setlistContext.serviceId,
+        transposition: newTransposition
+      });
+    }
   };
 
   const resetTransposition = () => {
     setTransposition(0);
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      socketRef.current.emit('leader-transpose', {
+        serviceId: setlistContext.serviceId,
+        transposition: 0
+      });
+    }
+  };
+
+  const handleSelectKey = (newTransposition) => {
+    setTransposition(newTransposition);
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      socketRef.current.emit('leader-transpose', {
+        serviceId: setlistContext.serviceId,
+        transposition: newTransposition
+      });
+    }
   };
 
   const handleDeleteSong = () => {
@@ -515,6 +583,16 @@ const SongView = () => {
     const nextSongId = setlistContext.setlist[currentSetlistIndex + 1].id;
     const newIndex = currentSetlistIndex + 1;
     setCurrentSetlistIndex(newIndex);
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      socketRef.current.emit('leader-navigate', {
+        serviceId: setlistContext.serviceId,
+        songId: nextSongId,
+        songIndex: newIndex
+      });
+    }
+
     navigate(`/song/${nextSongId}`, {
       state: {
         ...setlistContext,
@@ -530,6 +608,16 @@ const SongView = () => {
     const prevSongId = setlistContext.setlist[currentSetlistIndex - 1].id;
     const newIndex = currentSetlistIndex - 1;
     setCurrentSetlistIndex(newIndex);
+
+    // Broadcast to followers if user is leader
+    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+      socketRef.current.emit('leader-navigate', {
+        serviceId: setlistContext.serviceId,
+        songId: prevSongId,
+        songIndex: newIndex
+      });
+    }
+
     navigate(`/song/${prevSongId}`, {
       state: {
         ...setlistContext,
@@ -972,7 +1060,7 @@ const SongView = () => {
         onClose={() => setShowKeySelectorModal(false)}
         currentKey={song.key}
         currentTransposition={transposition}
-        onSelectKey={setTransposition}
+        onSelectKey={handleSelectKey}
       />
 
       {/* Confirm Delete Dialog */}
