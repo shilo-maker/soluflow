@@ -147,37 +147,9 @@ const SongView = () => {
     if (id && transpositionInitializedRef.current === id) {
       // Only update map after initialization is complete for current song
       songTranspositionsRef.current.set(id, transposition);
-      console.log('[SongView] Saved transposition:', transposition, 'for song:', id);
+      console.log('[SongView] Saved transposition to memory:', transposition, 'for song:', id);
     }
   }, [transposition, id]);
-
-  // Save transposition to database when changed (if opened from a service)
-  useEffect(() => {
-    const saveTranspositionToDatabase = async () => {
-      // Only save if:
-      // 1. Song is part of a service (has serviceId)
-      // 2. Transposition has been initialized for this song
-      // 3. We have valid IDs
-      if (!setlistContext?.serviceId || !id || transpositionInitializedRef.current !== id) {
-        return;
-      }
-
-      try {
-        await serviceService.updateServiceSong(setlistContext.serviceId, id, {
-          transposition: transposition
-        });
-        console.log('[SongView] Saved transposition to database:', transposition, 'for song:', id, 'in service:', setlistContext.serviceId);
-      } catch (error) {
-        console.error('[SongView] Failed to save transposition to database:', error);
-        // Don't show error to user - this is a background operation
-      }
-    };
-
-    // Small delay to avoid saving during initialization
-    const saveTimer = setTimeout(saveTranspositionToDatabase, 300);
-
-    return () => clearTimeout(saveTimer);
-  }, [transposition, id, setlistContext?.serviceId]);
 
   // Fetch notes
   useEffect(() => {
@@ -498,10 +470,31 @@ const SongView = () => {
     }
   };
 
-  const transposeUp = () => {
+  const transposeUp = async () => {
     const newTransposition = Math.min(transposition + 1, 11);
     setTransposition(newTransposition);
 
+    // Update setlist context in memory
+    if (setlistContext?.setlist && currentSetlistIndex >= 0) {
+      const updatedSetlist = [...setlistContext.setlist];
+      updatedSetlist[currentSetlistIndex] = {
+        ...updatedSetlist[currentSetlistIndex],
+        transposition: newTransposition
+      };
+      // Update in place for next navigation
+      setlistContext.setlist = updatedSetlist;
+    }
+
+    // Save transposition to database immediately
+    if (setlistContext?.serviceId && id) {
+      try {
+        await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
+        console.log('[SongView] Transposition saved to database:', newTransposition);
+      } catch (error) {
+        console.error('[SongView] Failed to save transposition:', error);
+      }
+    }
+
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
       socketRef.current.emit('leader-transpose', {
@@ -511,10 +504,30 @@ const SongView = () => {
     }
   };
 
-  const transposeDown = () => {
+  const transposeDown = async () => {
     const newTransposition = Math.max(transposition - 1, -11);
     setTransposition(newTransposition);
 
+    // Update setlist context in memory
+    if (setlistContext?.setlist && currentSetlistIndex >= 0) {
+      const updatedSetlist = [...setlistContext.setlist];
+      updatedSetlist[currentSetlistIndex] = {
+        ...updatedSetlist[currentSetlistIndex],
+        transposition: newTransposition
+      };
+      setlistContext.setlist = updatedSetlist;
+    }
+
+    // Save transposition to database immediately
+    if (setlistContext?.serviceId && id) {
+      try {
+        await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
+        console.log('[SongView] Transposition saved to database:', newTransposition);
+      } catch (error) {
+        console.error('[SongView] Failed to save transposition:', error);
+      }
+    }
+
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
       socketRef.current.emit('leader-transpose', {
@@ -524,8 +537,28 @@ const SongView = () => {
     }
   };
 
-  const resetTransposition = () => {
+  const resetTransposition = async () => {
     setTransposition(0);
+
+    // Update setlist context in memory
+    if (setlistContext?.setlist && currentSetlistIndex >= 0) {
+      const updatedSetlist = [...setlistContext.setlist];
+      updatedSetlist[currentSetlistIndex] = {
+        ...updatedSetlist[currentSetlistIndex],
+        transposition: 0
+      };
+      setlistContext.setlist = updatedSetlist;
+    }
+
+    // Save transposition to database immediately
+    if (setlistContext?.serviceId && id) {
+      try {
+        await serviceService.updateSongTransposition(setlistContext.serviceId, id, 0);
+        console.log('[SongView] Transposition reset saved to database');
+      } catch (error) {
+        console.error('[SongView] Failed to save transposition reset:', error);
+      }
+    }
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
@@ -536,8 +569,28 @@ const SongView = () => {
     }
   };
 
-  const handleSelectKey = (newTransposition) => {
+  const handleSelectKey = async (newTransposition) => {
     setTransposition(newTransposition);
+
+    // Update setlist context in memory
+    if (setlistContext?.setlist && currentSetlistIndex >= 0) {
+      const updatedSetlist = [...setlistContext.setlist];
+      updatedSetlist[currentSetlistIndex] = {
+        ...updatedSetlist[currentSetlistIndex],
+        transposition: newTransposition
+      };
+      setlistContext.setlist = updatedSetlist;
+    }
+
+    // Save transposition to database immediately
+    if (setlistContext?.serviceId && id) {
+      try {
+        await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
+        console.log('[SongView] Key selection saved to database:', newTransposition);
+      } catch (error) {
+        console.error('[SongView] Failed to save key selection:', error);
+      }
+    }
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
