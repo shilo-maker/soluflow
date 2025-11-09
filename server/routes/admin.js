@@ -23,6 +23,9 @@ router.delete('/workspaces/:workspaceName', adminAuth, async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
+    // Defer foreign key constraints in this transaction
+    await sequelize.query('SET CONSTRAINTS ALL DEFERRED', { transaction });
+
     console.log(`🔍 Searching for workspace: ${workspaceName}`);
 
     // Find the workspace
