@@ -233,11 +233,20 @@ const deleteWorkspace = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    // Get workspace
-    const workspace = await Workspace.findByPk(id);
-    if (!workspace) {
+    // Get workspace using raw SQL to avoid loading associations
+    const workspaces = await sequelize.query(
+      `SELECT id, name, workspace_type FROM workspaces WHERE id = $1`,
+      {
+        bind: [id],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    if (!workspaces || workspaces.length === 0) {
       return res.status(404).json({ error: 'Workspace not found' });
     }
+
+    const workspace = workspaces[0];
 
     // Cannot delete personal workspaces
     if (workspace.workspace_type === 'personal') {
@@ -247,16 +256,17 @@ const deleteWorkspace = async (req, res) => {
       });
     }
 
-    // Check if user is admin of this workspace
-    const membership = await WorkspaceMember.findOne({
-      where: {
-        workspace_id: id,
-        user_id: userId,
-        role: 'admin'
+    // Check if user is admin of this workspace using raw SQL
+    const memberships = await sequelize.query(
+      `SELECT id FROM workspace_members
+       WHERE workspace_id = $1 AND user_id = $2 AND role = 'admin'`,
+      {
+        bind: [id, userId],
+        type: sequelize.QueryTypes.SELECT
       }
-    });
+    );
 
-    if (!membership) {
+    if (!memberships || memberships.length === 0) {
       return res.status(403).json({
         error: 'Insufficient permissions',
         message: 'Only workspace admins can delete workspaces'
