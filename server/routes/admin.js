@@ -164,4 +164,70 @@ router.delete('/workspaces/:workspaceName', adminAuth, async (req, res) => {
   }
 });
 
+// POST /api/admin/users/:email/fix-workspace - Fix user's workspace references
+router.post('/users/:email/fix-workspace', adminAuth, async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    console.log(`Fixing workspace for user: ${email}`);
+
+    // Find user's personal workspace
+    const result = await sequelize.query(
+      `SELECT u.id as user_id, u.email, u.active_workspace_id, u.workspace_id,
+              w.id as personal_workspace_id, w.name as personal_workspace_name
+       FROM users u
+       LEFT JOIN workspace_members wm ON wm.user_id = u.id
+       LEFT JOIN workspaces w ON w.id = wm.workspace_id AND w.workspace_type = 'personal'
+       WHERE u.email = $1
+       LIMIT 1`,
+      {
+        bind: [email],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    if (!result || result.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result[0];
+    console.log('User found:', user);
+
+    if (!user.personal_workspace_id) {
+      return res.status(404).json({ error: 'Personal workspace not found for user' });
+    }
+
+    // Update user's workspace references
+    await sequelize.query(
+      `UPDATE users
+       SET active_workspace_id = $1, workspace_id = $1
+       WHERE id = $2`,
+      {
+        bind: [user.personal_workspace_id, user.user_id],
+        type: sequelize.QueryTypes.UPDATE
+      }
+    );
+
+    console.log('✅ User workspace updated successfully');
+
+    res.json({
+      message: 'User workspace updated successfully',
+      user: {
+        email: user.email,
+        old_active_workspace: user.active_workspace_id,
+        old_workspace: user.workspace_id,
+        new_workspace: user.personal_workspace_id,
+        workspace_name: user.personal_workspace_name
+      }
+    });
+
+  } catch (error) {
+    console.error('Fix workspace error:', error);
+    res.status(500).json({
+      error: 'Failed to fix user workspace',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
