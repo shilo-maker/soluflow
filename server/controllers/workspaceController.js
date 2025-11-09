@@ -267,23 +267,65 @@ const deleteWorkspace = async (req, res) => {
     const transaction = await sequelize.transaction();
 
     try {
-      // 1. Get all members who had this as active workspace
-      const affectedUsers = await User.findAll({
-        where: { active_workspace_id: id },
+      // 1. Get all members who had this as active workspace (before we delete anything)
+      const affectedUserIds = await sequelize.query(
+        `SELECT id FROM users WHERE active_workspace_id = $1`,
+        {
+          bind: [id],
+          transaction,
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+
+      // 2. Get all services for this workspace
+      const services = await Service.findAll({
+        where: { workspace_id: id },
+        attributes: ['id'],
+        transaction
+      });
+      const serviceIds = services.map(s => s.id);
+
+      // 3. Delete service songs first
+      if (serviceIds.length > 0) {
+        await ServiceSong.destroy({
+          where: { service_id: serviceIds },
+          transaction
+        });
+      }
+
+      // 4. Delete services
+      await Service.destroy({
+        where: { workspace_id: id },
         transaction
       });
 
-      // 2. Update affected users to have their personal workspace as active FIRST (in transaction)
-      // Use raw SQL to avoid Sequelize cascade issues
-      for (const user of affectedUsers) {
-        // Find user's personal workspace
+      // 5. Delete song-workspace associations
+      await SongWorkspace.destroy({
+        where: { workspace_id: id },
+        transaction
+      });
+
+      // 6. Delete workspace invitations
+      await WorkspaceInvitation.destroy({
+        where: { workspace_id: id },
+        transaction
+      });
+
+      // 7. Delete workspace members BEFORE updating users
+      await WorkspaceMember.destroy({
+        where: { workspace_id: id },
+        transaction
+      });
+
+      // 8. Now update affected users to point to their personal workspace
+      for (const userRow of affectedUserIds) {
         const personalWorkspaces = await sequelize.query(
           `SELECT w.id FROM workspaces w
            INNER JOIN workspace_members wm ON w.id = wm.workspace_id
            WHERE w.workspace_type = 'personal' AND wm.user_id = $1
            LIMIT 1`,
           {
-            bind: [user.id],
+            bind: [userRow.id],
             transaction,
             type: sequelize.QueryTypes.SELECT
           }
@@ -293,7 +335,7 @@ const deleteWorkspace = async (req, res) => {
           await sequelize.query(
             `UPDATE users SET active_workspace_id = $1 WHERE id = $2`,
             {
-              bind: [personalWorkspaces[0].id, user.id],
+              bind: [personalWorkspaces[0].id, userRow.id],
               transaction,
               type: sequelize.QueryTypes.UPDATE
             }
@@ -301,56 +343,14 @@ const deleteWorkspace = async (req, res) => {
         }
       }
 
-      // 3. Get all services for this workspace
-      const services = await Service.findAll({
-        where: { workspace_id: id },
-        attributes: ['id'],
-        transaction
-      });
-      const serviceIds = services.map(s => s.id);
-
-      // 4. Delete service songs first
-      if (serviceIds.length > 0) {
-        await ServiceSong.destroy({
-          where: { service_id: serviceIds },
-          transaction
-        });
-      }
-
-      // 5. Delete services
-      await Service.destroy({
-        where: { workspace_id: id },
-        transaction
-      });
-
-      // 6. Delete song-workspace associations
-      await SongWorkspace.destroy({
-        where: { workspace_id: id },
-        transaction
-      });
-
-      // 7. Delete workspace invitations
-      await WorkspaceInvitation.destroy({
-        where: { workspace_id: id },
-        transaction
-      });
-
-      // 8. Delete workspace members
-      await WorkspaceMember.destroy({
-        where: { workspace_id: id },
-        transaction
-      });
-
       // 9. Finally delete the workspace
       await workspace.destroy({ transaction });
 
       await transaction.commit();
 
-      const affectedCount = affectedUsers.length;
-
       res.json({
         message: 'Workspace deleted successfully',
-        affected_users: affectedCount
+        affected_users: affectedUserIds.length
       });
     } catch (error) {
       await transaction.rollback();
