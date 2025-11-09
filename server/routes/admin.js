@@ -76,85 +76,65 @@ router.delete('/workspaces/:workspaceName', adminAuth, async (req, res) => {
     console.log(`   - Service Songs: ${serviceSongCount}`);
     console.log(`   - Song-Workspace associations: ${songWorkspaceCount}`);
 
-    // Delete in order: child tables first, then parent
-    // Using a single transaction with explicit deletion order
+    // Delete in order, handling foreign key constraints properly
+    // The order matters: delete children before parents
 
-    // Use SET session_replication_role = 'replica' to temporarily disable FK constraints
-    await sequelize.query(`SET session_replication_role = 'replica'`, { transaction });
-
-    try {
-      // 1. Delete service songs
-      if (serviceIds.length > 0) {
-        await sequelize.query(
-          `DELETE FROM service_songs WHERE service_id = ANY($1)`,
-          {
-            bind: [serviceIds],
-            transaction,
-            type: sequelize.QueryTypes.DELETE
-          }
-        );
-        console.log(`✓ Deleted service songs for ${serviceIds.length} services`);
-      }
-
-      // 2. Delete services
-      await sequelize.query(
-        `DELETE FROM services WHERE workspace_id = $1`,
-        {
-          bind: [workspace.id],
-          transaction,
-          type: sequelize.QueryTypes.DELETE
-        }
-      );
-      console.log(`✓ Deleted ${serviceCount} services (setlists)`);
-
-      // 3. Delete workspace invitations
-      await sequelize.query(
-        `DELETE FROM workspace_invitations WHERE workspace_id = $1`,
-        {
-          bind: [workspace.id],
-          transaction,
-          type: sequelize.QueryTypes.DELETE
-        }
-      );
-      console.log(`✓ Deleted ${invitationCount} workspace invitations`);
-
-      // 4. Delete workspace members
-      await sequelize.query(
-        `DELETE FROM workspace_members WHERE workspace_id = $1`,
-        {
-          bind: [workspace.id],
-          transaction,
-          type: sequelize.QueryTypes.DELETE
-        }
-      );
-      console.log(`✓ Deleted ${memberCount} workspace members`);
-
-      // 5. Delete song-workspace associations
-      await sequelize.query(
-        `DELETE FROM song_workspaces WHERE workspace_id = $1`,
-        {
-          bind: [workspace.id],
-          transaction,
-          type: sequelize.QueryTypes.DELETE
-        }
-      );
-      console.log(`✓ Deleted ${songWorkspaceCount} song-workspace associations`);
-
-      // 6. Finally, delete the workspace itself
-      await sequelize.query(
-        `DELETE FROM workspaces WHERE id = $1`,
-        {
-          bind: [workspace.id],
-          transaction,
-          type: sequelize.QueryTypes.DELETE
-        }
-      );
-      console.log(`✓ Deleted workspace: ${workspace.name}`);
-
-    } finally {
-      // Re-enable FK constraints
-      await sequelize.query(`SET session_replication_role = 'origin'`, { transaction });
+    // 1. Delete service songs first (children of services)
+    if (serviceIds.length > 0) {
+      const deletedServiceSongs = await ServiceSong.destroy({
+        where: { service_id: serviceIds },
+        transaction,
+        hooks: false,
+        individualHooks: false
+      });
+      console.log(`✓ Deleted ${deletedServiceSongs} service songs`);
     }
+
+    // 2. Delete services (children of workspace)
+    const deletedServices = await Service.destroy({
+      where: { workspace_id: workspace.id },
+      transaction,
+      hooks: false,
+      individualHooks: false
+    });
+    console.log(`✓ Deleted ${deletedServices} services`);
+
+    // 3. Delete song-workspace associations (references workspace)
+    const deletedSongWorkspaces = await SongWorkspace.destroy({
+      where: { workspace_id: workspace.id },
+      transaction,
+      hooks: false,
+      individualHooks: false
+    });
+    console.log(`✓ Deleted ${deletedSongWorkspaces} song-workspace associations`);
+
+    // 4. Delete workspace invitations (children of workspace)
+    const deletedInvitations = await WorkspaceInvitation.destroy({
+      where: { workspace_id: workspace.id },
+      transaction,
+      hooks: false,
+      individualHooks: false
+    });
+    console.log(`✓ Deleted ${deletedInvitations} workspace invitations`);
+
+    // 5. Delete workspace members LAST before workspace (references both workspace and users)
+    const deletedMembers = await WorkspaceMember.destroy({
+      where: { workspace_id: workspace.id },
+      transaction,
+      hooks: false,
+      individualHooks: false,
+      force: true
+    });
+    console.log(`✓ Deleted ${deletedMembers} workspace members`);
+
+    // 6. Finally, delete the workspace itself
+    const deletedWorkspace = await Workspace.destroy({
+      where: { id: workspace.id },
+      transaction,
+      hooks: false,
+      individualHooks: false
+    });
+    console.log(`✓ Deleted workspace: ${workspace.name}`);
 
     // Commit the transaction
     await transaction.commit();
