@@ -263,34 +263,36 @@ const deleteWorkspace = async (req, res) => {
       });
     }
 
-    // Get all members who had this as active workspace
-    const affectedUsers = await User.findAll({
-      where: { active_workspace_id: id }
-    });
-
-    // Update affected users to have their personal workspace as active FIRST
-    for (const user of affectedUsers) {
-      // Find user's personal workspace
-      const personalWorkspace = await Workspace.findOne({
-        where: { workspace_type: 'personal' },
-        include: [{
-          model: WorkspaceMember,
-          as: 'members',
-          where: { user_id: user.id },
-          required: true
-        }]
-      });
-
-      if (personalWorkspace) {
-        await user.update({ active_workspace_id: personalWorkspace.id });
-      }
-    }
-
-    // Now safely delete all workspace-related data in correct order
+    // Start transaction for all deletions and updates
     const transaction = await sequelize.transaction();
 
     try {
-      // Get all services for this workspace
+      // 1. Get all members who had this as active workspace
+      const affectedUsers = await User.findAll({
+        where: { active_workspace_id: id },
+        transaction
+      });
+
+      // 2. Update affected users to have their personal workspace as active FIRST (in transaction)
+      for (const user of affectedUsers) {
+        // Find user's personal workspace
+        const personalWorkspace = await Workspace.findOne({
+          where: { workspace_type: 'personal' },
+          include: [{
+            model: WorkspaceMember,
+            as: 'members',
+            where: { user_id: user.id },
+            required: true
+          }],
+          transaction
+        });
+
+        if (personalWorkspace) {
+          await user.update({ active_workspace_id: personalWorkspace.id }, { transaction });
+        }
+      }
+
+      // 3. Get all services for this workspace
       const services = await Service.findAll({
         where: { workspace_id: id },
         attributes: ['id'],
@@ -298,7 +300,7 @@ const deleteWorkspace = async (req, res) => {
       });
       const serviceIds = services.map(s => s.id);
 
-      // 1. Delete service songs first
+      // 4. Delete service songs first
       if (serviceIds.length > 0) {
         await ServiceSong.destroy({
           where: { service_id: serviceIds },
@@ -306,43 +308,45 @@ const deleteWorkspace = async (req, res) => {
         });
       }
 
-      // 2. Delete services
+      // 5. Delete services
       await Service.destroy({
         where: { workspace_id: id },
         transaction
       });
 
-      // 3. Delete song-workspace associations
+      // 6. Delete song-workspace associations
       await SongWorkspace.destroy({
         where: { workspace_id: id },
         transaction
       });
 
-      // 4. Delete workspace invitations
+      // 7. Delete workspace invitations
       await WorkspaceInvitation.destroy({
         where: { workspace_id: id },
         transaction
       });
 
-      // 5. Delete workspace members
+      // 8. Delete workspace members
       await WorkspaceMember.destroy({
         where: { workspace_id: id },
         transaction
       });
 
-      // 6. Finally delete the workspace
+      // 9. Finally delete the workspace
       await workspace.destroy({ transaction });
 
       await transaction.commit();
+
+      const affectedCount = affectedUsers.length;
+
+      res.json({
+        message: 'Workspace deleted successfully',
+        affected_users: affectedCount
+      });
     } catch (error) {
       await transaction.rollback();
       throw error;
     }
-
-    res.json({
-      message: 'Workspace deleted successfully',
-      affected_users: affectedUsers.length
-    });
   } catch (error) {
     console.error('Delete workspace error:', error);
     console.error('Error details:', error.message);
