@@ -89,6 +89,12 @@ const serviceService = {
       new_leader_id: newLeaderId
     });
     return response.data;
+  },
+
+  // Remove shared service from user's view
+  unshareService: async (serviceId) => {
+    const response = await api.delete(`/services/${serviceId}/unshare`);
+    return response.data;
   }
 };
 

@@ -795,6 +795,28 @@ const Service = () => {
     setServiceToMove(null);
   };
 
+  const handleUnshareService = async (service) => {
+    try {
+      await serviceService.unshareService(service.id);
+
+      // Remove from services list
+      setServices(prev => prev.filter(s => s.id !== service.id));
+
+      // If we removed the selected service, select the first remaining service
+      if (selectedService?.id === service.id) {
+        const remainingServices = services.filter(s => s.id !== service.id);
+        setSelectedService(remainingServices.length > 0 ? remainingServices[0] : null);
+      }
+
+      setToastMessage('Shared service removed successfully!');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Error removing shared service:', err);
+      setToastMessage('Failed to remove shared service');
+      setShowToast(true);
+    }
+  };
+
   const handlePassLeadership = (service) => {
     setServiceToPassLeadership(service);
     setIsPassLeadershipModalOpen(true);
@@ -929,6 +951,30 @@ const Service = () => {
                   <span className="service-option-title">{service.title}</span>
                   {service.isShared && <span className="shared-label">Shared with me</span>}
                 </div>
+                {service.isShared && (
+                  <div className="service-option-menu">
+                    <button
+                      className="btn-menu-toggle"
+                      onClick={(e) => toggleServiceMenu(service.id, e)}
+                    >
+                      ⋮
+                    </button>
+                    {openMenuId === service.id && (
+                      <div className="service-dropdown-menu">
+                        <button
+                          className="menu-item menu-item-delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(null);
+                            handleUnshareService(service);
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {!service.isShared && (
                   <div className="service-option-menu">
                     <button
