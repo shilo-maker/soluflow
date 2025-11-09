@@ -85,40 +85,46 @@ const getAllServices = async (req, res) => {
     }
 
     // Get services shared with this user (from other workspaces)
-    const sharedServiceRecords = await SharedService.findAll({
-      where: {
-        user_id: req.user.id
-      },
-      include: [
-        {
-          model: Service,
-          as: 'service',
-          where: {
-            is_archived: false
-          },
-          include: [
-            {
-              model: User,
-              as: 'leader',
-              attributes: ['id', 'username', 'email']
-            },
-            {
-              model: User,
-              as: 'creator',
-              attributes: ['id', 'username', 'email']
-            }
-          ]
-        }
-      ]
-    });
+    // ONLY show shared services in personal workspace
+    const currentWorkspace = await Workspace.findByPk(workspaceId);
+    const isPersonalWorkspace = currentWorkspace && currentWorkspace.workspace_type === 'personal';
 
-    sharedServices = sharedServiceRecords.map(ss => {
-      const service = ss.service.toJSON();
-      service.isShared = true;
-      service.canEdit = false; // Shared services are read-only
-      service.isFromSharedLink = true; // Mark as added via share link
-      return service;
-    });
+    if (isPersonalWorkspace) {
+      const sharedServiceRecords = await SharedService.findAll({
+        where: {
+          user_id: req.user.id
+        },
+        include: [
+          {
+            model: Service,
+            as: 'service',
+            where: {
+              is_archived: false
+            },
+            include: [
+              {
+                model: User,
+                as: 'leader',
+                attributes: ['id', 'username', 'email']
+              },
+              {
+                model: User,
+                as: 'creator',
+                attributes: ['id', 'username', 'email']
+              }
+            ]
+          }
+        ]
+      });
+
+      sharedServices = sharedServiceRecords.map(ss => {
+        const service = ss.service.toJSON();
+        service.isShared = true;
+        service.canEdit = false; // Shared services are read-only
+        service.isFromSharedLink = true; // Mark as added via share link
+        return service;
+      });
+    }
 
     // Combine workspace services and shared services, removing duplicates
     const serviceMap = new Map();
@@ -862,6 +868,40 @@ const changeServiceLeader = async (req, res) => {
   }
 };
 
+// DELETE /api/services/:id/unshare - Remove a shared service from user's view
+const unshareService = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Find the shared service record
+    const sharedService = await SharedService.findOne({
+      where: {
+        service_id: id,
+        user_id: userId
+      }
+    });
+
+    if (!sharedService) {
+      return res.status(404).json({
+        error: 'Shared service not found',
+        message: 'This service was not shared with you or has already been removed'
+      });
+    }
+
+    // Delete the shared service record
+    await sharedService.destroy();
+
+    res.json({
+      message: 'Shared service removed successfully',
+      service_id: id
+    });
+  } catch (error) {
+    console.error('Error unsharing service:', error);
+    res.status(500).json({ error: 'Failed to remove shared service' });
+  }
+};
+
 module.exports = {
   getAllServices,
   getServiceById,
@@ -876,5 +916,6 @@ module.exports = {
   acceptSharedService,
   getShareLink,
   moveToWorkspace,
-  changeServiceLeader
+  changeServiceLeader,
+  unshareService
 };

@@ -14,6 +14,7 @@ const {
   updateSongTransposition,
   acceptSharedService,
   getShareLink,
+  unshareService,
   moveToWorkspace,
   changeServiceLeader
 } = require('../controllers/serviceController');
@@ -53,6 +54,9 @@ router.get('/:id/share', authenticate, getShareLink);
 
 // POST /api/services/accept/:code - Accept shared service (authenticated)
 router.post('/accept/:code', authenticate, acceptSharedService);
+
+// DELETE /api/services/:id/unshare - Remove shared service from user's view (authenticated)
+router.delete('/:id/unshare', authenticate, unshareService);
 
 // PUT /api/services/:id/move - Move service to another workspace (authenticated)
 router.put('/:id/move', authenticate, moveToWorkspace);
