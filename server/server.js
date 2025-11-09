@@ -105,6 +105,7 @@ const notesRoutes = require('./routes/notes');
 const usersRoutes = require('./routes/users');
 const workspacesRoutes = require('./routes/workspaces');
 const integrationRoutes = require('./routes/integration');
+const adminRoutes = require('./routes/admin');
 
 // API routes
 app.get('/api/health', (req, res) => {
@@ -119,6 +120,7 @@ app.use('/api/notes', notesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/workspaces', workspacesRoutes);
 app.use('/api/integration', integrationRoutes); // Integration API for external apps
+app.use('/api/admin', adminRoutes); // Admin API for system management
 
 // Serve static files from React app in production
 if (process.env.NODE_ENV === 'production') {
