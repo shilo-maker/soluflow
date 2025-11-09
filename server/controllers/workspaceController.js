@@ -320,8 +320,19 @@ const deleteWorkspace = async (req, res) => {
         { bind: [id], transaction, type: sequelize.QueryTypes.DELETE }
       );
 
-      // 8. Now update affected users to point to their personal workspace
-      for (const userRow of affectedUserIds) {
+      // 8. Update ALL users who reference this workspace (workspace_id or active_workspace_id)
+      // Get all users who have this workspace set
+      const allAffectedUsers = await sequelize.query(
+        `SELECT id FROM users WHERE workspace_id = $1 OR active_workspace_id = $1`,
+        {
+          bind: [id],
+          transaction,
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+
+      // Update them to point to their personal workspace
+      for (const userRow of allAffectedUsers) {
         const personalWorkspaces = await sequelize.query(
           `SELECT w.id FROM workspaces w
            INNER JOIN workspace_members wm ON w.id = wm.workspace_id
@@ -336,7 +347,9 @@ const deleteWorkspace = async (req, res) => {
 
         if (personalWorkspaces && personalWorkspaces.length > 0) {
           await sequelize.query(
-            `UPDATE users SET active_workspace_id = $1 WHERE id = $2`,
+            `UPDATE users
+             SET workspace_id = $1, active_workspace_id = $1
+             WHERE id = $2`,
             {
               bind: [personalWorkspaces[0].id, userRow.id],
               transaction,
