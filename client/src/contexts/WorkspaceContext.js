@@ -194,12 +194,12 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // Check if user can join more workspaces (max 4)
-  const canJoinMore = workspaces.length < 4;
+  // Check if user can join more workspaces (max 5)
+  const canJoinMore = workspaces.length < 5;
 
-  // Count team workspaces (max 3)
+  // Count team workspaces (max 4)
   const teamCount = workspaces.filter(ws => ws.workspace_type === 'organization').length;
-  const canCreateOrganization = teamCount < 3;
+  const canCreateOrganization = teamCount < 4;
 
   const value = {
     workspaces,

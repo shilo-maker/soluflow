@@ -47,7 +47,7 @@ const AcceptInvite = () => {
       } else if (err.message.includes('already a member')) {
         errorMessage = 'You are already a member of this workspace.';
       } else if (err.message.includes('workspace limit')) {
-        errorMessage = 'You have reached the maximum number of workspaces (4). Please leave a workspace before joining a new one.';
+        errorMessage = 'You have reached the maximum number of workspaces (5). Please leave a workspace before joining a new one.';
       } else if (err.message) {
         errorMessage = err.message;
       }

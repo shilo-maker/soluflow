@@ -119,10 +119,10 @@ const createWorkspace = async (req, res) => {
       where: { user_id: userId }
     });
 
-    if (memberCount >= 4) {
+    if (memberCount >= 5) {
       return res.status(403).json({
         error: 'Maximum workspace limit reached',
-        message: 'You can be a member of maximum 4 workspaces (1 personal + 3 organization)'
+        message: 'You can be a member of maximum 5 workspaces (1 personal + 4 organization)'
       });
     }
 
@@ -137,10 +137,10 @@ const createWorkspace = async (req, res) => {
       }]
     });
 
-    if (orgWorkspaces.length >= 3) {
+    if (orgWorkspaces.length >= 4) {
       return res.status(403).json({
         error: 'Maximum organization workspace limit reached',
-        message: 'You can create/join maximum 3 organization workspaces'
+        message: 'You can create/join maximum 4 organization workspaces'
       });
     }
 
@@ -522,10 +522,10 @@ const acceptInvite = async (req, res) => {
       where: { user_id: userId }
     });
 
-    if (memberCount >= 4) {
+    if (memberCount >= 5) {
       return res.status(403).json({
         error: 'Maximum workspace limit reached',
-        message: 'You can be a member of maximum 4 workspaces. Leave a workspace to join this one.'
+        message: 'You can be a member of maximum 5 workspaces. Leave a workspace to join this one.'
       });
     }
 
