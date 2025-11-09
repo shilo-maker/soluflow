@@ -277,45 +277,38 @@ const deleteWorkspace = async (req, res) => {
         }
       );
 
-      // 2. Get all services for this workspace
-      const services = await Service.findAll({
-        where: { workspace_id: id },
-        attributes: ['id'],
-        transaction
-      });
-      const serviceIds = services.map(s => s.id);
+      // 2. Delete all related data using raw SQL to completely avoid Sequelize ORM
 
-      // 3. Delete service songs first
-      if (serviceIds.length > 0) {
-        await ServiceSong.destroy({
-          where: { service_id: serviceIds },
-          transaction
-        });
-      }
+      // Delete service songs (via services in this workspace)
+      await sequelize.query(
+        `DELETE FROM service_songs
+         WHERE service_id IN (SELECT id FROM services WHERE workspace_id = $1)`,
+        { bind: [id], transaction, type: sequelize.QueryTypes.DELETE }
+      );
 
-      // 4. Delete services
-      await Service.destroy({
-        where: { workspace_id: id },
-        transaction
-      });
+      // Delete services
+      await sequelize.query(
+        `DELETE FROM services WHERE workspace_id = $1`,
+        { bind: [id], transaction, type: sequelize.QueryTypes.DELETE }
+      );
 
-      // 5. Delete song-workspace associations
-      await SongWorkspace.destroy({
-        where: { workspace_id: id },
-        transaction
-      });
+      // Delete song-workspace associations
+      await sequelize.query(
+        `DELETE FROM song_workspaces WHERE workspace_id = $1`,
+        { bind: [id], transaction, type: sequelize.QueryTypes.DELETE }
+      );
 
-      // 6. Delete workspace invitations
-      await WorkspaceInvitation.destroy({
-        where: { workspace_id: id },
-        transaction
-      });
+      // Delete workspace invitations
+      await sequelize.query(
+        `DELETE FROM workspace_invitations WHERE workspace_id = $1`,
+        { bind: [id], transaction, type: sequelize.QueryTypes.DELETE }
+      );
 
-      // 7. Delete workspace members BEFORE updating users
-      await WorkspaceMember.destroy({
-        where: { workspace_id: id },
-        transaction
-      });
+      // Delete workspace members
+      await sequelize.query(
+        `DELETE FROM workspace_members WHERE workspace_id = $1`,
+        { bind: [id], transaction, type: sequelize.QueryTypes.DELETE }
+      );
 
       // 8. Now update affected users to point to their personal workspace
       for (const userRow of affectedUserIds) {
