@@ -277,7 +277,7 @@ const deleteWorkspace = async (req, res) => {
       // Use raw SQL to avoid Sequelize cascade issues
       for (const user of affectedUsers) {
         // Find user's personal workspace
-        const [personalWorkspaces] = await sequelize.query(
+        const personalWorkspaces = await sequelize.query(
           `SELECT w.id FROM workspaces w
            INNER JOIN workspace_members wm ON w.id = wm.workspace_id
            WHERE w.workspace_type = 'personal' AND wm.user_id = $1
