@@ -77,46 +77,74 @@ router.delete('/workspaces/:workspaceName', adminAuth, async (req, res) => {
     console.log(`   - Song-Workspace associations: ${songWorkspaceCount}`);
 
     // Delete in order: child tables first, then parent
+    // Using raw SQL to avoid Sequelize cascade issues
 
     // 1. Delete service songs
     if (serviceIds.length > 0) {
-      const deletedServiceSongs = await ServiceSong.destroy({
-        where: { service_id: serviceIds },
-        transaction
-      });
-      console.log(`✓ Deleted ${deletedServiceSongs} service songs`);
+      const [deletedServiceSongs] = await sequelize.query(
+        `DELETE FROM service_songs WHERE service_id = ANY($1)`,
+        {
+          bind: [serviceIds],
+          transaction,
+          type: sequelize.QueryTypes.DELETE
+        }
+      );
+      console.log(`✓ Deleted service songs for ${serviceIds.length} services`);
     }
 
     // 2. Delete services
-    const deletedServices = await Service.destroy({
-      where: { workspace_id: workspace.id },
-      transaction
-    });
-    console.log(`✓ Deleted ${deletedServices} services (setlists)`);
+    const [deletedServices] = await sequelize.query(
+      `DELETE FROM services WHERE workspace_id = $1`,
+      {
+        bind: [workspace.id],
+        transaction,
+        type: sequelize.QueryTypes.DELETE
+      }
+    );
+    console.log(`✓ Deleted ${serviceCount} services (setlists)`);
 
     // 3. Delete workspace invitations
-    const deletedInvitations = await WorkspaceInvitation.destroy({
-      where: { workspace_id: workspace.id },
-      transaction
-    });
-    console.log(`✓ Deleted ${deletedInvitations} workspace invitations`);
+    const [deletedInvitations] = await sequelize.query(
+      `DELETE FROM workspace_invitations WHERE workspace_id = $1`,
+      {
+        bind: [workspace.id],
+        transaction,
+        type: sequelize.QueryTypes.DELETE
+      }
+    );
+    console.log(`✓ Deleted ${invitationCount} workspace invitations`);
 
     // 4. Delete workspace members
-    const deletedMembers = await WorkspaceMember.destroy({
-      where: { workspace_id: workspace.id },
-      transaction
-    });
-    console.log(`✓ Deleted ${deletedMembers} workspace members`);
+    const [deletedMembers] = await sequelize.query(
+      `DELETE FROM workspace_members WHERE workspace_id = $1`,
+      {
+        bind: [workspace.id],
+        transaction,
+        type: sequelize.QueryTypes.DELETE
+      }
+    );
+    console.log(`✓ Deleted ${memberCount} workspace members`);
 
     // 5. Delete song-workspace associations
-    const deletedSongWorkspaces = await SongWorkspace.destroy({
-      where: { workspace_id: workspace.id },
-      transaction
-    });
-    console.log(`✓ Deleted ${deletedSongWorkspaces} song-workspace associations`);
+    const [deletedSongWorkspaces] = await sequelize.query(
+      `DELETE FROM song_workspaces WHERE workspace_id = $1`,
+      {
+        bind: [workspace.id],
+        transaction,
+        type: sequelize.QueryTypes.DELETE
+      }
+    );
+    console.log(`✓ Deleted ${songWorkspaceCount} song-workspace associations`);
 
     // 6. Finally, delete the workspace itself
-    await workspace.destroy({ transaction });
+    await sequelize.query(
+      `DELETE FROM workspaces WHERE id = $1`,
+      {
+        bind: [workspace.id],
+        transaction,
+        type: sequelize.QueryTypes.DELETE
+      }
+    );
     console.log(`✓ Deleted workspace: ${workspace.name}`);
 
     // Commit the transaction
