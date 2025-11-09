@@ -1,4 +1,5 @@
-const { User, Workspace, WorkspaceMember, WorkspaceInvitation } = require('../models');
+const { User, Workspace, WorkspaceMember, WorkspaceInvitation, Service, ServiceSong, SongWorkspace } = require('../models');
+const { sequelize } = require('../config/database');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
 
@@ -267,10 +268,7 @@ const deleteWorkspace = async (req, res) => {
       where: { active_workspace_id: id }
     });
 
-    // Delete workspace (will cascade delete members and invitations)
-    await workspace.destroy();
-
-    // Update affected users to have their personal workspace as active
+    // Update affected users to have their personal workspace as active FIRST
     for (const user of affectedUsers) {
       // Find user's personal workspace
       const personalWorkspace = await Workspace.findOne({
@@ -286,6 +284,59 @@ const deleteWorkspace = async (req, res) => {
       if (personalWorkspace) {
         await user.update({ active_workspace_id: personalWorkspace.id });
       }
+    }
+
+    // Now safely delete all workspace-related data in correct order
+    const transaction = await sequelize.transaction();
+
+    try {
+      // Get all services for this workspace
+      const services = await Service.findAll({
+        where: { workspace_id: id },
+        attributes: ['id'],
+        transaction
+      });
+      const serviceIds = services.map(s => s.id);
+
+      // 1. Delete service songs first
+      if (serviceIds.length > 0) {
+        await ServiceSong.destroy({
+          where: { service_id: serviceIds },
+          transaction
+        });
+      }
+
+      // 2. Delete services
+      await Service.destroy({
+        where: { workspace_id: id },
+        transaction
+      });
+
+      // 3. Delete song-workspace associations
+      await SongWorkspace.destroy({
+        where: { workspace_id: id },
+        transaction
+      });
+
+      // 4. Delete workspace invitations
+      await WorkspaceInvitation.destroy({
+        where: { workspace_id: id },
+        transaction
+      });
+
+      // 5. Delete workspace members
+      await WorkspaceMember.destroy({
+        where: { workspace_id: id },
+        transaction
+      });
+
+      // 6. Finally delete the workspace
+      await workspace.destroy({ transaction });
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
 
     res.json({
