@@ -49,11 +49,11 @@
   letter-spacing: 0.05em;
   background: linear-gradient(
     135deg,
-    #667eea 0%,
-    #764ba2 25%,
-    #f093fb 50%,
-    #4facfe 75%,
-    #667eea 100%
+    var(--logo-gradient-1, #667eea) 0%,
+    var(--logo-gradient-2, #764ba2) 25%,
+    var(--logo-gradient-3, #8b7dd6) 50%,
+    var(--logo-gradient-4, #a991e8) 75%,
+    var(--logo-gradient-5, #667eea) 100%
   );
   background-size: 300% 300%;
   -webkit-background-clip: text;
@@ -85,11 +85,11 @@
   height: 3px;
   background: linear-gradient(
     135deg,
-    #667eea 0%,
-    #764ba2 25%,
-    #f093fb 50%,
-    #4facfe 75%,
-    #667eea 100%
+    var(--logo-gradient-1, #667eea) 0%,
+    var(--logo-gradient-2, #764ba2) 25%,
+    var(--logo-gradient-3, #8b7dd6) 50%,
+    var(--logo-gradient-4, #a991e8) 75%,
+    var(--logo-gradient-5, #667eea) 100%
   );
   background-size: 300% 300%;
   opacity: 0.4;
