@@ -343,8 +343,15 @@ const deleteWorkspace = async (req, res) => {
         }
       }
 
-      // 9. Finally delete the workspace
-      await workspace.destroy({ transaction });
+      // 9. Finally delete the workspace using raw SQL to avoid Sequelize cascades
+      await sequelize.query(
+        `DELETE FROM workspaces WHERE id = $1`,
+        {
+          bind: [id],
+          transaction,
+          type: sequelize.QueryTypes.DELETE
+        }
+      );
 
       await transaction.commit();
 
