@@ -274,21 +274,30 @@ const deleteWorkspace = async (req, res) => {
       });
 
       // 2. Update affected users to have their personal workspace as active FIRST (in transaction)
+      // Use raw SQL to avoid Sequelize cascade issues
       for (const user of affectedUsers) {
         // Find user's personal workspace
-        const personalWorkspace = await Workspace.findOne({
-          where: { workspace_type: 'personal' },
-          include: [{
-            model: WorkspaceMember,
-            as: 'members',
-            where: { user_id: user.id },
-            required: true
-          }],
-          transaction
-        });
+        const [personalWorkspaces] = await sequelize.query(
+          `SELECT w.id FROM workspaces w
+           INNER JOIN workspace_members wm ON w.id = wm.workspace_id
+           WHERE w.workspace_type = 'personal' AND wm.user_id = $1
+           LIMIT 1`,
+          {
+            bind: [user.id],
+            transaction,
+            type: sequelize.QueryTypes.SELECT
+          }
+        );
 
-        if (personalWorkspace) {
-          await user.update({ active_workspace_id: personalWorkspace.id }, { transaction });
+        if (personalWorkspaces && personalWorkspaces.length > 0) {
+          await sequelize.query(
+            `UPDATE users SET active_workspace_id = $1 WHERE id = $2`,
+            {
+              bind: [personalWorkspaces[0].id, user.id],
+              transaction,
+              type: sequelize.QueryTypes.UPDATE
+            }
+          );
         }
       }
 
