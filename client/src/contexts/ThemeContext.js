@@ -18,28 +18,28 @@ export const GRADIENT_PRESETS = {
     name: 'Professional',
     colors: ['#667eea', '#764ba2', '#5e72e4', '#825ee4', '#6f86d6'],
     accentColor: '#667eea',
-    logoGradient: ['#667eea', '#764ba2', '#8b7dd6', '#a991e8', '#667eea'],
+    logoGradient: ['#4a5fd8', '#764ba2', '#b89fff', '#d4a9ff', '#4a5fd8'],
     description: 'Classic blue-purple palette - trustworthy and calm'
   },
   warm: {
     name: 'Warm',
     colors: ['#f093fb', '#f5576c', '#fa709a', '#fee140', '#ffa07a'],
     accentColor: '#f5576c',
-    logoGradient: ['#f093fb', '#f5576c', '#fa709a', '#ff8fab', '#f093fb'],
+    logoGradient: ['#e03e5c', '#f093fb', '#ffc4d6', '#ff6b9d', '#e03e5c'],
     description: 'Warm coral and pink - friendly and approachable'
   },
   nature: {
     name: 'Nature',
     colors: ['#56ab2f', '#a8e063', '#38b2ac', '#4fd1c5', '#81e6d9'],
     accentColor: '#38b2ac',
-    logoGradient: ['#56ab2f', '#6cc24a', '#38b2ac', '#4fd1c5', '#56ab2f'],
+    logoGradient: ['#3d7c1f', '#a8e063', '#2d9b95', '#81f0e5', '#3d7c1f'],
     description: 'Fresh green and teal - calming and growth-oriented'
   },
   elegant: {
     name: 'Elegant',
     colors: ['#1a2332', '#2c3e50', '#34495e', '#546e7a', '#607d8b'],
     accentColor: '#607d8b',
-    logoGradient: ['#34495e', '#546e7a', '#607d8b', '#78909c', '#34495e'],
+    logoGradient: ['#1a2332', '#546e7a', '#8ba6b8', '#607d8b', '#1a2332'],
     description: 'Dark navy and gray - elegant and professional'
   }
 };

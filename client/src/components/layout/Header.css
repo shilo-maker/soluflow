@@ -61,7 +61,7 @@
   -webkit-text-fill-color: transparent;
   position: relative;
   user-select: none;
-  animation: gradientShift 8s ease infinite;
+  animation: gradientShift 4s ease infinite;
 }
 
 @keyframes gradientShift {
@@ -94,7 +94,7 @@
   background-size: 300% 300%;
   opacity: 0.4;
   border-radius: 2px;
-  animation: gradientShift 8s ease infinite;
+  animation: gradientShift 4s ease infinite;
 }
 
 .header-actions {
