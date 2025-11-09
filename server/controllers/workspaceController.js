@@ -345,7 +345,13 @@ const deleteWorkspace = async (req, res) => {
     });
   } catch (error) {
     console.error('Delete workspace error:', error);
-    res.status(500).json({ error: 'Failed to delete workspace' });
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({
+      error: 'Failed to delete workspace',
+      details: error.message,
+      type: error.name
+    });
   }
 };
 
