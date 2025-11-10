@@ -312,6 +312,18 @@
   gap: 5px;
 }
 
+.service-title-row {
+  display: flex;
+  align-items: center;
+}
+
+.service-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .service-option-title {
   color: #333;
   font-size: 15px;
@@ -339,7 +351,6 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-right: 6px;
 }
 
 .shared-label-header {

@@ -951,9 +951,13 @@ const Service = () => {
                 onClick={() => handleSelectService(service)}
               >
                 <div className="service-option-info">
-                  <span className="service-option-title">{service.title}</span>
-                  {service.isToday && <span className="today-label">{t('service.todayBadge')}</span>}
-                  {service.isShared && <span className="shared-label">Shared with me</span>}
+                  <div className="service-title-row">
+                    <span className="service-option-title">{service.title}</span>
+                  </div>
+                  <div className="service-badges-row">
+                    {service.isToday && <span className="today-label">{t('service.todayBadge')}</span>}
+                    {service.isShared && <span className="shared-label">Shared with me</span>}
+                  </div>
                 </div>
                 {service.isFromSharedLink && (
                   <div className="service-option-menu">
