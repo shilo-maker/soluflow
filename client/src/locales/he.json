@@ -135,7 +135,10 @@
     "serviceCode": "קוד אסיפה",
     "leader": "מוביל",
     "public": "ציבורי",
-    "private": "פרטי"
+    "private": "פרטי",
+    "todayBadge": "היום",
+    "seeAllPastEvents": "הצג את כל האסיפות שעברו",
+    "hidePastEvents": "הסתר אסיפות שעברו"
   },
   "home": {
     "title": "האסיפות שלי",

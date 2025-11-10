@@ -952,7 +952,7 @@ const Service = () => {
               >
                 <div className="service-option-info">
                   <span className="service-option-title">{service.title}</span>
-                  {service.isToday && <span className="today-label">Today</span>}
+                  {service.isToday && <span className="today-label">{t('service.todayBadge')}</span>}
                   {service.isShared && <span className="shared-label">Shared with me</span>}
                 </div>
                 {service.isFromSharedLink && (
@@ -1082,7 +1082,7 @@ const Service = () => {
                   className="btn-see-all"
                   onClick={() => setShowPastEvents(true)}
                 >
-                  See All Past Events
+                  {t('service.seeAllPastEvents')}
                 </button>
               </div>
             )}
@@ -1092,7 +1092,7 @@ const Service = () => {
                   className="btn-see-all"
                   onClick={() => setShowPastEvents(false)}
                 >
-                  Hide Past Events
+                  {t('service.hidePastEvents')}
                 </button>
               </div>
             )}

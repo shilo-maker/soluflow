@@ -135,7 +135,10 @@
     "serviceCode": "Service Code",
     "leader": "Leader",
     "public": "Public",
-    "private": "Private"
+    "private": "Private",
+    "todayBadge": "Today",
+    "seeAllPastEvents": "See All Past Events",
+    "hidePastEvents": "Hide Past Events"
   },
   "home": {
     "title": "My Services",
