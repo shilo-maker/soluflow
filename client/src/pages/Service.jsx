@@ -54,6 +54,7 @@ const Service = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPastEvents, setShowPastEvents] = useState(false);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
@@ -941,7 +942,9 @@ const Service = () => {
 
         {!loading && !error && (
           <div className="service-list">
-            {services.map(service => (
+            {services
+              .filter(service => showPastEvents || !service.isPast)
+              .map(service => (
               <div
                 key={service.id}
                 className={`service-option ${selectedService?.id === service.id ? 'selected' : ''} ${service.isShared ? 'shared' : ''}`}
@@ -949,9 +952,10 @@ const Service = () => {
               >
                 <div className="service-option-info">
                   <span className="service-option-title">{service.title}</span>
+                  {service.isToday && <span className="today-label">Today</span>}
                   {service.isShared && <span className="shared-label">Shared with me</span>}
                 </div>
-                {service.isShared && (
+                {service.isFromSharedLink && (
                   <div className="service-option-menu">
                     <button
                       className="btn-menu-toggle"
@@ -975,7 +979,7 @@ const Service = () => {
                     )}
                   </div>
                 )}
-                {!service.isShared && (
+                {!service.isFromSharedLink && (
                   <div className="service-option-menu">
                     <button
                       className="btn-menu-toggle"
@@ -985,50 +989,58 @@ const Service = () => {
                     </button>
                     {openMenuId === service.id && (
                       <div className="service-dropdown-menu">
-                        <button
-                          className="menu-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            handleEditService(service);
-                          }}
-                        >
-                          {t('service.edit')}
-                        </button>
-                        <button
-                          className="menu-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            handleMoveService(service);
-                          }}
-                        >
-                          {t('service.move')}
-                        </button>
-                        <button
-                          className="menu-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            handlePassLeadership(service);
-                          }}
-                        >
-                          Pass Leadership
-                        </button>
-                        <button
-                          className="menu-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            // Select service first if not selected
-                            if (selectedService?.id !== service.id) {
-                              handleSelectService(service);
-                            }
-                            handleShareService(service);
-                          }}
-                        >
-                          {t('service.share')}
-                        </button>
+                        {service.canEdit && (
+                          <button
+                            className="menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              handleEditService(service);
+                            }}
+                          >
+                            {t('service.edit')}
+                          </button>
+                        )}
+                        {service.isCreator && (
+                          <button
+                            className="menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              handleMoveService(service);
+                            }}
+                          >
+                            {t('service.move')}
+                          </button>
+                        )}
+                        {service.canEdit && (
+                          <button
+                            className="menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              handlePassLeadership(service);
+                            }}
+                          >
+                            Pass Leadership
+                          </button>
+                        )}
+                        {service.isCreator && (
+                          <button
+                            className="menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              // Select service first if not selected
+                              if (selectedService?.id !== service.id) {
+                                handleSelectService(service);
+                              }
+                              handleShareService(service);
+                            }}
+                          >
+                            {t('service.share')}
+                          </button>
+                        )}
                         <button
                           className="menu-item"
                           onClick={(e) => {
@@ -1046,22 +1058,44 @@ const Service = () => {
                         >
                           PDF
                         </button>
-                        <button
-                          className="menu-item menu-item-delete"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            handleDeleteService(service);
-                          }}
-                        >
-                          {t('service.delete')}
-                        </button>
+                        {service.canEdit && (
+                          <button
+                            className="menu-item menu-item-delete"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              handleDeleteService(service);
+                            }}
+                          >
+                            {t('service.delete')}
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
                 )}
               </div>
             ))}
+            {!showPastEvents && services.some(service => service.isPast) && (
+              <div className="see-all-container">
+                <button
+                  className="btn-see-all"
+                  onClick={() => setShowPastEvents(true)}
+                >
+                  See All Past Events
+                </button>
+              </div>
+            )}
+            {showPastEvents && services.some(service => service.isPast) && (
+              <div className="see-all-container">
+                <button
+                  className="btn-see-all"
+                  onClick={() => setShowPastEvents(false)}
+                >
+                  Hide Past Events
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

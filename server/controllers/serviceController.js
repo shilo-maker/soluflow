@@ -52,6 +52,7 @@ const getAllServices = async (req, res) => {
         service.isShared = service.created_by !== req.user.id;
         service.canEdit = true; // Admins/planners can edit all
         service.isFromSharedLink = false;
+        service.isCreator = service.created_by === req.user.id; // Track if user is the creator
         return service;
       });
     } else {
@@ -80,6 +81,7 @@ const getAllServices = async (req, res) => {
         service.isShared = service.created_by !== req.user.id;
         service.canEdit = false; // Members cannot edit any services
         service.isFromSharedLink = false;
+        service.isCreator = service.created_by === req.user.id; // Track if user is the creator
         return service;
       });
     }
@@ -143,16 +145,53 @@ const getAllServices = async (req, res) => {
 
     const allServices = Array.from(serviceMap.values());
 
-    // Sort by date
+    // Get current date and time
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+
+    // Calculate 24 hours ago
+    const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
+    // Add isToday and isPast flags to services
+    allServices.forEach(service => {
+      if (service.date) {
+        const serviceDate = new Date(service.date);
+        const serviceDateOnly = new Date(serviceDate);
+        serviceDateOnly.setHours(0, 0, 0, 0);
+
+        // Check if service is today
+        service.isToday = serviceDateOnly.getTime() === today.getTime();
+
+        // Check if service is more than 24 hours in the past
+        // Combine date and time for accurate comparison
+        if (service.time) {
+          const [hours, minutes] = service.time.split(':').map(Number);
+          const serviceDateTime = new Date(serviceDate);
+          serviceDateTime.setHours(hours, minutes, 0, 0);
+          service.isPast = serviceDateTime < twentyFourHoursAgo;
+        } else {
+          // If no time specified, just check the date
+          const endOfDay = new Date(serviceDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          service.isPast = endOfDay < twentyFourHoursAgo;
+        }
+      } else {
+        service.isToday = false;
+        service.isPast = false;
+      }
+    });
+
+    // Sort by date - future first (descending), with earliest time first for same day
     allServices.sort((a, b) => {
       const dateA = new Date(a.date || 0);
       const dateB = new Date(b.date || 0);
-      if (dateB.getTime() !== dateA.getTime()) {
-        return dateB - dateA;
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateB - dateA; // Descending order: future -> past
       }
       const timeA = a.time || '00:00';
       const timeB = b.time || '00:00';
-      return timeB.localeCompare(timeA);
+      return timeA.localeCompare(timeB); // Ascending time for same day
     });
 
     res.json(allServices);
