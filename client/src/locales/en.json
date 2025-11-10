@@ -137,6 +137,7 @@
     "public": "Public",
     "private": "Private",
     "todayBadge": "Today",
+    "sharedBadge": "Shared",
     "seeAllPastEvents": "See All Past Events",
     "hidePastEvents": "Hide Past Events"
   },

@@ -137,6 +137,7 @@
     "public": "ציבורי",
     "private": "פרטי",
     "todayBadge": "היום",
+    "sharedBadge": "משותף",
     "seeAllPastEvents": "הצג את כל האסיפות שעברו",
     "hidePastEvents": "הסתר אסיפות שעברו"
   },
