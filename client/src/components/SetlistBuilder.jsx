@@ -39,14 +39,36 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     }
   };
 
-  const filteredSongs = availableSongs.filter(song => {
-    const inSetlist = setlist.some(s => s.id === song.id);
-    if (inSetlist) return false;
+  const filteredSongs = React.useMemo(() => {
+    const query = searchQuery.toLowerCase();
 
-    if (!searchQuery) return true;
-    return song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           (song.authors && song.authors.toLowerCase().includes(searchQuery.toLowerCase()));
-  });
+    // Filter out songs already in setlist
+    const available = availableSongs.filter(song => !setlist.some(s => s.id === song.id));
+
+    if (!query) return available;
+
+    // Categorize matches by priority
+    const titleMatches = [];
+    const authorMatches = [];
+    const contentMatches = [];
+
+    available.forEach(song => {
+      const titleMatch = song.title.toLowerCase().includes(query);
+      const authorMatch = song.authors && song.authors.toLowerCase().includes(query);
+      const contentMatch = song.content && song.content.toLowerCase().includes(query);
+
+      if (titleMatch) {
+        titleMatches.push(song);
+      } else if (authorMatch) {
+        authorMatches.push(song);
+      } else if (contentMatch) {
+        contentMatches.push(song);
+      }
+    });
+
+    // Return with priority: title > author > content
+    return [...titleMatches, ...authorMatches, ...contentMatches];
+  }, [availableSongs, setlist, searchQuery]);
 
   const handleAddSong = (song) => {
     setSetlist(prev => [...prev, song]);
