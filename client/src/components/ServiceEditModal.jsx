@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import songService from '../services/songService';
+import { stripChords } from '../utils/transpose';
 import './ServiceEditModal.css';
 
 const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSave, onUpdate }) => {
@@ -218,7 +219,9 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     available.forEach(song => {
       const titleMatch = song.title.toLowerCase().includes(query);
       const authorMatch = song.authors && song.authors.toLowerCase().includes(query);
-      const contentMatch = song.content && song.content.toLowerCase().includes(query);
+      // Strip chords from content before searching (chords like [Am] split words)
+      const strippedContent = stripChords(song.content || '').toLowerCase();
+      const contentMatch = strippedContent.includes(query);
 
       if (titleMatch) {
         titleMatches.push(song);

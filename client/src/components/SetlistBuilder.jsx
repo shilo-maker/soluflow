@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import songService from '../services/songService';
+import { stripChords } from '../utils/transpose';
 import './SetlistBuilder.css';
 
 const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) => {
@@ -55,7 +56,9 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     available.forEach(song => {
       const titleMatch = song.title.toLowerCase().includes(query);
       const authorMatch = song.authors && song.authors.toLowerCase().includes(query);
-      const contentMatch = song.content && song.content.toLowerCase().includes(query);
+      // Strip chords from content before searching (chords like [Am] split words)
+      const strippedContent = stripChords(song.content || '').toLowerCase();
+      const contentMatch = strippedContent.includes(query);
 
       if (titleMatch) {
         titleMatches.push(song);
