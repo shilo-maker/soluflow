@@ -90,7 +90,9 @@ const Library = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isAddToServiceModalOpen, setIsAddToServiceModalOpen] = useState(false);
   const [addToServiceSong, setAddToServiceSong] = useState(null);
+  const [showSongMenu, setShowSongMenu] = useState(false);
   const songDisplayRef = useRef(null);
+  const menuRef = useRef(null);
 
   // Debounce search query for better performance
   useEffect(() => {
@@ -104,7 +106,22 @@ const Library = () => {
   // Reset modal state when selected song changes
   useEffect(() => {
     setShowKeySelectorModal(false);
+    setShowSongMenu(false);
   }, [selectedSong?.id]);
+
+  // Close song menu when clicking outside
+  useEffect(() => {
+    const handleClickOutsideMenu = (event) => {
+      if (showSongMenu && menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowSongMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutsideMenu);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideMenu);
+    };
+  }, [showSongMenu]);
 
   // Close expanded song when clicking outside
   useEffect(() => {
@@ -483,7 +500,7 @@ const Library = () => {
               <div className="song-display-inline" ref={songDisplayRef}>
           <div className="song-header-inline">
             <div className="song-info-inline">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', position: 'relative', width: '100%' }}>
                 <h2 className="song-title-inline">{selectedSong.title}</h2>
                 <button
                   className="btn-pdf-library"
@@ -493,6 +510,94 @@ const Library = () => {
                 >
                   {isGeneratingPDF ? 'Generating...' : 'PDF'}
                 </button>
+                {/* 3-dot menu button - positioned at top right corner */}
+                <div className="song-menu-container" ref={menuRef}>
+                  <button
+                    className="btn-song-menu"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSongMenu(!showSongMenu);
+                    }}
+                    aria-label="Song actions menu"
+                    title="More actions"
+                  >
+                    ⋯
+                  </button>
+                  {showSongMenu && (
+                    <div className="song-menu-dropdown">
+                      {user && (
+                        <button
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSongMenu(false);
+                            handleAddToService();
+                          }}
+                        >
+                          {t('library.addToService')}
+                        </button>
+                      )}
+                      {(user?.role === 'admin' || selectedSong.created_by === user?.id) && (
+                        <button
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSongMenu(false);
+                            handleEditSong();
+                          }}
+                        >
+                          {t('library.edit')}
+                        </button>
+                      )}
+                      {!selectedSong.is_public && (user?.role === 'admin' || selectedSong.created_by === user?.id) && (
+                        <button
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSongMenu(false);
+                            handleShareSong();
+                          }}
+                        >
+                          {t('library.shareSong')}
+                        </button>
+                      )}
+                      {user?.role === 'admin' && !selectedSong.is_public && (
+                        <button
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSongMenu(false);
+                            handleMakePublic();
+                          }}
+                        >
+                          {t('library.makePublic')}
+                        </button>
+                      )}
+                      {(user?.role === 'admin' || selectedSong.created_by === user?.id) && (
+                        <button
+                          className="menu-item menu-item-danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSongMenu(false);
+                            handleDeleteSong();
+                          }}
+                        >
+                          {t('library.delete')}
+                        </button>
+                      )}
+                      <button
+                        className="menu-item"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowSongMenu(false);
+                          setSelectedSong(null);
+                        }}
+                      >
+                        {t('common.close')}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="song-authors-inline">{selectedSong.authors}</p>
             </div>
@@ -553,54 +658,6 @@ const Library = () => {
             />
           </div>
 
-          <div className="song-actions-inline">
-            {user && (
-              <button
-                className="btn-add-to-service"
-                onClick={handleAddToService}
-              >
-                {t('library.addToService')}
-              </button>
-            )}
-            {(user?.role === 'admin' || selectedSong.created_by === user?.id) && (
-              <button
-                className="btn-edit-song"
-                onClick={handleEditSong}
-              >
-                Edit Song
-              </button>
-            )}
-            {!selectedSong.is_public && (user?.role === 'admin' || selectedSong.created_by === user?.id) && (
-              <button
-                className="btn-share-song"
-                onClick={handleShareSong}
-              >
-                Share Song
-              </button>
-            )}
-            {user?.role === 'admin' && !selectedSong.is_public && (
-              <button
-                className="btn-make-public"
-                onClick={handleMakePublic}
-              >
-                Make Public
-              </button>
-            )}
-            {(user?.role === 'admin' || selectedSong.created_by === user?.id) && (
-              <button
-                className="btn-delete-song"
-                onClick={handleDeleteSong}
-              >
-                Delete Song
-              </button>
-            )}
-            <button
-              className="btn-close-song"
-              onClick={() => setSelectedSong(null)}
-            >
-              Close
-            </button>
-          </div>
         </div>
             )}
           </React.Fragment>

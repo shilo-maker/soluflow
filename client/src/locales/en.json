@@ -120,7 +120,9 @@
     "alreadyAdded": "Already added",
     "alreadyInService": "is already in",
     "addedToService": "added to",
-    "failedToAddSong": "Failed to add song to service"
+    "failedToAddSong": "Failed to add song to service",
+    "makePublic": "Make Public",
+    "shareSong": "Share Song"
   },
   "service": {
     "title": "Service",

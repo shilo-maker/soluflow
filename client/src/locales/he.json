@@ -120,7 +120,9 @@
     "alreadyAdded": "כבר הוסף",
     "alreadyInService": "כבר נמצא ב",
     "addedToService": "נוסף ל",
-    "failedToAddSong": "הוספת השיר לאסיפה נכשלה"
+    "failedToAddSong": "הוספת השיר לאסיפה נכשלה",
+    "makePublic": "הפוך לציבורי",
+    "shareSong": "שתף שיר"
   },
   "service": {
     "title": "אסיפה",
