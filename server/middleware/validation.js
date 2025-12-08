@@ -97,7 +97,7 @@ const songValidation = {
       .isLength({ max: 100000 })
       .withMessage('Content must not exceed 100,000 characters'),
     body('key')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .matches(/^[A-G][#b]?m?$/)
       .withMessage('Invalid musical key format'),
@@ -125,7 +125,7 @@ const songValidation = {
       .isBoolean()
       .withMessage('is_public must be a boolean'),
     body('listen_url')
-      .optional()
+      .optional({ values: 'falsy' })
       .trim()
       .isURL({ require_protocol: false })
       .withMessage('Listen URL must be a valid URL')
