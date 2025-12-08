@@ -110,7 +110,17 @@
     "allSongs": "כל השירים",
     "edit": "ערוך",
     "delete": "מחק",
-    "view": "צפה"
+    "view": "צפה",
+    "addToService": "הוסף לאסיפה",
+    "addingSong": "מוסיף שיר",
+    "searchServices": "חפש אסיפות...",
+    "noServicesFound": "לא נמצאו אסיפות",
+    "noServicesYet": "!אין עדיין אסיפות. צור אחת קודם",
+    "songs": "שירים",
+    "alreadyAdded": "כבר הוסף",
+    "alreadyInService": "כבר נמצא ב",
+    "addedToService": "נוסף ל",
+    "failedToAddSong": "הוספת השיר לאסיפה נכשלה"
   },
   "service": {
     "title": "אסיפה",

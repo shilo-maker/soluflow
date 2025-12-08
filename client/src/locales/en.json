@@ -110,7 +110,17 @@
     "allSongs": "All Songs",
     "edit": "Edit",
     "delete": "Delete",
-    "view": "View"
+    "view": "View",
+    "addToService": "Add to Service",
+    "addingSong": "Adding song",
+    "searchServices": "Search services...",
+    "noServicesFound": "No services found",
+    "noServicesYet": "No services yet. Create one first!",
+    "songs": "songs",
+    "alreadyAdded": "Already added",
+    "alreadyInService": "is already in",
+    "addedToService": "added to",
+    "failedToAddSong": "Failed to add song to service"
   },
   "service": {
     "title": "Service",

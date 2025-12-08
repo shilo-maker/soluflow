@@ -8,6 +8,7 @@ import ChordProDisplay from '../components/ChordProDisplay';
 import SongEditModal from '../components/SongEditModal';
 import SongShareModal from '../components/SongShareModal';
 import KeySelectorModal from '../components/KeySelectorModal';
+import AddToServiceModal from '../components/AddToServiceModal';
 import Toast from '../components/Toast';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import { getTransposeDisplay, transposeChord, stripChords, convertKeyToFlat } from '../utils/transpose';
@@ -87,6 +88,8 @@ const Library = () => {
   const [shareSong, setShareSong] = useState(null);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isAddToServiceModalOpen, setIsAddToServiceModalOpen] = useState(false);
+  const [addToServiceSong, setAddToServiceSong] = useState(null);
   const songDisplayRef = useRef(null);
 
   // Debounce search query for better performance
@@ -107,10 +110,11 @@ const Library = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (selectedSong && songDisplayRef.current && !songDisplayRef.current.contains(event.target)) {
-        // Check if click is not on a song card or key selector modal
+        // Check if click is not on a song card, key selector modal, or any modal overlay
         const clickedSongCard = event.target.closest('.song-card');
         const clickedModal = event.target.closest('.key-selector-overlay');
-        if (!clickedSongCard && !clickedModal) {
+        const clickedModalOverlay = event.target.closest('.modal-overlay');
+        if (!clickedSongCard && !clickedModal && !clickedModalOverlay) {
           setSelectedSong(null);
         }
       }
@@ -376,6 +380,24 @@ const Library = () => {
     setShareSong(null);
   };
 
+  const handleAddToService = () => {
+    console.log('handleAddToService clicked, selectedSong:', selectedSong);
+    setAddToServiceSong(selectedSong);
+    setIsAddToServiceModalOpen(true);
+    console.log('isAddToServiceModalOpen set to true');
+  };
+
+  const handleCloseAddToServiceModal = () => {
+    setIsAddToServiceModalOpen(false);
+    setAddToServiceSong(null);
+  };
+
+  const handleAddToServiceSuccess = (message) => {
+    console.log('handleAddToServiceSuccess called with:', message);
+    setToastMessage(message);
+    setShowToast(true);
+  };
+
   const handleDownloadPDF = async (e) => {
     e.stopPropagation(); // Prevent triggering song click
 
@@ -532,6 +554,14 @@ const Library = () => {
           </div>
 
           <div className="song-actions-inline">
+            {user && (
+              <button
+                className="btn-add-to-service"
+                onClick={handleAddToService}
+              >
+                {t('library.addToService')}
+              </button>
+            )}
             {(user?.role === 'admin' || selectedSong.created_by === user?.id) && (
               <button
                 className="btn-edit-song"
@@ -597,6 +627,14 @@ const Library = () => {
         song={shareSong}
         isOpen={isShareModalOpen}
         onClose={handleCloseShareModal}
+      />
+
+      {/* Add to Service Modal */}
+      <AddToServiceModal
+        song={addToServiceSong}
+        isOpen={isAddToServiceModalOpen}
+        onClose={handleCloseAddToServiceModal}
+        onSuccess={handleAddToServiceSuccess}
       />
 
       {/* Key Selector Modal */}

@@ -43,6 +43,11 @@ const getAllServices = async (req, res) => {
             model: User,
             as: 'creator',
             attributes: ['id', 'username', 'email']
+          },
+          {
+            model: ServiceSong,
+            as: 'serviceSongs',
+            attributes: ['id', 'song_id']
           }
         ]
       });
@@ -53,6 +58,9 @@ const getAllServices = async (req, res) => {
         service.canEdit = true; // Admins/planners can edit all
         service.isFromSharedLink = false;
         service.isCreator = service.created_by === req.user.id; // Track if user is the creator
+        service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
+        service.song_ids = service.serviceSongs ? service.serviceSongs.map(ss => ss.song_id) : [];
+        delete service.serviceSongs; // Remove full serviceSongs to keep response small
         return service;
       });
     } else {
@@ -72,6 +80,11 @@ const getAllServices = async (req, res) => {
             model: User,
             as: 'creator',
             attributes: ['id', 'username', 'email']
+          },
+          {
+            model: ServiceSong,
+            as: 'serviceSongs',
+            attributes: ['id', 'song_id']
           }
         ]
       });
@@ -82,6 +95,9 @@ const getAllServices = async (req, res) => {
         service.canEdit = false; // Members cannot edit any services
         service.isFromSharedLink = false;
         service.isCreator = service.created_by === req.user.id; // Track if user is the creator
+        service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
+        service.song_ids = service.serviceSongs ? service.serviceSongs.map(ss => ss.song_id) : [];
+        delete service.serviceSongs; // Remove full serviceSongs to keep response small
         return service;
       });
     }
@@ -113,6 +129,11 @@ const getAllServices = async (req, res) => {
                 model: User,
                 as: 'creator',
                 attributes: ['id', 'username', 'email']
+              },
+              {
+                model: ServiceSong,
+                as: 'serviceSongs',
+                attributes: ['id', 'song_id']
               }
             ]
           }
@@ -124,6 +145,9 @@ const getAllServices = async (req, res) => {
         service.isShared = true;
         service.canEdit = false; // Shared services are read-only
         service.isFromSharedLink = true; // Mark as added via share link
+        service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
+        service.song_ids = service.serviceSongs ? service.serviceSongs.map(s => s.song_id) : [];
+        delete service.serviceSongs;
         return service;
       });
     }
