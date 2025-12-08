@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import './ChordProDisplay.css';
-import { transpose } from '../utils/transpose';
+import { transpose, convertToFlatNotation, transposeChord } from '../utils/transpose';
 import InlineNoteMarker from './InlineNoteMarker';
 
 const ChordProDisplay = React.memo(({
@@ -9,6 +9,7 @@ const ChordProDisplay = React.memo(({
   dir = 'ltr',
   fontSize = 14,
   transposition = 0,
+  songKey = null,
   notes = [],
   isEditMode = false,
   onAddNote = null,
@@ -20,10 +21,15 @@ const ChordProDisplay = React.memo(({
   const canvasRef = useRef(null);
   const [columnCount, setColumnCount] = useState(1);
 
-  // Transpose the content if needed
+  // Transpose the content if needed, and convert to flat notation if key requires it
   const transposedContent = useMemo(() => {
-    return transpose(content, transposition);
-  }, [content, transposition]);
+    let result = transpose(content, transposition);
+    // Calculate the transposed key to determine if we should use flats
+    const transposedKey = songKey ? transposeChord(songKey, transposition) : null;
+    // Apply flat notation conversion for keys like A#, C#, D#, G#
+    result = convertToFlatNotation(result, transposedKey);
+    return result;
+  }, [content, transposition, songKey]);
 
   // Calculate if we need 2 columns based on content height
   useEffect(() => {

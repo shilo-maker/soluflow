@@ -13,7 +13,7 @@ import PassLeadershipModal from '../components/PassLeadershipModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { getTransposeDisplay, transposeChord } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord, convertKeyToFlat } from '../utils/transpose';
 import { generateSetlistPDF, generateSongPDF, generateMultiSongPDF } from '../utils/pdfGenerator';
 import io from 'socket.io-client';
 import './Service.css';
@@ -1179,7 +1179,7 @@ const Service = () => {
                       onClick={(e) => { e.stopPropagation(); setShowKeySelectorModal(true); }}
                       title="Click to select key"
                     >
-                      {transposeChord(currentSong.key, transposition)}
+                      {convertKeyToFlat(transposeChord(currentSong.key, transposition))}
                       {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                     </span>
                     <button className="btn-transpose-service" onClick={(e) => { e.stopPropagation(); transposeUp(); }}>+</button>
@@ -1188,7 +1188,7 @@ const Service = () => {
                     <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
                     <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
                   </div>
-                  <span className="key-info">Key: {transposeChord(currentSong.key, transposition)}</span>
+                  <span className="key-info">Key: {convertKeyToFlat(transposeChord(currentSong.key, transposition))}</span>
                   {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}</span>}
                 </div>
               </div>
@@ -1199,6 +1199,7 @@ const Service = () => {
                   dir={hasHebrew(currentSong.content) ? 'rtl' : 'ltr'}
                   fontSize={fontSize}
                   transposition={transposition}
+                  songKey={currentSong.key}
                 />
               </div>
             </div>

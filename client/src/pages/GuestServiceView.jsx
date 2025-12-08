@@ -5,7 +5,7 @@ import serviceService from '../services/serviceService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import Toast from '../components/Toast';
 import KeySelectorModal from '../components/KeySelectorModal';
-import { getTransposeDisplay, transposeChord } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord, convertKeyToFlat } from '../utils/transpose';
 import io from 'socket.io-client';
 import './GuestServiceView.css';
 
@@ -350,7 +350,7 @@ const GuestServiceView = () => {
                       onClick={(e) => { e.stopPropagation(); setShowKeySelectorModal(true); }}
                       title="Click to select key"
                     >
-                      {transposeChord(currentSong.key, transposition)}
+                      {convertKeyToFlat(transposeChord(currentSong.key, transposition))}
                       {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                     </span>
                     <button className="btn-transpose" onClick={(e) => { e.stopPropagation(); transposeUp(); }}>+</button>
@@ -359,7 +359,7 @@ const GuestServiceView = () => {
                     <button className="btn-zoom" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
                     <button className="btn-zoom" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
                   </div>
-                  <span className="key-info">Key: {currentSong.key}</span>
+                  <span className="key-info">Key: {convertKeyToFlat(currentSong.key)}</span>
                   {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}</span>}
                 </div>
               </div>
@@ -370,6 +370,7 @@ const GuestServiceView = () => {
                   dir={hasHebrew(currentSong.content) ? 'rtl' : 'ltr'}
                   fontSize={fontSize}
                   transposition={transposition}
+                  songKey={currentSong.key}
                 />
               </div>
             </div>

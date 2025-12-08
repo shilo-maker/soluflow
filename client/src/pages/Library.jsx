@@ -10,7 +10,7 @@ import SongShareModal from '../components/SongShareModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import LoadingSkeleton from '../components/LoadingSkeleton';
-import { getTransposeDisplay, transposeChord, stripChords } from '../utils/transpose';
+import { getTransposeDisplay, transposeChord, stripChords, convertKeyToFlat } from '../utils/transpose';
 import { generateSongPDF } from '../utils/pdfGenerator';
 import { getFriendlyErrorMessage, getSuccessMessage } from '../utils/errorMessages';
 import './Library.css';
@@ -57,7 +57,7 @@ const LibrarySongCard = React.memo(({ song, isSelected, onClick, user, activeWor
           <p className="song-card-authors">{song.authors}</p>
         </div>
         <div className="song-card-right">
-          <span className="song-key">Key: {song.key}</span>
+          <span className="song-key">Key: {convertKeyToFlat(song.key)}</span>
         </div>
       </div>
     </div>
@@ -487,7 +487,7 @@ const Library = () => {
                   }}
                   title="Click to select key"
                 >
-                  {transposeChord(selectedSong.key, transposition)}
+                  {convertKeyToFlat(transposeChord(selectedSong.key, transposition))}
                   {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                 </span>
                 <button className="btn-transpose-inline" onClick={transposeUp}>+</button>
@@ -500,7 +500,7 @@ const Library = () => {
                   <span className="zoom-icon-large">A</span>
                 </button>
               </div>
-              <span className="key-info-inline">Key: {selectedSong.key}</span>
+              <span className="key-info-inline">Key: {convertKeyToFlat(selectedSong.key)}</span>
               {selectedSong.bpm && <span className="bpm-info-inline">BPM: {selectedSong.bpm}</span>}
               {selectedSong.listen_url && (
                 <a
@@ -526,6 +526,7 @@ const Library = () => {
               dir={hasHebrew(selectedSong.content) ? 'rtl' : 'ltr'}
               fontSize={fontSize}
               transposition={transposition}
+              songKey={selectedSong.key}
               disableColumnCalculation={true}
             />
           </div>

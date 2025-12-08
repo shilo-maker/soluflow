@@ -5,7 +5,7 @@ import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import Toast from '../components/Toast';
 import KeySelectorModal from '../components/KeySelectorModal';
-import { transposeChord } from '../utils/transpose';
+import { transposeChord, convertKeyToFlat } from '../utils/transpose';
 import './SharedSongView.css';
 
 const SharedSongView = () => {
@@ -178,7 +178,7 @@ const SharedSongView = () => {
                   onClick={() => setShowKeySelectorModal(true)}
                   title="Click to select key"
                 >
-                  {transposeChord(song.key, transposition)}
+                  {convertKeyToFlat(transposeChord(song.key, transposition))}
                   {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
                 </span>
                 <button className="btn-transpose" onClick={transposeUp}>+</button>
@@ -191,7 +191,7 @@ const SharedSongView = () => {
                   <span className="zoom-icon-large">A</span>
                 </button>
               </div>
-              <span className="key-info">Key: {song.key}</span>
+              <span className="key-info">Key: {convertKeyToFlat(song.key)}</span>
               {song.bpm && <span className="bpm-info">BPM: {song.bpm}</span>}
             </div>
           </div>
@@ -206,6 +206,7 @@ const SharedSongView = () => {
               dir={hasHebrew(song.content) ? 'rtl' : 'ltr'}
               fontSize={fontSize}
               transposition={transposition}
+              songKey={song.key}
             />
           </div>
         </div>

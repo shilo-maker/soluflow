@@ -11,7 +11,7 @@ import Toast from '../components/Toast';
 import NotesModal from '../components/NotesModal';
 import SongEditModal from '../components/SongEditModal';
 import KeySelectorModal from '../components/KeySelectorModal';
-import { getTransposeDisplay, transposeChord } from '../utils/transpose';
+import { transposeChord, convertKeyToFlat } from '../utils/transpose';
 import io from 'socket.io-client';
 import './SongView.css';
 
@@ -1047,7 +1047,7 @@ const SongView = () => {
           <div>
             <span className="song-view-subtitle">{song.authors}</span>
             <div className="song-view-controls">
-              <span className="control-info" dir="ltr">Key: {transposeChord(song.key, transposition)}</span>
+              <span className="control-info" dir="ltr">Key: {convertKeyToFlat(transposeChord(song.key, transposition))}</span>
               {song.bpm && <span className="control-info" dir="ltr">BPM: {song.bpm}</span>}
             </div>
           </div>
@@ -1065,7 +1065,7 @@ const SongView = () => {
             onClick={() => setShowKeySelectorModal(true)}
             title="Click to select key"
           >
-            {transposeChord(song.key, transposition)}
+            {convertKeyToFlat(transposeChord(song.key, transposition))}
             {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
           </span>
           <button className="btn-action btn-transpose-view" onClick={transposeUp}>+</button>
@@ -1146,6 +1146,7 @@ const SongView = () => {
           dir={hasHebrew ? 'rtl' : 'ltr'}
           fontSize={isExpanded ? expandedFontSize : fontSize}
           transposition={transposition}
+          songKey={song.key}
         />
       </div>
 
@@ -1155,7 +1156,7 @@ const SongView = () => {
           <span className="next-label">{isRTL ? 'הבא ←' : 'Next:'}</span>
           <span className="next-song-title">{nextSong.title}</span>
           <span className="next-song-meta">
-            {nextSong.key}{nextSong.bpm ? ` • ${nextSong.bpm} BPM` : ''}
+            {convertKeyToFlat(nextSong.key)}{nextSong.bpm ? ` • ${nextSong.bpm} BPM` : ''}
           </span>
         </div>
       )}

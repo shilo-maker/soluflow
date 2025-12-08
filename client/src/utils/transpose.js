@@ -24,6 +24,9 @@ const SHARP_TO_FLAT = {
   'A#': 'Bb'
 };
 
+// Keys that should always display as flats (uncommon sharp keys)
+const KEYS_PREFER_FLAT = ['A#', 'C#', 'D#', 'G#'];
+
 /**
  * Normalizes a note to its sharp equivalent
  * @param {string} note - The note to normalize (e.g., 'Db' -> 'C#')
@@ -269,4 +272,94 @@ export const getAllKeys = () => {
     { value: 'A#', label: 'A# / Bb' },
     { value: 'B', label: 'B' }
   ];
+};
+
+/**
+ * Checks if a key should use flat notation
+ * @param {string} key - The key to check (e.g., 'A#', 'Bb')
+ * @returns {boolean} - True if flat notation should be used
+ */
+export const shouldUseFlats = (key) => {
+  if (!key) return false;
+  const normalizedKey = normalizeNote(key);
+  return KEYS_PREFER_FLAT.includes(normalizedKey);
+};
+
+/**
+ * Converts a key to its flat equivalent if it's a sharp key that should display as flat
+ * @param {string} key - The key to convert (e.g., 'A#' -> 'Bb', 'A#m' -> 'Bbm')
+ * @returns {string} - The converted key
+ */
+export const convertKeyToFlat = (key) => {
+  if (!key) return key;
+
+  // Parse the key to get root and suffix (e.g., 'A#m' -> 'A#' + 'm')
+  const match = key.match(/^([A-G][#b]?)(.*)/);
+  if (!match) return key;
+
+  const [, root, suffix] = match;
+  const normalizedRoot = normalizeNote(root);
+
+  // Only convert if this root should prefer flats
+  if (KEYS_PREFER_FLAT.includes(normalizedRoot) && SHARP_TO_FLAT[normalizedRoot]) {
+    return SHARP_TO_FLAT[normalizedRoot] + suffix;
+  }
+
+  return key;
+};
+
+/**
+ * Converts a single chord to flat notation if needed
+ * @param {string} chord - The chord to convert (e.g., 'A#m7' -> 'Bbm7', 'D#/G#' -> 'Eb/Ab')
+ * @param {boolean} useFlats - Whether to use flat notation
+ * @returns {string} - The converted chord
+ */
+export const convertChordToFlat = (chord, useFlats = false) => {
+  if (!chord || !useFlats) return chord;
+
+  // Handle slash chords
+  const slashIndex = chord.indexOf('/');
+  if (slashIndex !== -1) {
+    const mainChord = chord.substring(0, slashIndex);
+    const bassNote = chord.substring(slashIndex + 1);
+    return convertChordToFlat(mainChord, true) + '/' + convertSingleNoteToFlat(bassNote);
+  }
+
+  // Parse the chord root and suffix
+  const match = chord.match(/^([A-G][#b]?)(.*)/);
+  if (!match) return chord;
+
+  const [, root, suffix] = match;
+  const flatRoot = convertSingleNoteToFlat(root);
+
+  return flatRoot + suffix;
+};
+
+/**
+ * Converts a single note to flat if it's a sharp
+ * @param {string} note - The note to convert
+ * @returns {string} - The converted note
+ */
+const convertSingleNoteToFlat = (note) => {
+  if (!note) return note;
+  const normalizedNote = normalizeNote(note);
+  return SHARP_TO_FLAT[normalizedNote] || note;
+};
+
+/**
+ * Converts all chords in ChordPro text to flat notation based on the key
+ * @param {string} chordProText - The ChordPro formatted text
+ * @param {string} key - The song's key
+ * @returns {string} - ChordPro text with chords in flat notation if needed
+ */
+export const convertToFlatNotation = (chordProText, key) => {
+  if (!chordProText || !shouldUseFlats(key)) {
+    return chordProText;
+  }
+
+  // Replace all chords in [brackets] with flat equivalents
+  return chordProText.replace(/\[([^\]]+)\]/g, (match, chord) => {
+    const flatChord = convertChordToFlat(chord, true);
+    return `[${flatChord}]`;
+  });
 };
