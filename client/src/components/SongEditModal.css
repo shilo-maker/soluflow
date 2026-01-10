@@ -141,6 +141,7 @@
   font-family: inherit;
   transition: border-color 0.2s ease;
   background-color: white;
+  color: #333;
   box-sizing: border-box;
 }
 
@@ -197,6 +198,8 @@
   border-radius: 4px;
   font-size: 14px;
   font-weight: 600;
+  background-color: white;
+  color: #333;
 }
 
 .song-edit-modal .chord-input:focus {
