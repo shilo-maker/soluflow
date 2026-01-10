@@ -2,6 +2,66 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import './ChordProDisplay.css';
 import { transpose, convertToFlatNotation, transposeChord } from '../utils/transpose';
 import InlineNoteMarker from './InlineNoteMarker';
+import { useLanguage } from '../contexts/LanguageContext';
+
+// Section name translations (Hebrew <-> English)
+const SECTION_TRANSLATIONS = {
+  // Hebrew to English
+  'בית': 'Verse',
+  'בית א': 'Verse 1',
+  "בית א'": 'Verse 1',
+  'בית א׳': 'Verse 1',
+  'בית ב': 'Verse 2',
+  "בית ב'": 'Verse 2',
+  'בית ב׳': 'Verse 2',
+  'בית ג': 'Verse 3',
+  "בית ג'": 'Verse 3',
+  'בית ג׳': 'Verse 3',
+  "בית ד'": 'Verse 4',
+  'בית ד׳': 'Verse 4',
+  'בית ה׳': 'Verse 5',
+  'פזמון': 'Chorus',
+  'פזמון א׳': 'Chorus 1',
+  'פזמון ב': 'Chorus 2',
+  'פזמון ב׳': 'Chorus 2',
+  'גשר': 'Bridge',
+  'פרי פזמון': 'Pre-Chorus',
+  'פרי-פזמון': 'Pre-Chorus',
+  'פריקורוס': 'Pre-Chorus',
+  'פרי קורוס': 'Pre-Chorus',
+  "פרי קורוס א'": 'Pre-Chorus 1',
+  'פרי קורוס א׳': 'Pre-Chorus 1',
+  "פרי קורס א'": 'Pre-Chorus 1',
+  "פרי קורס ב'": 'Pre-Chorus 2',
+  'פריקורוס ב׳': 'Pre-Chorus 2',
+  'פרי פיזמון': 'Pre-Chorus',
+  'פתיחה': 'Intro',
+  'הקדמה': 'Intro',
+  'מעבר': 'Transition',
+  'טאג': 'Tag',
+  'פוסט פזמון': 'Post-Chorus',
+  'פוסטקורס': 'Post-Chorus',
+  'מודולציה': 'Modulation',
+  // English to Hebrew
+  'Verse': 'בית',
+  'Verse 1': 'בית א׳',
+  'Verse 2': 'בית ב׳',
+  'Verse 3': 'בית ג׳',
+  'Verse 4': 'בית ד׳',
+  'Verse 5': 'בית ה׳',
+  'Chorus': 'פזמון',
+  'Bridge': 'גשר',
+  'Pre-Chorus': 'פרי פזמון',
+  'Pre Chorus': 'פרי פזמון',
+  'Intro': 'פתיחה',
+  'Outro': 'סיום',
+  'Tag': 'טאג',
+  'Hook': 'פזמון',
+  'Post-Chorus': 'פוסט פזמון',
+  'Interlude': 'אינטרלוד',
+  'Transition': 'מעבר',
+  'Modulation': 'מודולציה'
+};
 
 const ChordProDisplay = React.memo(({
   content,
@@ -20,6 +80,24 @@ const ChordProDisplay = React.memo(({
   const contentRef = useRef(null);
   const canvasRef = useRef(null);
   const [columnCount, setColumnCount] = useState(1);
+  const { language } = useLanguage();
+  const isHebrew = language === 'he';
+
+  // Helper function to translate section names based on current language
+  const translateSectionName = (name) => {
+    if (!name) return name;
+
+    // Check if the name contains Hebrew characters
+    const hasHebrew = /[\u0590-\u05FF]/.test(name);
+
+    // If app is in Hebrew and name is in English, translate to Hebrew
+    // If app is in English and name is in Hebrew, translate to English
+    if ((isHebrew && !hasHebrew) || (!isHebrew && hasHebrew)) {
+      return SECTION_TRANSLATIONS[name] || name;
+    }
+
+    return name;
+  };
 
   // Transpose the content if needed, and convert to flat notation if key requires it
   const transposedContent = useMemo(() => {
@@ -97,6 +175,14 @@ const ChordProDisplay = React.memo(({
     const parsed = [];
 
     lines.forEach((line, index) => {
+      // Handle {c:...} or {comment:...} tags as section labels
+      const commentMatch = line.match(/^{c(?:omment)?[:\s]+([^}]+)}/i);
+      if (commentMatch) {
+        const label = commentMatch[1].trim();
+        parsed.push({ type: 'section-label', content: label });
+        return;
+      }
+
       // Skip all ChordPro metadata/directive lines (anything starting with { and ending with })
       // But allow section markers which we handle separately
       if (line.match(/^{(?!soc|eoc)[^}]*}/i)) {
@@ -227,7 +313,7 @@ const ChordProDisplay = React.memo(({
         // End section - wrap everything in a section container
         result.push(
           <div key={`section-${sectionKey}`} className="section-container">
-            <div className="section-header">{sectionName}</div>
+            <div className="section-header">{translateSectionName(sectionName)}</div>
             {currentSection}
           </div>
         );
@@ -251,7 +337,7 @@ const ChordProDisplay = React.memo(({
     if (currentSection.length > 0 && sectionName !== null) {
       result.push(
         <div key={`section-${sectionKey}`} className="section-container">
-          <div className="section-header">{sectionName}</div>
+          <div className="section-header">{translateSectionName(sectionName)}</div>
           {currentSection}
         </div>
       );
@@ -401,6 +487,13 @@ const ChordProDisplay = React.memo(({
         return (
           <div key={index} className="lyric-line">
             {item.content}
+          </div>
+        );
+
+      case 'section-label':
+        return (
+          <div key={index} className="section-label">
+            {translateSectionName(item.content)}
           </div>
         );
 

@@ -27,6 +27,24 @@
   margin-top: 0;
 }
 
+.section-label {
+  font-weight: 700;
+  font-size: 1em;
+  color: var(--color-primary);
+  margin-top: 8px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-label:first-child {
+  margin-top: 0;
+}
+
+[dir="rtl"] .section-label {
+  text-align: right;
+}
+
 .empty-line {
   height: 1.2em;
 }
