@@ -3,6 +3,12 @@ import songService from '../services/songService';
 import { stripChords } from '../utils/transpose';
 import './SetlistBuilder.css';
 
+// Strip Hebrew niqqud (vowel points) from text for search matching
+const stripNiqqud = (text) => {
+  if (!text) return '';
+  return text.replace(/[\u0591-\u05C7]/g, '');
+};
+
 const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) => {
   const [setlist, setSetlist] = useState([]);
   const [availableSongs, setAvailableSongs] = useState([]);
@@ -41,7 +47,8 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
   };
 
   const filteredSongs = React.useMemo(() => {
-    const query = searchQuery.toLowerCase();
+    // Strip niqqud from query for Hebrew search matching
+    const query = stripNiqqud(searchQuery.toLowerCase());
 
     // Filter out songs already in setlist
     const available = availableSongs.filter(song => !setlist.some(s => s.id === song.id));
@@ -54,10 +61,10 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     const contentMatches = [];
 
     available.forEach(song => {
-      const titleMatch = song.title.toLowerCase().includes(query);
-      const authorMatch = song.authors && song.authors.toLowerCase().includes(query);
-      // Strip chords from content before searching (chords like [Am] split words)
-      const strippedContent = stripChords(song.content || '').toLowerCase();
+      const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
+      const authorMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
+      // Strip chords and niqqud from content before searching
+      const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
       const contentMatch = strippedContent.includes(query);
 
       if (titleMatch) {

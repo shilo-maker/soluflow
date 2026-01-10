@@ -16,6 +16,13 @@ import { generateSongPDF } from '../utils/pdfGenerator';
 import { getFriendlyErrorMessage, getSuccessMessage } from '../utils/errorMessages';
 import './Library.css';
 
+// Strip Hebrew niqqud (vowel points) from text for search matching
+const stripNiqqud = (text) => {
+  if (!text) return '';
+  // Remove Hebrew niqqud characters (U+0591 to U+05C7)
+  return text.replace(/[\u0591-\u05C7]/g, '');
+};
+
 // Memoized song card component to prevent unnecessary re-renders
 const LibrarySongCard = React.memo(({ song, isSelected, onClick, user, activeWorkspace, t }) => {
   return (
@@ -165,22 +172,23 @@ const Library = () => {
   }, []); // Empty dependency array - fetch once on mount
 
   const filteredSongs = songs.filter(song => {
-    const query = debouncedSearchQuery.toLowerCase();
-    const titleMatch = song.title.toLowerCase().includes(query);
-    const authorsMatch = song.authors && song.authors.toLowerCase().includes(query);
+    // Strip niqqud from query and content for Hebrew search matching
+    const query = stripNiqqud(debouncedSearchQuery.toLowerCase());
+    const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
+    const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
 
-    // Search in lyrics content (strip chords first)
-    const strippedContent = stripChords(song.content || '').toLowerCase();
+    // Search in lyrics content (strip chords and niqqud)
+    const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
     const contentMatch = strippedContent.includes(query);
 
     return titleMatch || authorsMatch || contentMatch;
   }).map(song => {
     // Assign priority based on what matched (lower number = higher priority)
-    const query = debouncedSearchQuery.toLowerCase();
-    const titleMatch = song.title.toLowerCase().includes(query);
-    const strippedContent = stripChords(song.content || '').toLowerCase();
+    const query = stripNiqqud(debouncedSearchQuery.toLowerCase());
+    const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
+    const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
     const contentMatch = strippedContent.includes(query);
-    const authorsMatch = song.authors && song.authors.toLowerCase().includes(query);
+    const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
 
     let priority;
     if (titleMatch) {
