@@ -3,8 +3,10 @@ html, body {
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  touch-action: pan-x pan-y;
-  -ms-touch-action: pan-x pan-y;
+  touch-action: pan-y;
+  -ms-touch-action: pan-y;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 code {
