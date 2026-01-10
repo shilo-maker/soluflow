@@ -1,0 +1,72 @@
+.tag-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+}
+
+.tag-filter-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.25rem 0;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color, #ddd) transparent;
+}
+
+.tag-filter-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tag-filter-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tag-filter-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--border-color, #ddd);
+  border-radius: 2px;
+}
+
+.tag-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border: 1.5px solid var(--tag-color, #6c5ce7);
+  border-radius: 9999px;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tag-filter-chip:hover {
+  opacity: 0.8;
+}
+
+.tag-filter-chip.selected {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.tag-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--bg-tertiary, #f0f0f0);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tag-filter-clear:hover {
+  background: var(--border-color, #ddd);
+}

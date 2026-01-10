@@ -11,6 +11,8 @@ const WorkspaceMember = require('./WorkspaceMember');
 const WorkspaceInvitation = require('./WorkspaceInvitation');
 const SongWorkspace = require('./SongWorkspace');
 const SongReport = require('./SongReport');
+const Tag = require('./Tag');
+const SongTag = require('./SongTag');
 
 // Define associations
 
@@ -152,6 +154,30 @@ SongReport.belongsTo(Song, { foreignKey: 'song_id', as: 'song' });
 SongReport.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
 Song.hasMany(SongReport, { foreignKey: 'song_id', as: 'reports' });
 
+// Tag associations
+Tag.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Tag, { foreignKey: 'created_by', as: 'createdTags' });
+
+// SongTag associations (many-to-many between Song and Tag)
+SongTag.belongsTo(Song, { foreignKey: 'song_id', as: 'song' });
+SongTag.belongsTo(Tag, { foreignKey: 'tag_id', as: 'tag' });
+Song.hasMany(SongTag, { foreignKey: 'song_id', as: 'songTags' });
+Tag.hasMany(SongTag, { foreignKey: 'tag_id', as: 'songTags' });
+
+// Many-to-many: Songs can have multiple tags, Tags can be on multiple songs
+Song.belongsToMany(Tag, {
+  through: SongTag,
+  foreignKey: 'song_id',
+  otherKey: 'tag_id',
+  as: 'tags'
+});
+Tag.belongsToMany(Song, {
+  through: SongTag,
+  foreignKey: 'tag_id',
+  otherKey: 'song_id',
+  as: 'songs'
+});
+
 // Sync database (create tables)
 const syncDatabase = async (options = {}) => {
   try {
@@ -188,6 +214,8 @@ module.exports = {
   WorkspaceInvitation,
   SongWorkspace,
   SongReport,
+  Tag,
+  SongTag,
   syncDatabase,
   testConnection
 };

@@ -175,20 +175,56 @@ const Library = () => {
     fetchSongs();
   }, []); // Empty dependency array - fetch once on mount
 
+  // Parse search query for #tagname patterns
+  const parseSearchQuery = (query) => {
+    const tagPattern = /#([\u0590-\u05FF\w-]+)/g;
+    const tagNames = [];
+    let match;
+    while ((match = tagPattern.exec(query)) !== null) {
+      tagNames.push(stripNiqqud(match[1].toLowerCase()));
+    }
+    // Remove tag patterns from query to get text search part
+    const textQuery = query.replace(tagPattern, '').trim();
+    return { tagNames, textQuery };
+  };
+
+  const { tagNames: searchTagNames, textQuery } = parseSearchQuery(debouncedSearchQuery);
+
   const filteredSongs = songs.filter(song => {
     // Strip niqqud from query and content for Hebrew search matching
-    const query = stripNiqqud(debouncedSearchQuery.toLowerCase());
-    const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
-    const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
+    const query = stripNiqqud(textQuery.toLowerCase());
 
-    // Search in lyrics content (strip chords and niqqud)
-    const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
-    const contentMatch = strippedContent.includes(query);
+    // If there's no text query, don't filter by text (only by tags)
+    let textMatch = true;
+    if (query) {
+      const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
+      const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
 
-    return titleMatch || authorsMatch || contentMatch;
+      // Search in lyrics content (strip chords and niqqud)
+      const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
+      const contentMatch = strippedContent.includes(query);
+
+      textMatch = titleMatch || authorsMatch || contentMatch;
+    }
+
+    // Filter by tags if any #tagname patterns were found
+    let tagMatch = true;
+    if (searchTagNames.length > 0) {
+      tagMatch = song.tags && searchTagNames.every(searchTag =>
+        song.tags.some(tag => stripNiqqud(tag.name.toLowerCase()).includes(searchTag))
+      );
+    }
+
+    return textMatch && tagMatch;
   }).map(song => {
     // Assign priority based on what matched (lower number = higher priority)
-    const query = stripNiqqud(debouncedSearchQuery.toLowerCase());
+    const query = stripNiqqud(textQuery.toLowerCase());
+
+    // If no text query, all songs have same priority
+    if (!query) {
+      return { ...song, searchPriority: 1 };
+    }
+
     const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
     const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
     const contentMatch = strippedContent.includes(query);
@@ -276,6 +312,11 @@ const Library = () => {
       // Include workspace_ids if provided
       if (formData.workspace_ids) {
         songData.workspace_ids = formData.workspace_ids;
+      }
+
+      // Include tag_ids if provided
+      if (formData.tag_ids) {
+        songData.tag_ids = formData.tag_ids;
       }
 
       if (modalSong) {

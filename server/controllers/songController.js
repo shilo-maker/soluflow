@@ -1,4 +1,4 @@
-const { Song, User, Workspace, SongWorkspace, WorkspaceMember, SharedSong } = require('../models');
+const { Song, User, Workspace, SongWorkspace, WorkspaceMember, SharedSong, Tag, SongTag } = require('../models');
 const { Op } = require('sequelize');
 const { songCache, invalidateCache } = require('../middleware/cache');
 
@@ -92,6 +92,11 @@ const getAllSongs = async (req, res) => {
               attributes: ['id', 'username', 'email']
             }
           ]
+        },
+        {
+          model: Tag,
+          as: 'tags',
+          through: { attributes: [] } // Don't include junction table attributes
         }
       ],
       order: [['title', 'ASC']]
@@ -135,6 +140,11 @@ const getSongById = async (req, res) => {
           model: User,
           as: 'creator',
           attributes: ['id', 'username', 'email']
+        },
+        {
+          model: Tag,
+          as: 'tags',
+          through: { attributes: [] }
         }
       ]
     });
@@ -270,6 +280,11 @@ const searchSongs = async (req, res) => {
           model: User,
           as: 'creator',
           attributes: ['id', 'username', 'email']
+        },
+        {
+          model: Tag,
+          as: 'tags',
+          through: { attributes: [] }
         }
       ],
       order: [['title', 'ASC']]
@@ -360,7 +375,8 @@ const updateSong = async (req, res) => {
       authors,
       copyright_info,
       is_public,
-      workspace_ids // Array of workspace IDs where the song should be visible
+      workspace_ids, // Array of workspace IDs where the song should be visible
+      tag_ids // Array of tag IDs for this song
     } = req.body;
 
     const userId = req.user?.id;
@@ -418,8 +434,32 @@ const updateSong = async (req, res) => {
       }
     }
 
-    // Reload to get fresh data from database
-    await song.reload();
+    // Update tags if tag_ids are provided
+    if (tag_ids !== undefined && Array.isArray(tag_ids)) {
+      // Check permission to modify tags
+      const canModifyTags = song.is_public ? userRole === 'admin' : (song.created_by === userId || userRole === 'admin');
+
+      if (canModifyTags) {
+        // Delete existing tag associations
+        await SongTag.destroy({
+          where: { song_id: id }
+        });
+
+        // Create new associations
+        if (tag_ids.length > 0) {
+          const songTagEntries = tag_ids.map(tagId => ({
+            song_id: id,
+            tag_id: tagId
+          }));
+          await SongTag.bulkCreate(songTagEntries);
+        }
+      }
+    }
+
+    // Reload to get fresh data from database with tags
+    await song.reload({
+      include: [{ model: Tag, as: 'tags', through: { attributes: [] } }]
+    });
 
     console.log('Song after update - is_public:', song.is_public);
 
@@ -664,6 +704,11 @@ const getSongByCode = async (req, res) => {
           model: User,
           as: 'creator',
           attributes: ['id', 'username', 'email']
+        },
+        {
+          model: Tag,
+          as: 'tags',
+          through: { attributes: [] }
         }
       ]
     });
@@ -709,6 +754,11 @@ const acceptSharedSong = async (req, res) => {
           model: User,
           as: 'creator',
           attributes: ['id', 'username', 'email']
+        },
+        {
+          model: Tag,
+          as: 'tags',
+          through: { attributes: [] }
         }
       ]
     });

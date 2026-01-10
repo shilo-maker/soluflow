@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import TagInput from './TagInput';
 import './SongEditModal.css';
 
 // Chord mappings for each key (diatonic chords)
@@ -34,6 +36,7 @@ const COMMON_KEYS = [
 const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
   const { workspaces, activeWorkspace } = useWorkspace();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     authors: '',
@@ -44,6 +47,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
     content: ''
   });
   const [selectedWorkspaces, setSelectedWorkspaces] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [chordInput, setChordInput] = useState('');
@@ -89,6 +93,8 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
       });
       // TODO: Load existing workspace selections for edit mode if needed
       setSelectedWorkspaces([]);
+      // Load tags if available
+      setSelectedTags(song.tags || []);
     } else {
       // Reset form for create mode
       setFormData({
@@ -101,6 +107,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
         content: ''
       });
       setSelectedWorkspaces([]);
+      setSelectedTags([]);
     }
   }, [song]);
 
@@ -246,7 +253,8 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
     const finalFormData = {
       ...formData,
       content: fullContent,
-      workspace_ids: selectedWorkspaces.length > 0 ? selectedWorkspaces : undefined
+      workspace_ids: selectedWorkspaces.length > 0 ? selectedWorkspaces : undefined,
+      tag_ids: selectedTags.map(t => t.id)
     };
 
     setSaving(true);
@@ -325,6 +333,17 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
               />
             </div>
           </div>
+
+          {/* Tags - only show in edit mode */}
+          {isEditMode && song && (
+            <TagInput
+              songId={song.id}
+              songTags={selectedTags}
+              isPublicSong={song.is_public}
+              songOwnerId={song.created_by}
+              onChange={setSelectedTags}
+            />
+          )}
 
           <div className="form-row three-cols">
             <div className="form-group">

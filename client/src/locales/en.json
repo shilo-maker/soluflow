@@ -102,7 +102,7 @@
   },
   "library": {
     "title": "Song Library",
-    "searchPlaceholder": "Search Songs...",
+    "searchPlaceholder": "Search songs or #tag...",
     "add": "ADD",
     "public": "Public",
     "addSong": "ADD SONG",
@@ -269,5 +269,19 @@
     "errorInvalidBpm": "BPM must be a number between 20 and 300",
     "errorInvalidKey": "Please select a valid key from the dropdown",
     "errorSaveFailed": "Failed to save song. Please try again."
+  },
+  "tags": {
+    "label": "Tags",
+    "add": "Add tag",
+    "remove": "Remove tag",
+    "createNew": "Create new tag",
+    "namePlaceholder": "Tag name",
+    "cancel": "Cancel",
+    "create": "Create",
+    "createError": "Failed to create tag",
+    "public": "Public",
+    "filterLabel": "Filter by tags",
+    "clearFilter": "Clear filter",
+    "noTags": "No tags yet"
   }
 }

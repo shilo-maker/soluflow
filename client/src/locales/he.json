@@ -102,7 +102,7 @@
   },
   "library": {
     "title": "ספריית שירים",
-    "searchPlaceholder": "חפש שירים...",
+    "searchPlaceholder": "חפש שירים או #תגית...",
     "add": "הוספה",
     "public": "ציבורי",
     "addSong": "הוסף שיר",
@@ -269,5 +269,19 @@
     "errorInvalidBpm": "BPM חייב להיות מספר בין 20 ל-300",
     "errorInvalidKey": "אנא בחר מפתח תקין מהרשימה הנפתחת",
     "errorSaveFailed": "שמירת השיר נכשלה. אנא נסה שוב."
+  },
+  "tags": {
+    "label": "תגיות",
+    "add": "הוסף תגית",
+    "remove": "הסר תגית",
+    "createNew": "צור תגית חדשה",
+    "namePlaceholder": "שם התגית",
+    "cancel": "ביטול",
+    "create": "צור",
+    "createError": "יצירת התגית נכשלה",
+    "public": "ציבורי",
+    "filterLabel": "סנן לפי תגיות",
+    "clearFilter": "נקה סינון",
+    "noTags": "אין תגיות עדיין"
   }
 }
