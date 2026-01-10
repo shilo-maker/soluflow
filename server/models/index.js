@@ -10,6 +10,7 @@ const SharedSong = require('./SharedSong');
 const WorkspaceMember = require('./WorkspaceMember');
 const WorkspaceInvitation = require('./WorkspaceInvitation');
 const SongWorkspace = require('./SongWorkspace');
+const SongReport = require('./SongReport');
 
 // Define associations
 
@@ -146,6 +147,11 @@ User.belongsToMany(Song, {
   as: 'songsSharedWithMe'
 });
 
+// SongReport associations
+SongReport.belongsTo(Song, { foreignKey: 'song_id', as: 'song' });
+SongReport.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
+Song.hasMany(SongReport, { foreignKey: 'song_id', as: 'reports' });
+
 // Sync database (create tables)
 const syncDatabase = async (options = {}) => {
   try {
@@ -181,6 +187,7 @@ module.exports = {
   WorkspaceMember,
   WorkspaceInvitation,
   SongWorkspace,
+  SongReport,
   syncDatabase,
   testConnection
 };

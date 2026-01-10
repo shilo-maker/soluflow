@@ -77,6 +77,24 @@
   background-color: #c82333;
 }
 
+.btn-report-header {
+  background-color: transparent;
+  color: #f39c12;
+  border: 1px solid #f39c12;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 10px;
+}
+
+.btn-report-header:hover {
+  background-color: #f39c12;
+  color: white;
+}
+
 .btn-follow-header {
   background-color: transparent;
   color: #6c757d;

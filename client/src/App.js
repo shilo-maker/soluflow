@@ -29,6 +29,7 @@ const Register = lazy(() => import('./pages/Register'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const SongReports = lazy(() => import('./pages/SongReports'));
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => (
@@ -123,6 +124,7 @@ function AppContent() {
             <Route path="/settings" element={<PrivateRoute><UserSettings /></PrivateRoute>} />
             <Route path="/workspace/settings" element={<PrivateRoute><WorkspaceManagement /></PrivateRoute>} />
             <Route path="/workspace/invite/:token" element={<PrivateRoute><AcceptInvite /></PrivateRoute>} />
+            <Route path="/admin/reports" element={<PrivateRoute><SongReports /></PrivateRoute>} />
           </Routes>
         </Suspense>
       </main>

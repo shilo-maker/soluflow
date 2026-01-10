@@ -11,6 +11,7 @@ import Toast from '../components/Toast';
 import NotesModal from '../components/NotesModal';
 import SongEditModal from '../components/SongEditModal';
 import KeySelectorModal from '../components/KeySelectorModal';
+import ReportModal from '../components/ReportModal';
 import { transposeChord, convertKeyToFlat } from '../utils/transpose';
 import io from 'socket.io-client';
 import './SongView.css';
@@ -54,6 +55,7 @@ const SongView = () => {
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedFontSize, setExpandedFontSize] = useState(16);
   const [autoFontSize, setAutoFontSize] = useState(16);
@@ -1038,6 +1040,11 @@ const SongView = () => {
                 )}
               </>
             )}
+            {song.is_public && (
+              <button className="btn-report-header" onClick={() => setShowReportModal(true)}>
+                Report
+              </button>
+            )}
           </div>
         </div>
         <div className="song-view-title-section">
@@ -1225,6 +1232,14 @@ const SongView = () => {
         message={`Are you sure you want to delete "${song.title}"? This action cannot be undone.`}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        songId={song.id}
+        songTitle={song.title}
       />
 
       {/* Success Toast */}
