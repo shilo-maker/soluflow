@@ -6,7 +6,12 @@ import './SetlistBuilder.css';
 // Strip Hebrew niqqud (vowel points) from text for search matching
 const stripNiqqud = (text) => {
   if (!text) return '';
-  return text.replace(/[\u0591-\u05C7]/g, '');
+  // First, normalize to NFD to decompose precomposed Hebrew characters (e.g., U+FB2A שׁ -> ש + combining mark)
+  // Then remove Hebrew combining marks (U+0591 to U+05C7)
+  return text
+    .normalize('NFD')
+    .replace(/[\u0591-\u05C7]/g, '')
+    .normalize('NFC');
 };
 
 const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) => {

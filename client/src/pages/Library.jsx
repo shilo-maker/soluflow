@@ -19,8 +19,12 @@ import './Library.css';
 // Strip Hebrew niqqud (vowel points) from text for search matching
 const stripNiqqud = (text) => {
   if (!text) return '';
-  // Remove Hebrew niqqud characters (U+0591 to U+05C7)
-  return text.replace(/[\u0591-\u05C7]/g, '');
+  // First, normalize to NFD to decompose precomposed Hebrew characters (e.g., U+FB2A שׁ -> ש + combining mark)
+  // Then remove Hebrew combining marks (U+0591 to U+05C7) and Hebrew presentation forms vowels
+  return text
+    .normalize('NFD')
+    .replace(/[\u0591-\u05C7]/g, '')
+    .normalize('NFC');
 };
 
 // Memoized song card component to prevent unnecessary re-renders
