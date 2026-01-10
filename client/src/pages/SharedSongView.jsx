@@ -192,7 +192,7 @@ const SharedSongView = () => {
                 </button>
               </div>
               <span className="key-info">Key: {convertKeyToFlat(song.key)}</span>
-              {song.bpm && <span className="bpm-info">BPM: {song.bpm}</span>}
+              {song.bpm && <span className="bpm-info">BPM: {song.bpm}{song.time_signature && ` (${song.time_signature})`}</span>}
             </div>
           </div>
 

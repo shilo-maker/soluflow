@@ -1189,7 +1189,7 @@ const Service = () => {
                     <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
                   </div>
                   <span className="key-info">Key: {convertKeyToFlat(transposeChord(currentSong.key, transposition))}</span>
-                  {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}</span>}
+                  {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}{currentSong.time_signature && ` (${currentSong.time_signature})`}</span>}
                 </div>
               </div>
 

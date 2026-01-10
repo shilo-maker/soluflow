@@ -360,7 +360,7 @@ const GuestServiceView = () => {
                     <button className="btn-zoom" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
                   </div>
                   <span className="key-info">Key: {convertKeyToFlat(currentSong.key)}</span>
-                  {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}</span>}
+                  {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}{currentSong.time_signature && ` (${currentSong.time_signature})`}</span>}
                 </div>
               </div>
 

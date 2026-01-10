@@ -380,7 +380,7 @@ const GuestLanding = () => {
                 </button>
               </div>
               <span className="key-info-inline">Key: {convertKeyToFlat(selectedSong.key)}</span>
-              {selectedSong.bpm && <span className="bpm-info-inline">BPM: {selectedSong.bpm}</span>}
+              {selectedSong.bpm && <span className="bpm-info-inline">BPM: {selectedSong.bpm}{selectedSong.time_signature && ` (${selectedSong.time_signature})`}</span>}
               {selectedSong.listen_url && (
                 <a
                   href={selectedSong.listen_url}

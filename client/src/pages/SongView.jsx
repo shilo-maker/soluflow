@@ -1048,7 +1048,7 @@ const SongView = () => {
             <span className="song-view-subtitle">{song.authors}</span>
             <div className="song-view-controls">
               <span className="control-info" dir="ltr">Key: {convertKeyToFlat(transposeChord(song.key, transposition))}</span>
-              {song.bpm && <span className="control-info" dir="ltr">BPM: {song.bpm}</span>}
+              {song.bpm && <span className="control-info" dir="ltr">BPM: {song.bpm}{song.time_signature && ` (${song.time_signature})`}</span>}
             </div>
           </div>
         </div>
@@ -1156,7 +1156,7 @@ const SongView = () => {
           <span className="next-label">{isRTL ? 'הבא ←' : 'Next:'}</span>
           <span className="next-song-title">{nextSong.title}</span>
           <span className="next-song-meta">
-            {convertKeyToFlat(nextSong.key)}{nextSong.bpm ? ` • ${nextSong.bpm} BPM` : ''}
+            {convertKeyToFlat(nextSong.key)}{nextSong.bpm ? ` • ${nextSong.bpm} BPM${nextSong.time_signature ? ` (${nextSong.time_signature})` : ''}` : ''}
           </span>
         </div>
       )}
