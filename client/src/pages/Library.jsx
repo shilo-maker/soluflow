@@ -707,7 +707,7 @@ const Library = () => {
           </React.Fragment>
         ))}
 
-        {filteredSongs.length === 0 && (
+        {displayedSongs.length === 0 && (
           <div className="empty-state">
             No songs found matching "{searchQuery}"
           </div>
