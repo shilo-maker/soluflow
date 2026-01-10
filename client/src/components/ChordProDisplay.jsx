@@ -138,8 +138,9 @@ const ChordProDisplay = React.memo(({
   // Normalize chord notation (uppercase M to lowercase m for minor chords)
   const normalizeChord = (chord) => {
     // Replace uppercase M with lowercase m for minor chords
-    // Pattern: Match a chord root (letter, optional sharp/flat) followed by uppercase M
-    return chord.replace(/([A-G][#b]?)M/g, '$1m');
+    // Use negative lookahead to avoid converting "Maj" (major) chords
+    // Pattern: Match chord root followed by M that's NOT followed by 'a' (as in Maj)
+    return chord.replace(/([A-G][#b]?)M(?!aj)/g, '$1m');
   };
 
   const parseChordLine = (line) => {
