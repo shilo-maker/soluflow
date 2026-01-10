@@ -21,7 +21,8 @@ const Note = sequelize.define('Note', {
     references: {
       model: 'songs',
       key: 'id'
-    }
+    },
+    onDelete: 'CASCADE'
   },
   service_id: {
     type: DataTypes.INTEGER,
@@ -30,6 +31,7 @@ const Note = sequelize.define('Note', {
       model: 'services',
       key: 'id'
     },
+    onDelete: 'CASCADE',
     comment: 'Optional: note for specific service context'
   },
   content: {

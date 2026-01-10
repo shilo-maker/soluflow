@@ -13,7 +13,8 @@ const SongReport = sequelize.define('SongReport', {
     references: {
       model: 'songs',
       key: 'id'
-    }
+    },
+    onDelete: 'CASCADE'
   },
   reporter_email: {
     type: DataTypes.STRING(255),

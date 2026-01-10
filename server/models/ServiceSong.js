@@ -13,7 +13,8 @@ const ServiceSong = sequelize.define('ServiceSong', {
     references: {
       model: 'services',
       key: 'id'
-    }
+    },
+    onDelete: 'CASCADE'
   },
   song_id: {
     type: DataTypes.INTEGER,
@@ -21,7 +22,8 @@ const ServiceSong = sequelize.define('ServiceSong', {
     references: {
       model: 'songs',
       key: 'id'
-    }
+    },
+    onDelete: 'CASCADE'
   },
   position: {
     type: DataTypes.INTEGER,

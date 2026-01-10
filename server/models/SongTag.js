@@ -9,11 +9,21 @@ const SongTag = sequelize.define('SongTag', {
   },
   song_id: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'songs',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
   },
   tag_id: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'tags',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
   }
 }, {
   tableName: 'song_tags',

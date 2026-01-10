@@ -12,7 +12,8 @@ const securityHeaders = (req, res, next) => {
 
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.socket.io",
+    // Note: 'unsafe-inline' needed for React's style injection; 'unsafe-eval' removed for security
+    "script-src 'self' 'unsafe-inline' https://cdn.socket.io",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https: blob:",

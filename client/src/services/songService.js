@@ -3,19 +3,23 @@ import offlineStorage from '../utils/offlineStorage';
 
 const songService = {
   // Get all songs
-  getAllSongs: async (workspaceId = null) => {
+  getAllSongs: async (workspaceId = null, page = 1, limit = 500) => {
     try {
-      const params = workspaceId ? { workspace_id: workspaceId } : {};
+      const params = { page, limit };
+      if (workspaceId) params.workspace_id = workspaceId;
       const response = await api.get('/songs', { params });
 
+      // Handle both paginated response (new) and array response (legacy/offline)
+      const songs = response.data.songs || response.data;
+
       // Save songs to offline storage for future offline use
-      if (response.data && response.data.length > 0) {
-        await offlineStorage.saveSongs(response.data).catch(err => {
+      if (songs && songs.length > 0) {
+        await offlineStorage.saveSongs(songs).catch(err => {
           console.warn('Failed to save songs to offline storage:', err);
         });
       }
 
-      return response.data;
+      return songs;
     } catch (error) {
       // If network request fails, try to get songs from offline storage
       console.warn('Network request failed, attempting to load from offline storage');
@@ -60,11 +64,12 @@ const songService = {
   },
 
   // Search songs
-  searchSongs: async (query, workspaceId = null) => {
-    const params = { q: query };
+  searchSongs: async (query, workspaceId = null, page = 1, limit = 100) => {
+    const params = { q: query, page, limit };
     if (workspaceId) params.workspace_id = workspaceId;
     const response = await api.get('/songs/search', { params });
-    return response.data;
+    // Handle both paginated response (new) and array response (legacy)
+    return response.data.songs || response.data;
   },
 
   // Create new song

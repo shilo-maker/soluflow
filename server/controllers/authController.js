@@ -107,10 +107,7 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log('Login attempt for email:', email);
-
     if (!email || !password) {
-      console.log('Missing email or password');
       return res.status(400).json({ error: 'Email and password required' });
     }
 
@@ -127,26 +124,18 @@ const login = async (req, res) => {
     });
 
     if (!user) {
-      console.log('User not found');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    console.log('User found:', user.email);
-
     // Check if user is active
     if (!user.is_active) {
-      console.log('User is inactive');
       return res.status(403).json({ error: 'Account is inactive' });
     }
 
-    console.log('User is active');
-
     // Validate password
     const isValidPassword = await user.validPassword(password);
-    console.log('Password validation result:', isValidPassword);
 
     if (!isValidPassword) {
-      console.log('Invalid password');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -160,7 +149,6 @@ const login = async (req, res) => {
 
     // Check if user has workspaces - if not, create personal workspace
     if (!user.workspaces || user.workspaces.length === 0) {
-      console.log('User has no workspaces, creating personal workspace...');
 
       // Create personal workspace
       const workspaceName = `${user.username}'s Workspace`;

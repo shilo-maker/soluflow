@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -190,61 +190,62 @@ const Library = () => {
 
   const { tagNames: searchTagNames, textQuery } = parseSearchQuery(debouncedSearchQuery);
 
-  const filteredSongs = songs.filter(song => {
-    // Strip niqqud from query and content for Hebrew search matching
-    const query = stripNiqqud(textQuery.toLowerCase());
+  // Memoize filtered songs to prevent unnecessary recalculations
+  const displayedSongs = useMemo(() => {
+    return songs.filter(song => {
+      // Strip niqqud from query and content for Hebrew search matching
+      const query = stripNiqqud(textQuery.toLowerCase());
 
-    // If there's no text query, don't filter by text (only by tags)
-    let textMatch = true;
-    if (query) {
+      // If there's no text query, don't filter by text (only by tags)
+      let textMatch = true;
+      if (query) {
+        const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
+        const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
+
+        // Search in lyrics content (strip chords and niqqud)
+        const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
+        const contentMatch = strippedContent.includes(query);
+
+        textMatch = titleMatch || authorsMatch || contentMatch;
+      }
+
+      // Filter by tags if any #tagname patterns were found
+      let tagMatch = true;
+      if (searchTagNames.length > 0) {
+        tagMatch = song.tags && searchTagNames.every(searchTag =>
+          song.tags.some(tag => stripNiqqud(tag.name.toLowerCase()).includes(searchTag))
+        );
+      }
+
+      return textMatch && tagMatch;
+    }).map(song => {
+      // Assign priority based on what matched (lower number = higher priority)
+      const query = stripNiqqud(textQuery.toLowerCase());
+
+      // If no text query, all songs have same priority
+      if (!query) {
+        return { ...song, searchPriority: 1 };
+      }
+
       const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
-      const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
-
-      // Search in lyrics content (strip chords and niqqud)
       const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
       const contentMatch = strippedContent.includes(query);
+      const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
 
-      textMatch = titleMatch || authorsMatch || contentMatch;
-    }
+      let priority;
+      if (titleMatch) {
+        priority = 1;
+      } else if (contentMatch) {
+        priority = 2;
+      } else if (authorsMatch) {
+        priority = 3;
+      } else {
+        priority = 4;
+      }
 
-    // Filter by tags if any #tagname patterns were found
-    let tagMatch = true;
-    if (searchTagNames.length > 0) {
-      tagMatch = song.tags && searchTagNames.every(searchTag =>
-        song.tags.some(tag => stripNiqqud(tag.name.toLowerCase()).includes(searchTag))
-      );
-    }
-
-    return textMatch && tagMatch;
-  }).map(song => {
-    // Assign priority based on what matched (lower number = higher priority)
-    const query = stripNiqqud(textQuery.toLowerCase());
-
-    // If no text query, all songs have same priority
-    if (!query) {
-      return { ...song, searchPriority: 1 };
-    }
-
-    const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
-    const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
-    const contentMatch = strippedContent.includes(query);
-    const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
-
-    let priority;
-    if (titleMatch) {
-      priority = 1;
-    } else if (contentMatch) {
-      priority = 2;
-    } else if (authorsMatch) {
-      priority = 3;
-    } else {
-      priority = 4;
-    }
-
-    return { ...song, searchPriority: priority };
-  }).sort((a, b) => a.searchPriority - b.searchPriority);
-
-  const displayedSongs = filteredSongs;
+      return { ...song, searchPriority: priority };
+    }).sort((a, b) => a.searchPriority - b.searchPriority);
+  }, [songs, textQuery, searchTagNames]);
 
   const handleSongClick = (song) => {
     // Close any open modal first
@@ -379,8 +380,6 @@ const Library = () => {
     if (!selectedSong) return;
 
     try {
-      console.log('Making song public:', selectedSong.id);
-
       const updatedSong = await songService.updateSong(selectedSong.id, {
         title: selectedSong.title,
         content: selectedSong.content,
@@ -391,9 +390,6 @@ const Library = () => {
         copyright_info: selectedSong.copyright_info,
         is_public: true
       });
-
-      console.log('Song updated successfully:', updatedSong);
-      console.log('is_public value:', updatedSong.is_public);
 
       // Update the songs list
       setSongs(prev => prev.map(song =>
@@ -451,10 +447,8 @@ const Library = () => {
   };
 
   const handleAddToService = () => {
-    console.log('handleAddToService clicked, selectedSong:', selectedSong);
     setAddToServiceSong(selectedSong);
     setIsAddToServiceModalOpen(true);
-    console.log('isAddToServiceModalOpen set to true');
   };
 
   const handleCloseAddToServiceModal = () => {
@@ -463,7 +457,6 @@ const Library = () => {
   };
 
   const handleAddToServiceSuccess = (message) => {
-    console.log('handleAddToServiceSuccess called with:', message);
     setToastMessage(message);
     setShowToast(true);
   };
@@ -660,10 +653,8 @@ const Library = () => {
                 <span
                   className="transpose-display-inline"
                   onClick={(e) => {
-                    console.log('Transpose display clicked!');
                     e.stopPropagation();
                     setShowKeySelectorModal(true);
-                    console.log('Modal should open now, showKeySelectorModal:', true);
                   }}
                   title="Click to select key"
                 >

@@ -9,6 +9,11 @@ const getAllSongs = async (req, res) => {
     const userRole = req.user?.role;
     const activeWorkspaceId = req.user?.active_workspace_id;
 
+    // Pagination parameters
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = (page - 1) * limit;
+
     // Build where clause based on role and workspace
     let whereClause = {};
 
@@ -67,7 +72,7 @@ const getAllSongs = async (req, res) => {
     }
 
     // Optimized: Single query with LEFT JOIN to include SharedSongs
-    const songs = await Song.findAll({
+    const { count, rows: songs } = await Song.findAndCountAll({
       where: whereClause,
       include: [
         {
@@ -99,7 +104,10 @@ const getAllSongs = async (req, res) => {
           through: { attributes: [] } // Don't include junction table attributes
         }
       ],
-      order: [['title', 'ASC']]
+      order: [['title', 'ASC']],
+      limit,
+      offset,
+      distinct: true // Needed for accurate count with includes
     });
 
     // Map songs with share info (single pass, no extra queries)
@@ -119,7 +127,16 @@ const getAllSongs = async (req, res) => {
       return songData;
     });
 
-    res.json(songsWithShareInfo);
+    // Return paginated response
+    res.json({
+      songs: songsWithShareInfo,
+      pagination: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     console.error('Error fetching songs:', error);
     res.status(500).json({ error: 'Failed to fetch songs' });
@@ -153,21 +170,13 @@ const getSongById = async (req, res) => {
       return res.status(404).json({ error: 'Song not found' });
     }
 
-    // Debug logging
-    console.log('[getSongById] req.user:', req.user);
-    console.log('[getSongById] isGuest:', isGuest);
-    console.log('[getSongById] userId:', userId);
-    console.log('[getSongById] song.is_public:', song.is_public);
-
     // For guest users, allow viewing any song (they can only access via public services)
     if (isGuest) {
-      console.log('[getSongById] Returning song for guest user');
       return res.json(song);
     }
 
     // Allow unauthenticated users to view public songs
     if (!req.user && song.is_public) {
-      console.log('[getSongById] Returning public song for unauthenticated user');
       return res.json(song);
     }
 
@@ -219,6 +228,11 @@ const searchSongs = async (req, res) => {
     const workspace_id = req.query.workspace_id || req.user?.active_workspace_id;
     const userId = req.user?.id;
     const userRole = req.user?.role;
+
+    // Pagination parameters
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = (page - 1) * limit;
 
     if (!q) {
       return res.status(400).json({ error: 'Search query is required' });
@@ -273,7 +287,7 @@ const searchSongs = async (req, res) => {
       }
     }
 
-    const songs = await Song.findAll({
+    const { count, rows: songs } = await Song.findAndCountAll({
       where: whereClause,
       include: [
         {
@@ -287,10 +301,21 @@ const searchSongs = async (req, res) => {
           through: { attributes: [] }
         }
       ],
-      order: [['title', 'ASC']]
+      order: [['title', 'ASC']],
+      limit,
+      offset,
+      distinct: true
     });
 
-    res.json(songs);
+    res.json({
+      songs,
+      pagination: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     console.error('Error searching songs:', error);
     res.status(500).json({ error: 'Failed to search songs' });
@@ -410,10 +435,7 @@ const updateSong = async (req, res) => {
     // Only admins can change is_public status
     if (userRole === 'admin' && is_public !== undefined) {
       updateData.is_public = is_public;
-      console.log('Admin updating is_public to:', is_public);
     }
-
-    console.log('Updating song with data:', updateData);
 
     await song.update(updateData);
 
@@ -460,8 +482,6 @@ const updateSong = async (req, res) => {
     await song.reload({
       include: [{ model: Tag, as: 'tags', through: { attributes: [] } }]
     });
-
-    console.log('Song after update - is_public:', song.is_public);
 
     // Invalidate song cache (updated song affects lists and detail views)
     invalidateCache(songCache, 'songs:');
