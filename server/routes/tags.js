@@ -337,4 +337,112 @@ router.put('/song/:songId', authenticate, async (req, res) => {
   }
 });
 
+// POST /api/tags/import-bulk - Bulk import tags and assign to songs (admin only)
+// Body: { tags: [{ name, color }], assignments: [{ songTitle, tagNames: [] }] }
+router.post('/import-bulk', authenticate, async (req, res) => {
+  try {
+    const userRole = req.user.role;
+
+    if (userRole !== 'admin') {
+      return res.status(403).json({ error: 'Only admins can bulk import tags' });
+    }
+
+    const { tags, assignments } = req.body;
+
+    if (!Array.isArray(tags) || !Array.isArray(assignments)) {
+      return res.status(400).json({ error: 'tags and assignments must be arrays' });
+    }
+
+    const results = {
+      tagsCreated: 0,
+      tagsExisting: 0,
+      assignmentsCreated: 0,
+      songsNotFound: [],
+      errors: []
+    };
+
+    // Create/find tags
+    const tagIdMap = new Map();
+    for (const tagData of tags) {
+      try {
+        const [tag, created] = await Tag.findOrCreate({
+          where: { name: tagData.name.trim() },
+          defaults: {
+            color: tagData.color || '#6c5ce7',
+            is_public: true,
+            created_by: null
+          }
+        });
+        tagIdMap.set(tagData.name, tag.id);
+        if (created) {
+          results.tagsCreated++;
+        } else {
+          results.tagsExisting++;
+        }
+      } catch (err) {
+        results.errors.push(`Tag "${tagData.name}": ${err.message}`);
+      }
+    }
+
+    // Get all songs for matching
+    const allSongs = await Song.findAll({ attributes: ['id', 'title'] });
+    const songLookup = new Map();
+    for (const song of allSongs) {
+      const normalized = song.title.trim().toLowerCase().replace(/[()]/g, '').replace(/\s+/g, ' ');
+      if (!songLookup.has(normalized)) {
+        songLookup.set(normalized, []);
+      }
+      songLookup.get(normalized).push(song);
+    }
+
+    // Process assignments
+    for (const assignment of assignments) {
+      const normalizedTitle = assignment.songTitle.trim().toLowerCase().replace(/[()]/g, '').replace(/\s+/g, ' ');
+      let matchedSongs = songLookup.get(normalizedTitle);
+
+      // Try partial match if no exact match
+      if (!matchedSongs) {
+        for (const [dbTitle, songs] of songLookup) {
+          if (dbTitle.includes(normalizedTitle) || normalizedTitle.includes(dbTitle)) {
+            matchedSongs = songs;
+            break;
+          }
+        }
+      }
+
+      if (matchedSongs && matchedSongs.length > 0) {
+        for (const song of matchedSongs) {
+          for (const tagName of assignment.tagNames) {
+            const tagId = tagIdMap.get(tagName);
+            if (tagId) {
+              try {
+                const [songTag, created] = await SongTag.findOrCreate({
+                  where: { song_id: song.id, tag_id: tagId }
+                });
+                if (created) {
+                  results.assignmentsCreated++;
+                }
+              } catch (err) {
+                // Ignore duplicate errors
+              }
+            }
+          }
+        }
+      } else {
+        if (!results.songsNotFound.includes(assignment.songTitle)) {
+          results.songsNotFound.push(assignment.songTitle);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      results
+    });
+  } catch (error) {
+    console.error('Error bulk importing tags:', error);
+    res.status(500).json({ error: 'Failed to bulk import tags' });
+  }
+});
+
 module.exports = router;
