@@ -14,7 +14,7 @@ import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getTransposeDisplay, transposeChord, convertKeyToFlat } from '../utils/transpose';
-import { generateSetlistPDF, generateSongPDF, generateMultiSongPDF } from '../utils/pdfGenerator';
+import { generateSetlistPDF, generateSongPDF, generateMultiSongPDF, generateMultiSongPDFBlob } from '../utils/pdfGenerator';
 import io from 'socket.io-client';
 import './Service.css';
 
@@ -756,6 +756,68 @@ const Service = () => {
     }
   };
 
+  const handleSharePDFWhatsApp = async () => {
+    if (!selectedService || !serviceDetails || !serviceDetails.songs) {
+      setToastMessage('No songs to share');
+      setShowToast(true);
+      return;
+    }
+
+    if (serviceDetails.songs.length === 0) {
+      setToastMessage('No songs in setlist');
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      setIsGeneratingPDF(true);
+
+      // Generate PDF as blob
+      const { blob, filename } = await generateMultiSongPDFBlob(selectedService, serviceDetails.songs, { fontSize });
+
+      // Create a File object from the blob
+      const file = new File([blob], filename, { type: 'application/pdf' });
+
+      // Check if Web Share API with files is supported
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: selectedService.title || 'Setlist',
+          text: `${selectedService.venue || selectedService.title || 'Setlist'} - SoluFlow`
+        });
+        setToastMessage('PDF shared successfully!');
+      } else {
+        // Fallback: Download the file and show message to share manually
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Try to open WhatsApp with a message
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`Check out this setlist: ${selectedService.venue || selectedService.title || 'Setlist'}\n\nGenerated with SoluFlow`)}`;
+        window.open(whatsappUrl, '_blank');
+
+        setToastMessage('PDF downloaded. Share it via WhatsApp!');
+      }
+      setShowToast(true);
+    } catch (err) {
+      console.error('Error sharing PDF:', err);
+      if (err.name === 'AbortError') {
+        // User cancelled the share
+        setToastMessage('Share cancelled');
+      } else {
+        setToastMessage('Failed to share PDF');
+      }
+      setShowToast(true);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleMoveService = (service) => {
     setServiceToMove(service);
     setShowMoveDialog(true);
@@ -1068,6 +1130,22 @@ const Service = () => {
                           }}
                         >
                           PDF
+                        </button>
+                        <button
+                          className="menu-item menu-item-whatsapp"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(null);
+                            // Select service first if not selected, then share
+                            if (selectedService?.id !== service.id) {
+                              handleSelectService(service);
+                              setTimeout(() => handleSharePDFWhatsApp(), 100);
+                            } else {
+                              handleSharePDFWhatsApp();
+                            }
+                          }}
+                        >
+                          WhatsApp
                         </button>
                         {service.canEdit && (
                           <button

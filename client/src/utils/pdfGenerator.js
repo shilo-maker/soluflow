@@ -662,6 +662,214 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
   }
 
   console.log(`✅ PDF generation completed successfully for ${successCount} songs`);
+
+  // Return the filename for potential sharing
+  return window.multiSongPdfFilename || filename;
+};
+
+/**
+ * Generate a multi-song PDF and return as Blob for sharing
+ * @param {Object} service - The service object
+ * @param {Array} songs - Array of songs in the setlist
+ * @param {Object} options - Optional settings like fontSize
+ * @returns {Promise<{blob: Blob, filename: string}>} The PDF blob and filename
+ */
+export const generateMultiSongPDFBlob = async (service, songs, options = {}) => {
+  const { fontSize = 14 } = options;
+
+  console.log('Generating multi-song PDF blob for:', songs.length, 'songs');
+
+  // Format filename: [Date] - [Time] - [Venue]
+  let filename = 'SoluFlow';
+
+  if (service.date) {
+    const date = new Date(service.date);
+    const formattedDate = date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).replace(/\//g, '-');
+    filename = formattedDate;
+
+    const formattedTime = date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    if (formattedTime !== '00:00') {
+      filename += ` - ${formattedTime}`;
+    }
+  }
+
+  if (service.venue) {
+    filename += ` - ${service.venue}`;
+  } else if (service.title) {
+    filename += ` - ${service.title}`;
+  }
+
+  filename += '.pdf';
+
+  // Load Heebo font if not already loaded
+  if (!document.querySelector('link[href*="Heebo"]')) {
+    const fontLink = document.createElement('link');
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700&display=swap';
+    fontLink.rel = 'stylesheet';
+    document.head.appendChild(fontLink);
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  // Create title page
+  const titlePageContainer = document.createElement('div');
+  titlePageContainer.style.position = 'fixed';
+  titlePageContainer.style.left = '-10000px';
+  titlePageContainer.style.top = '0';
+  titlePageContainer.style.width = '595px';
+  titlePageContainer.style.height = '842px';
+  titlePageContainer.style.backgroundColor = '#ffffff';
+  titlePageContainer.style.padding = '60px 40px';
+  titlePageContainer.style.boxSizing = 'border-box';
+  titlePageContainer.style.fontFamily = "'Heebo', Arial, sans-serif";
+  document.body.appendChild(titlePageContainer);
+
+  let displayTime = '';
+  if (service.date) {
+    const date = new Date(service.date);
+    const time = date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    if (time !== '00:00') {
+      displayTime = time;
+    }
+  }
+
+  titlePageContainer.innerHTML = `
+    <div style="text-align: center;">
+      <h1 style="font-size: 36px; font-weight: 700; margin: 0 0 20px 0; color: #333;">
+        ${service.venue || service.title || 'Service'}
+      </h1>
+      ${displayTime ? `
+        <div style="font-size: 18px; color: #666; margin-bottom: 40px; direction: rtl;">
+          האסיפה מתחילה ב ${displayTime}
+        </div>
+      ` : '<div style="margin-bottom: 40px;"></div>'}
+      <hr style="border: none; border-top: 2px solid #4ECDC4; margin: 0 0 30px 0;">
+      <h2 style="font-size: 24px; font-weight: 600; margin: 0 0 30px 0; color: #4ECDC4;">
+        רשימת שירים
+      </h2>
+    </div>
+    <div style="text-align: right; direction: rtl; font-size: 16px; line-height: 2;">
+      ${songs.map((song, index) => {
+        const metaInfo = [];
+        if (song.authors) metaInfo.push(song.authors);
+        if (song.key) {
+          const transposedKey = song.transposition || song.serviceSongTransposition || 0;
+          const finalKey = transposedKey !== 0 ? transposeChord(song.key, transposedKey) : song.key;
+          metaInfo.push(finalKey);
+        }
+        if (song.bpm) metaInfo.push(`${song.bpm} BPM`);
+
+        return `
+          <div style="margin-bottom: 12px; padding-right: 10px;">
+            ${index + 1}. <strong>${song.title}</strong>${metaInfo.length > 0 ? ` - ${metaInfo.join(' | ')}` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  const titleCanvas = await html2canvas(titlePageContainer, {
+    scale: 2,
+    useCORS: true,
+    letterRendering: true,
+    logging: false,
+    allowTaint: true,
+    backgroundColor: '#ffffff'
+  });
+
+  const titleImgData = titleCanvas.toDataURL('image/jpeg', 0.95);
+
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  const pdfWidth = 210;
+  const pdfHeight = 297;
+  const titleImgWidth = pdfWidth;
+  const titleImgHeight = (titleCanvas.height * pdfWidth) / titleCanvas.width;
+
+  pdf.addImage(titleImgData, 'JPEG', 0, 0, titleImgWidth, Math.min(titleImgHeight, pdfHeight), undefined, 'FAST');
+
+  document.body.removeChild(titlePageContainer);
+
+  // Generate PDF for each song
+  for (let i = 0; i < songs.length; i++) {
+    const song = songs[i];
+    const songTransposition = song.transposition || song.serviceSongTransposition || 0;
+
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-10000px';
+    container.style.top = '0';
+    container.style.width = '595px';
+    container.style.height = '842px';
+    container.style.zIndex = '-9999';
+    document.body.appendChild(container);
+
+    try {
+      const root = createRoot(container);
+
+      await new Promise((resolve) => {
+        root.render(
+          <A4PDFView
+            song={song}
+            transposition={songTransposition}
+            fontSize={fontSize}
+          />
+        );
+        setTimeout(resolve, 1000);
+      });
+
+      const a4Page = container.querySelector('.a4-page');
+      if (!a4Page) {
+        root.unmount();
+        document.body.removeChild(container);
+        continue;
+      }
+
+      const canvas = await html2canvas(a4Page, {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addPage('a4', 'portrait');
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pdfHeight), undefined, 'FAST');
+
+      root.unmount();
+      document.body.removeChild(container);
+
+    } catch (error) {
+      console.error('Error generating PDF for song:', song.title, error);
+      if (container.parentNode) {
+        document.body.removeChild(container);
+      }
+    }
+  }
+
+  // Return as blob
+  const blob = pdf.output('blob');
+  return { blob, filename };
 };
 
 /**

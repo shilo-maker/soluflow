@@ -194,6 +194,15 @@
   padding-left: 20px;
 }
 
+.menu-item-whatsapp {
+  color: #25D366;
+}
+
+.menu-item-whatsapp:hover {
+  background-color: #e8f8ed;
+  padding-left: 20px;
+}
+
 .header-menu-container {
   position: relative;
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ChordProDisplay from './ChordProDisplay';
+import { transposeChord } from '../utils/transpose';
 import './A4PDFView.css';
 
 /**
@@ -117,7 +118,7 @@ const A4PDFView = ({ song, transposition = 0, fontSize: initialFontSize = 14 }) 
             {song.title}
             {song.authors && <span className="a4-song-authors"> {song.authors}</span>}
             {(song.key || song.bpm) && <span className="a4-song-meta">
-              {song.key && ` - ${song.key}`}
+              {song.key && ` - ${transposition !== 0 ? transposeChord(song.key, transposition) : song.key}`}
               {song.bpm && ` | ${song.bpm}`}
             </span>}
           </h1>
