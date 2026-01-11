@@ -20,6 +20,31 @@ const stripNiqqud = (text) => {
     .normalize('NFC');
 };
 
+// Parse search query for #tagname patterns
+// Supports: #מהיר (single word) or #"שירי ילדים" (multi-word with quotes)
+const parseSearchQuery = (query) => {
+  const tagNames = [];
+  let processedQuery = query;
+
+  // First, match quoted tags: #"tag name" or #'tag name'
+  const quotedTagPattern = /#["']([^"']+)["']/g;
+  let match;
+  while ((match = quotedTagPattern.exec(query)) !== null) {
+    tagNames.push(stripNiqqud(match[1].toLowerCase().trim()));
+  }
+  processedQuery = processedQuery.replace(quotedTagPattern, '');
+
+  // Then match unquoted single-word tags: #tagname
+  const simpleTagPattern = /#([\u0590-\u05FF\w-]+)/g;
+  while ((match = simpleTagPattern.exec(processedQuery)) !== null) {
+    tagNames.push(stripNiqqud(match[1].toLowerCase()));
+  }
+
+  // Remove all tag patterns from query to get text search part
+  const textQuery = processedQuery.replace(simpleTagPattern, '').trim();
+  return { tagNames, textQuery };
+};
+
 // Helper function to convert hex color to CSS filter
 const getColorFilter = (hexColor) => {
   // Remove the # if present
@@ -148,20 +173,44 @@ const GuestLanding = () => {
     };
   }, [selectedSong]);
 
+  // Parse search query for tags and text
+  const { tagNames: searchTagNames, textQuery } = parseSearchQuery(searchQuery);
+
   const filteredSongs = songs.filter(song => {
     // Strip niqqud from query and content for Hebrew search matching
-    const query = stripNiqqud(searchQuery.toLowerCase());
-    const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
-    const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
+    const query = stripNiqqud(textQuery.toLowerCase());
 
-    // Search in lyrics content (strip chords and niqqud)
-    const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
-    const contentMatch = strippedContent.includes(query);
+    // If there's no text query, don't filter by text (only by tags)
+    let textMatch = true;
+    if (query) {
+      const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
+      const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
 
-    return titleMatch || authorsMatch || contentMatch;
+      // Search in lyrics content (strip chords and niqqud)
+      const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
+      const contentMatch = strippedContent.includes(query);
+
+      textMatch = titleMatch || authorsMatch || contentMatch;
+    }
+
+    // Filter by tags if any #tagname patterns were found
+    let tagMatch = true;
+    if (searchTagNames.length > 0) {
+      tagMatch = song.tags && searchTagNames.every(searchTag =>
+        song.tags.some(tag => stripNiqqud(tag.name.toLowerCase()).includes(searchTag))
+      );
+    }
+
+    return textMatch && tagMatch;
   }).map(song => {
     // Assign priority based on what matched (lower number = higher priority)
-    const query = stripNiqqud(searchQuery.toLowerCase());
+    const query = stripNiqqud(textQuery.toLowerCase());
+
+    // If only searching by tags (no text query), all matches have equal priority
+    if (!query) {
+      return { ...song, searchPriority: 1 };
+    }
+
     const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
     const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
     const contentMatch = strippedContent.includes(query);
