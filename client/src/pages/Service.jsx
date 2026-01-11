@@ -29,6 +29,7 @@ const Service = () => {
   const songPillsRef = useRef(null);
   const socketRef = useRef(null);
   const previousServiceIdRef = useRef(null);
+  const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
 
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -58,6 +59,11 @@ const Service = () => {
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
+
+  // Keep ref in sync with state for socket handlers
+  useEffect(() => {
+    isFollowModeRef.current = isFollowMode;
+  }, [isFollowMode]);
   const [isLeader, setIsLeader] = useState(false);
   const [isWorkspaceAdmin, setIsWorkspaceAdmin] = useState(false);
   const [socketConnected, setSocketConnected] = useState(true); // Track socket connection status
@@ -229,22 +235,23 @@ const Service = () => {
     });
 
     // Listen for leader events (only if not leader and in follow mode)
+    // Use isFollowModeRef.current to always get the latest value without causing socket reconnection
     socketRef.current.on('leader-navigated', ({ songId, songIndex }) => {
-      if (!userIsLeader && isFollowMode) {
+      if (!userIsLeader && isFollowModeRef.current) {
         console.log('Leader navigated to song:', songId, songIndex);
         setSelectedSongIndex(songIndex);
       }
     });
 
     socketRef.current.on('leader-transposed', ({ transposition: newTransposition }) => {
-      if (!userIsLeader && isFollowMode) {
+      if (!userIsLeader && isFollowModeRef.current) {
         console.log('Leader transposed to:', newTransposition);
         setTransposition(newTransposition);
       }
     });
 
     socketRef.current.on('leader-changed-font', ({ fontSize: newFontSize }) => {
-      if (!userIsLeader && isFollowMode) {
+      if (!userIsLeader && isFollowModeRef.current) {
         console.log('Leader changed font size to:', newFontSize);
         setFontSize(newFontSize);
       }
@@ -348,7 +355,7 @@ const Service = () => {
         socketRef.current = null;
       }
     };
-  }, [selectedService, user, isFollowMode]);
+  }, [selectedService, user]); // Removed isFollowMode - using ref instead to prevent socket reconnection
 
   // Get the set list for the selected service
   const currentSetList = serviceDetails?.songs || [];

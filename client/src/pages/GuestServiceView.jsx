@@ -14,6 +14,7 @@ const GuestServiceView = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef(null);
+  const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
 
   const [serviceDetails, setServiceDetails] = useState(null);
   const [selectedSongIndex, setSelectedSongIndex] = useState(0);
@@ -25,9 +26,15 @@ const GuestServiceView = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState('success');
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(true); // Track socket connection status
 
   // Real-time sync state (guests are always followers)
   const [isFollowMode, setIsFollowMode] = useState(true);
+
+  // Keep ref in sync with state for socket handlers
+  useEffect(() => {
+    isFollowModeRef.current = isFollowMode;
+  }, [isFollowMode]);
 
   useEffect(() => {
     const fetchServiceByCode = async () => {
@@ -73,6 +80,7 @@ const GuestServiceView = () => {
 
     socketRef.current.on('connect', () => {
       console.log('Guest Socket.IO connected:', socketRef.current.id);
+      setSocketConnected(true);
 
       // Join the service room as follower
       // Use a guest ID if not authenticated, or actual user ID if authenticated
@@ -86,38 +94,80 @@ const GuestServiceView = () => {
       });
     });
 
+    // Handle disconnection
+    socketRef.current.on('disconnect', (reason) => {
+      console.log('Guest Socket.IO disconnected:', reason);
+      setSocketConnected(false);
+    });
+
+    // Handle reconnection
+    socketRef.current.on('reconnect', (attemptNumber) => {
+      console.log('Guest Socket.IO reconnected after', attemptNumber, 'attempts');
+      setSocketConnected(true);
+
+      // Rejoin the service room after reconnection
+      const guestUserId = user?.id || `guest-${socketRef.current.id}`;
+      socketRef.current.emit('join-service', {
+        serviceId: serviceDetails.id,
+        userId: guestUserId,
+        userRole: user?.role || 'guest',
+        isLeader: false
+      });
+    });
+
+    // Handle reconnection attempts
+    socketRef.current.on('reconnect_attempt', (attemptNumber) => {
+      console.log('Guest Socket.IO reconnection attempt', attemptNumber);
+    });
+
+    // Handle reconnection errors
+    socketRef.current.on('reconnect_error', (error) => {
+      console.error('Guest Socket.IO reconnection error:', error);
+    });
+
+    // Handle reconnection failure
+    socketRef.current.on('reconnect_failed', () => {
+      console.error('Guest Socket.IO reconnection failed');
+      setToastMessage('Connection lost. Please refresh the page.');
+      setToastType('error');
+      setShowToast(true);
+    });
+
     // Listen for leader events (only if in follow mode)
+    // Use isFollowModeRef.current to always get the latest value without causing socket reconnection
     socketRef.current.on('leader-navigated', ({ songId, songIndex }) => {
-      if (isFollowMode) {
+      if (isFollowModeRef.current) {
         console.log('Leader navigated to song:', songId, songIndex);
         setSelectedSongIndex(songIndex);
       }
     });
 
     socketRef.current.on('leader-transposed', ({ transposition: newTransposition }) => {
-      if (isFollowMode) {
+      if (isFollowModeRef.current) {
         console.log('Leader transposed to:', newTransposition);
         setTransposition(newTransposition);
       }
     });
 
     socketRef.current.on('leader-changed-font', ({ fontSize: newFontSize }) => {
-      if (isFollowMode) {
+      if (isFollowModeRef.current) {
         console.log('Leader changed font size to:', newFontSize);
         setFontSize(newFontSize);
       }
     });
 
     socketRef.current.on('sync-state', (state) => {
-      console.log('Syncing state from leader:', state);
-      if (state.currentSongIndex !== undefined) {
-        setSelectedSongIndex(state.currentSongIndex);
-      }
-      if (state.transposition !== undefined) {
-        setTransposition(state.transposition);
-      }
-      if (state.fontSize !== undefined) {
-        setFontSize(state.fontSize);
+      if (isFollowModeRef.current) {
+        console.log('Syncing state from leader:', state);
+        if (state.currentSongIndex !== undefined) {
+          setSelectedSongIndex(state.currentSongIndex);
+        }
+        if (state.transposition !== undefined) {
+          setTransposition(state.transposition);
+        }
+        if (state.fontSize !== undefined) {
+          setFontSize(state.fontSize);
+        }
       }
     });
 
@@ -130,6 +180,7 @@ const GuestServiceView = () => {
       console.log('Leader disconnected from service');
       setIsFollowMode(false); // Automatically switch to free mode
       setToastMessage(message || 'Leader disconnected - switched to free mode');
+      setToastType('info');
       setShowToast(true);
     });
 
@@ -137,6 +188,7 @@ const GuestServiceView = () => {
     socketRef.current.on('leader-reconnected', ({ message }) => {
       console.log('Leader reconnected to service');
       setToastMessage(message || 'Leader reconnected - you can enable follow mode');
+      setToastType('success');
       setShowToast(true);
     });
 
@@ -147,6 +199,11 @@ const GuestServiceView = () => {
 
         // Remove all event listeners to prevent memory leaks
         socketRef.current.off('connect');
+        socketRef.current.off('disconnect');
+        socketRef.current.off('reconnect');
+        socketRef.current.off('reconnect_attempt');
+        socketRef.current.off('reconnect_error');
+        socketRef.current.off('reconnect_failed');
         socketRef.current.off('leader-navigated');
         socketRef.current.off('leader-transposed');
         socketRef.current.off('leader-changed-font');
@@ -160,7 +217,7 @@ const GuestServiceView = () => {
         socketRef.current = null;
       }
     };
-  }, [serviceDetails, user, isFollowMode]);
+  }, [serviceDetails, user]); // Removed isFollowMode - using ref instead to prevent socket reconnection
 
   const currentSetList = serviceDetails?.songs || [];
   const currentSong = currentSetList[selectedSongIndex];
@@ -278,13 +335,20 @@ const GuestServiceView = () => {
                 {serviceDetails.location && <span>{serviceDetails.location}</span>}
               </div>
             </div>
-            <button
-              className={`btn-follow-mode ${isFollowMode ? 'active' : ''}`}
-              onClick={toggleFollowMode}
-              title={isFollowMode ? 'Click to enable free mode' : 'Click to follow leader'}
-            >
-              {isFollowMode ? 'FOLLOWING' : 'FREE MODE'}
-            </button>
+            <div className="header-buttons">
+              <button
+                className={`btn-follow-mode ${isFollowMode ? 'active' : ''}`}
+                onClick={toggleFollowMode}
+                title={isFollowMode ? 'Click to enable free mode' : 'Click to follow leader'}
+              >
+                {isFollowMode ? 'FOLLOWING' : 'FREE MODE'}
+              </button>
+              {!socketConnected && (
+                <div className="connection-status disconnected" title="Connection lost - attempting to reconnect">
+                  ⚠️ Disconnected
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

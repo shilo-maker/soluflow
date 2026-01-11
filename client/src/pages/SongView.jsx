@@ -25,6 +25,7 @@ const SongView = () => {
   const touchStartRef = useRef(null);
   const touchEndRef = useRef(null);
   const socketRef = useRef(null);
+  const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
 
   // Store transposition per song ID to remember transposition when navigating
   const songTranspositionsRef = useRef(new Map());
@@ -76,9 +77,10 @@ const SongView = () => {
   const nextSong = hasNext ? setlistContext.setlist[currentSetlistIndex + 1] : null;
   const previousSong = hasPrevious ? setlistContext.setlist[currentSetlistIndex - 1] : null;
 
-  // Save follow mode to sessionStorage whenever it changes
+  // Save follow mode to sessionStorage and keep ref in sync
   useEffect(() => {
     sessionStorage.setItem('followMode', isFollowMode.toString());
+    isFollowModeRef.current = isFollowMode;
   }, [isFollowMode]);
 
   useEffect(() => {
@@ -277,8 +279,9 @@ const SongView = () => {
     });
 
     // Listen for leader events (only if not leader and in follow mode)
+    // Use isFollowModeRef.current to always get the latest value without causing socket reconnection
     socketRef.current.on('leader-navigated', ({ songId, songIndex }) => {
-      if (!userIsLeader && isFollowMode && setlistContext?.setlist) {
+      if (!userIsLeader && isFollowModeRef.current && setlistContext?.setlist) {
         console.log('[SongView] Follower received leader-navigated:', songId, songIndex);
 
         // Set flag to skip initialization (we'll wait for leader-transpose event)
@@ -308,7 +311,7 @@ const SongView = () => {
     });
 
     socketRef.current.on('leader-transposed', ({ transposition: newTransposition }) => {
-      if (!userIsLeader && isFollowMode) {
+      if (!userIsLeader && isFollowModeRef.current) {
         console.log('[SongView] Follower received leader-transposed:', newTransposition);
         setTransposition(newTransposition);
         songTranspositionsRef.current.set(id, newTransposition);
@@ -325,14 +328,14 @@ const SongView = () => {
     });
 
     socketRef.current.on('leader-changed-font', ({ fontSize: newFontSize }) => {
-      if (!userIsLeader && isFollowMode) {
+      if (!userIsLeader && isFollowModeRef.current) {
         console.log('Leader changed font size to:', newFontSize);
         setFontSize(newFontSize);
       }
     });
 
     socketRef.current.on('sync-state', (state) => {
-      if (!userIsLeader && isFollowMode) {
+      if (!userIsLeader && isFollowModeRef.current) {
         console.log('Syncing state from leader:', state);
         if (state.currentSongIndex !== undefined && setlistContext?.setlist) {
           const syncSong = setlistContext.setlist[state.currentSongIndex];
@@ -359,6 +362,25 @@ const SongView = () => {
       console.log('Room update - Leader:', leaderSocketId, 'Followers:', followerCount);
     });
 
+    // Handle leader disconnection - switch to free mode
+    socketRef.current.on('leader-disconnected', ({ message }) => {
+      console.log('Leader disconnected from service');
+      if (!userIsLeader) {
+        setIsFollowMode(false); // Automatically switch to free mode
+        setToastMessage(message || 'Leader disconnected - switched to free mode');
+        setShowToast(true);
+      }
+    });
+
+    // Handle leader reconnection
+    socketRef.current.on('leader-reconnected', ({ message }) => {
+      console.log('Leader reconnected to service');
+      if (!userIsLeader) {
+        setToastMessage(message || 'Leader reconnected - you can enable follow mode');
+        setShowToast(true);
+      }
+    });
+
     // Cleanup on unmount or when dependencies change
     return () => {
       if (socketRef.current) {
@@ -376,6 +398,8 @@ const SongView = () => {
         socketRef.current.off('leader-changed-font');
         socketRef.current.off('sync-state');
         socketRef.current.off('room-update');
+        socketRef.current.off('leader-disconnected');
+        socketRef.current.off('leader-reconnected');
 
         // Leave service room and disconnect
         socketRef.current.emit('leave-service', { serviceId: setlistContext.serviceId });
@@ -383,7 +407,7 @@ const SongView = () => {
         socketRef.current = null;
       }
     };
-  }, [setlistContext, user, isFollowMode, id, navigate]);
+  }, [setlistContext, user, id, navigate]); // Removed isFollowMode - using ref instead to prevent socket reconnection
 
   // Keyboard navigation - must be before early returns
   useEffect(() => {
