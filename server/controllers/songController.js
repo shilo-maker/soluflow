@@ -11,7 +11,7 @@ const getAllSongs = async (req, res) => {
 
     // Pagination parameters
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 50)); // Increased max from 100 to 1000
     const offset = (page - 1) * limit;
 
     // Build where clause based on role and workspace
@@ -231,7 +231,7 @@ const searchSongs = async (req, res) => {
 
     // Pagination parameters
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 50)); // Increased max from 100 to 1000
     const offset = (page - 1) * limit;
 
     if (!q) {
