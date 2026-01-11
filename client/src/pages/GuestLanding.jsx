@@ -26,8 +26,9 @@ const parseSearchQuery = (query) => {
   const tagNames = [];
   let processedQuery = query;
 
-  // First, match quoted tags: #"tag name" or #'tag name'
-  const quotedTagPattern = /#["']([^"']+)["']/g;
+  // First, match quoted tags with various quote styles:
+  // English: " ' | Hebrew: ״ ׳ | Smart quotes: " " ' '
+  const quotedTagPattern = /#["'״׳""''"]([^"'״׳""''"]+)["'״׳""'']/g;
   let match;
   while ((match = quotedTagPattern.exec(query)) !== null) {
     tagNames.push(stripNiqqud(match[1].toLowerCase().trim()));
