@@ -176,15 +176,27 @@ const Library = () => {
   }, []); // Empty dependency array - fetch once on mount
 
   // Parse search query for #tagname patterns
+  // Supports: #מהיר (single word) or #"שירי ילדים" (multi-word with quotes)
   const parseSearchQuery = (query) => {
-    const tagPattern = /#([\u0590-\u05FF\w-]+)/g;
     const tagNames = [];
+    let processedQuery = query;
+
+    // First, match quoted tags: #"tag name" or #'tag name'
+    const quotedTagPattern = /#["']([^"']+)["']/g;
     let match;
-    while ((match = tagPattern.exec(query)) !== null) {
+    while ((match = quotedTagPattern.exec(query)) !== null) {
+      tagNames.push(stripNiqqud(match[1].toLowerCase().trim()));
+    }
+    processedQuery = processedQuery.replace(quotedTagPattern, '');
+
+    // Then match unquoted single-word tags: #tagname
+    const simpleTagPattern = /#([\u0590-\u05FF\w-]+)/g;
+    while ((match = simpleTagPattern.exec(processedQuery)) !== null) {
       tagNames.push(stripNiqqud(match[1].toLowerCase()));
     }
-    // Remove tag patterns from query to get text search part
-    const textQuery = query.replace(tagPattern, '').trim();
+
+    // Remove all tag patterns from query to get text search part
+    const textQuery = processedQuery.replace(simpleTagPattern, '').trim();
     return { tagNames, textQuery };
   };
 

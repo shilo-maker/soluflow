@@ -102,7 +102,7 @@
   },
   "library": {
     "title": "Song Library",
-    "searchPlaceholder": "Search songs or #tag...",
+    "searchPlaceholder": "Search songs, #tag or #\"multi word\"...",
     "add": "ADD",
     "public": "Public",
     "addSong": "ADD SONG",

@@ -102,7 +102,7 @@
   },
   "library": {
     "title": "ספריית שירים",
-    "searchPlaceholder": "חפש שירים או #תגית...",
+    "searchPlaceholder": "חפש שירים, #תגית או #\"שתי מילים\"...",
     "add": "הוספה",
     "public": "ציבורי",
     "addSong": "הוסף שיר",
