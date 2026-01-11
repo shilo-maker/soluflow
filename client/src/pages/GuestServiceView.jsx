@@ -63,10 +63,15 @@ const GuestServiceView = () => {
     }
   }, [code]);
 
-  // Reset transposition when song changes
+  // Load saved transposition when song changes
   useEffect(() => {
-    setTransposition(0);
-  }, [selectedSongIndex]);
+    if (serviceDetails?.songs?.[selectedSongIndex]) {
+      const currentSong = serviceDetails.songs[selectedSongIndex];
+      const savedTransposition = currentSong.transposition || 0;
+      console.log('[GuestServiceView] Loading transposition for song:', currentSong.title, '=', savedTransposition);
+      setTransposition(savedTransposition);
+    }
+  }, [selectedSongIndex, serviceDetails]);
 
   // Socket.IO connection for real-time sync
   useEffect(() => {
@@ -423,7 +428,7 @@ const GuestServiceView = () => {
                     <button className="btn-zoom" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
                     <button className="btn-zoom" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
                   </div>
-                  <span className="key-info">Key: {convertKeyToFlat(currentSong.key)}</span>
+                  <span className="key-info">Key: {convertKeyToFlat(transposeChord(currentSong.key, transposition))}</span>
                   {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}{currentSong.time_signature && ` (${currentSong.time_signature})`}</span>}
                 </div>
               </div>
