@@ -55,6 +55,15 @@
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
+  padding-right: 40px; /* Reserve space for chords that extend beyond lyrics */
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden; /* Clip chords that extend beyond container */
+}
+
+[dir="rtl"] .chord-lyric-pair {
+  padding-right: 0;
+  padding-left: 40px; /* Reserve space on left for RTL */
 }
 
 .chord-line {
@@ -65,6 +74,8 @@
   font-size: calc(0.93em * var(--theme-chord-size, 1)); /* Relative to parent font size with theme multiplier */
   direction: ltr;
   font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
+  overflow: visible; /* Allow chords to extend beyond if needed */
+  max-width: 100%;
 }
 
 .chord {
@@ -80,6 +91,8 @@
   color: var(--theme-text-color, #333);
   min-height: 1.2em;
   white-space: pre-wrap;
+  word-break: break-word; /* Prevent long words from overflowing */
+  overflow-wrap: break-word;
 }
 
 /* RTL support for Hebrew */
@@ -234,5 +247,17 @@
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .chord-lyric-pair {
+    padding-right: 30px; /* Slightly less padding on mobile */
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  [dir="rtl"] .chord-lyric-pair {
+    padding-right: 0;
+    padding-left: 30px;
   }
 }

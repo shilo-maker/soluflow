@@ -956,15 +956,20 @@ const SongView = () => {
       // Force reflow
       void chordDisplay.offsetHeight;
 
-      // Check if content fits (no scrolling needed)
+      // Check if content fits (no scrolling needed) - both height AND width
       // Add a small buffer (10px) to ensure no cutoff
       const contentHeight = chordDisplay.scrollHeight;
       const containerHeight = container.clientHeight;
+      const contentWidth = chordDisplay.scrollWidth;
+      const containerWidth = container.clientWidth;
       const buffer = 10;
 
-      console.log(`Test ${i + 1}: fontSize=${testSize.toFixed(2)}px, contentHeight=${contentHeight}px, containerHeight=${containerHeight}px`);
+      const heightFits = contentHeight <= containerHeight - buffer;
+      const widthFits = contentWidth <= containerWidth - buffer;
 
-      if (contentHeight <= containerHeight - buffer) {
+      console.log(`Test ${i + 1}: fontSize=${testSize.toFixed(2)}px, h=${contentHeight}/${containerHeight}, w=${contentWidth}/${containerWidth}`);
+
+      if (heightFits && widthFits) {
         // Content fits with buffer, try larger
         optimalSize = testSize;
         minSize = testSize;
