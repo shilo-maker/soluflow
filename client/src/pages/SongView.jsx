@@ -26,6 +26,8 @@ const SongView = () => {
   const touchEndRef = useRef(null);
   const socketRef = useRef(null);
   const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
+  const setlistContextRef = useRef(null); // Ref to access current setlist context in socket handlers
+  const currentSongIdRef = useRef(null); // Ref to track current song ID
 
   // Store transposition per song ID to remember transposition when navigating
   const songTranspositionsRef = useRef(new Map());
@@ -82,6 +84,15 @@ const SongView = () => {
     sessionStorage.setItem('followMode', isFollowMode.toString());
     isFollowModeRef.current = isFollowMode;
   }, [isFollowMode]);
+
+  // Keep setlistContext and song ID refs in sync for socket handlers
+  useEffect(() => {
+    setlistContextRef.current = setlistContext;
+  }, [setlistContext]);
+
+  useEffect(() => {
+    currentSongIdRef.current = id;
+  }, [id]);
 
   useEffect(() => {
     const fetchSong = async () => {
@@ -211,12 +222,15 @@ const SongView = () => {
   }, [song, isExpanded]);
 
   // Socket.IO connection for real-time sync
+  // Extract serviceId to use as a stable dependency - socket stays connected across song navigations
+  const serviceId = setlistContext?.serviceId;
+
   useEffect(() => {
-    if (!setlistContext?.serviceId) return;
+    if (!serviceId) return;
 
     // In SongView, we're always a follower (leader controls from Service page)
     // Check if we're passed the isLeader flag from Service page
-    const userIsLeader = setlistContext.isLeader === true;
+    const userIsLeader = setlistContextRef.current?.isLeader === true;
     setIsLeader(userIsLeader);
 
     // Connect to Socket.IO server
@@ -233,7 +247,7 @@ const SongView = () => {
       const userId = user?.id || `guest-${socketRef.current.id}`;
 
       socketRef.current.emit('join-service', {
-        serviceId: setlistContext.serviceId,
+        serviceId: serviceId,
         userId: userId,
         userRole: user?.role || 'guest',
         isLeader: userIsLeader
@@ -254,7 +268,7 @@ const SongView = () => {
       // Rejoin the service room after reconnection
       const userId = user?.id || `guest-${socketRef.current.id}`;
       socketRef.current.emit('join-service', {
-        serviceId: setlistContext.serviceId,
+        serviceId: serviceId,
         userId: userId,
         userRole: user?.role || 'guest',
         isLeader: userIsLeader
@@ -279,9 +293,12 @@ const SongView = () => {
     });
 
     // Listen for leader events (only if not leader and in follow mode)
-    // Use isFollowModeRef.current to always get the latest value without causing socket reconnection
+    // Use refs to always get the latest values without causing socket reconnection
     socketRef.current.on('leader-navigated', ({ songId, songIndex }) => {
-      if (!userIsLeader && isFollowModeRef.current && setlistContext?.setlist) {
+      const currentSetlistContext = setlistContextRef.current;
+      const currentSongId = currentSongIdRef.current;
+
+      if (!userIsLeader && isFollowModeRef.current && currentSetlistContext?.setlist) {
         console.log('[SongView] Follower received leader-navigated:', songId, songIndex);
 
         // Set flag to skip initialization (we'll wait for leader-transpose event)
@@ -297,11 +314,11 @@ const SongView = () => {
         }, 2500);
 
         // Navigate to the new song
-        const newSong = setlistContext.setlist[songIndex];
-        if (newSong && newSong.id.toString() !== id) {
+        const newSong = currentSetlistContext.setlist[songIndex];
+        if (newSong && newSong.id.toString() !== currentSongId) {
           navigate(`/song/${newSong.id}`, {
             state: {
-              ...setlistContext,
+              ...currentSetlistContext,
               currentIndex: songIndex
             },
             replace: true
@@ -311,13 +328,15 @@ const SongView = () => {
     });
 
     socketRef.current.on('leader-transposed', ({ transposition: newTransposition }) => {
+      const currentSongId = currentSongIdRef.current;
+
       if (!userIsLeader && isFollowModeRef.current) {
         console.log('[SongView] Follower received leader-transposed:', newTransposition);
         setTransposition(newTransposition);
-        songTranspositionsRef.current.set(id, newTransposition);
+        songTranspositionsRef.current.set(currentSongId, newTransposition);
 
         // Mark this song as initialized with leader's transposition
-        transpositionInitializedRef.current = id;
+        transpositionInitializedRef.current = currentSongId;
 
         // Clear the flag after applying leader's transposition
         // Use timeout to ensure flag gets cleared even if multiple events arrive
@@ -335,14 +354,17 @@ const SongView = () => {
     });
 
     socketRef.current.on('sync-state', (state) => {
+      const currentSetlistContext = setlistContextRef.current;
+      const currentSongId = currentSongIdRef.current;
+
       if (!userIsLeader && isFollowModeRef.current) {
         console.log('Syncing state from leader:', state);
-        if (state.currentSongIndex !== undefined && setlistContext?.setlist) {
-          const syncSong = setlistContext.setlist[state.currentSongIndex];
-          if (syncSong && syncSong.id.toString() !== id) {
+        if (state.currentSongIndex !== undefined && currentSetlistContext?.setlist) {
+          const syncSong = currentSetlistContext.setlist[state.currentSongIndex];
+          if (syncSong && syncSong.id.toString() !== currentSongId) {
             navigate(`/song/${syncSong.id}`, {
               state: {
-                ...setlistContext,
+                ...currentSetlistContext,
                 currentIndex: state.currentSongIndex
               },
               replace: true
@@ -402,12 +424,12 @@ const SongView = () => {
         socketRef.current.off('leader-reconnected');
 
         // Leave service room and disconnect
-        socketRef.current.emit('leave-service', { serviceId: setlistContext.serviceId });
+        socketRef.current.emit('leave-service', { serviceId: serviceId });
         socketRef.current.disconnect();
         socketRef.current = null;
       }
     };
-  }, [setlistContext, user, id, navigate]); // Removed isFollowMode - using ref instead to prevent socket reconnection
+  }, [serviceId, user, navigate]); // Only reconnect socket when service changes, not when song changes
 
   // Keyboard navigation - must be before early returns
   useEffect(() => {
