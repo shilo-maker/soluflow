@@ -58,7 +58,7 @@
   padding-right: 40px; /* Reserve space for chords that extend beyond lyrics */
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden; /* Clip chords that extend beyond container */
+  overflow-x: visible; /* Allow chords to extend beyond container */
 }
 
 [dir="rtl"] .chord-lyric-pair {

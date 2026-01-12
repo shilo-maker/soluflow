@@ -425,13 +425,13 @@ const ChordProDisplay = React.memo(({
         const chordPositions = [];
         const minSpacing = 5; // Minimum pixels between chords
 
-        // Estimate maximum safe position based on typical screen widths
-        // This prevents chords from being positioned way off screen
-        // The actual container width will clip via CSS, but this prevents extreme cases
-        const maxSafePosition = Math.max(
-          measureTextWidth(item.lyrics, fontSize, fontFamily) + 50, // Lyrics width + buffer
-          300 // Minimum reasonable width
-        );
+        // Calculate the total lyrics width for positioning reference
+        const lyricsWidth = measureTextWidth(item.lyrics, fontSize, fontFamily);
+
+        // For RTL, we need to position chords differently
+        // Instead of using right: Xpx (which positions from right edge),
+        // we'll calculate positions that work within the container
+        const maxSafePosition = Math.max(lyricsWidth + 50, 300);
 
         item.chords.forEach((c, i) => {
           // Measure actual text width up to this chord position
