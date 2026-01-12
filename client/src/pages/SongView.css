@@ -323,7 +323,7 @@
 .song-view-content {
   background-color: #fafafa;
   border-radius: 8px;
-  padding: 20px;
+  padding: 1px;
   margin-bottom: 15px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
   position: relative;
@@ -467,7 +467,7 @@
   }
 
   .song-view-content {
-    padding: 20px;
+    padding: 1px;
   }
 }
 
@@ -731,5 +731,269 @@
   }
   50% {
     opacity: 0.7;
+  }
+}
+
+/* Controls Toggle Button */
+.btn-controls-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.btn-controls-toggle:hover {
+  background-color: var(--color-primary-dark, #b8844e);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.controls-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* Controls Drawer Overlay */
+.controls-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Controls Drawer */
+.controls-drawer {
+  background-color: white;
+  border-radius: 20px 20px 0 0;
+  padding: 20px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.drawer-handle {
+  width: 40px;
+  height: 4px;
+  background-color: #ddd;
+  border-radius: 2px;
+  margin: 0 auto 20px auto;
+  cursor: pointer;
+}
+
+.drawer-handle:hover {
+  background-color: #bbb;
+}
+
+.drawer-section {
+  margin-bottom: 24px;
+}
+
+.drawer-section:last-child {
+  margin-bottom: 10px;
+}
+
+.drawer-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.drawer-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Transpose Controls in Drawer */
+.transpose-controls-drawer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.btn-drawer {
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-drawer:hover {
+  background-color: #e0e0e0;
+}
+
+.btn-drawer:active {
+  transform: scale(0.95);
+}
+
+.btn-drawer.btn-transpose {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-drawer.btn-transpose:hover {
+  background-color: var(--color-primary-dark, #b8844e);
+}
+
+.transpose-display-drawer {
+  min-width: 100px;
+  text-align: center;
+  padding: 14px 20px;
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: 700;
+  font-size: 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.transpose-display-drawer:hover {
+  background-color: #e9ecef;
+}
+
+.transpose-offset {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+/* Toggle Buttons in Drawer */
+.btn-drawer-toggle {
+  flex: 1;
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-drawer-toggle:hover {
+  background-color: #e0e0e0;
+}
+
+.btn-drawer-toggle.active {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-drawer-toggle.active:hover {
+  background-color: var(--color-primary-dark, #b8844e);
+}
+
+/* Zoom Controls in Drawer */
+.zoom-controls-drawer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.btn-drawer.btn-zoom {
+  width: 60px;
+  height: 50px;
+}
+
+.zoom-a-small {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.zoom-a-large {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.zoom-display {
+  min-width: 60px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+/* Mobile adjustments for drawer */
+@media (max-width: 768px) {
+  .btn-controls-toggle {
+    bottom: 15px;
+    right: 15px;
+    width: 45px;
+    height: 45px;
+  }
+
+  .controls-icon {
+    font-size: 20px;
+  }
+
+  .controls-drawer {
+    padding: 16px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .btn-drawer {
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+
+  .transpose-display-drawer {
+    min-width: 80px;
+    padding: 12px 16px;
+    font-size: 18px;
+  }
+
+  .btn-drawer-toggle {
+    padding: 12px 12px;
+    font-size: 13px;
   }
 }

@@ -62,7 +62,9 @@ const SongView = () => {
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showControlsDrawer, setShowControlsDrawer] = useState(false);
   const [expandedFontSize, setExpandedFontSize] = useState(16);
+  const [canExpand, setCanExpand] = useState(true); // Disabled on mobile/PWA
   const [autoFontSize, setAutoFontSize] = useState(16);
   const contentRef = useRef(null);
 
@@ -86,6 +88,26 @@ const SongView = () => {
     sessionStorage.setItem('followMode', isFollowMode.toString());
     isFollowModeRef.current = isFollowMode;
   }, [isFollowMode]);
+
+  // Check if expanded mode should be disabled (mobile or PWA)
+  useEffect(() => {
+    const checkCanExpand = () => {
+      // Check if running as PWA (standalone mode)
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                    window.navigator.standalone === true;
+
+      // Check if small screen (mobile)
+      const isSmallScreen = window.innerWidth <= 768;
+
+      // Disable expand on mobile or PWA
+      setCanExpand(!isPWA && !isSmallScreen);
+    };
+
+    checkCanExpand();
+    window.addEventListener('resize', checkCanExpand);
+
+    return () => window.removeEventListener('resize', checkCanExpand);
+  }, []);
 
   // Keep setlistContext and song ID refs in sync for socket handlers
   useEffect(() => {
@@ -1115,51 +1137,101 @@ const SongView = () => {
       </div>
       )}
 
-      {/* Action Buttons */}
+      {/* Controls Button - Opens drawer */}
       {!isExpanded && (
-      <div className="song-view-actions">
-        <div className="transpose-controls-view">
-          <button className="btn-action btn-transpose-view" onClick={transposeDown}>-</button>
-          <span
-            className="transpose-display"
-            onClick={() => setShowKeySelectorModal(true)}
-            title="Click to select key"
-          >
-            {convertKeyToFlat(transposeChord(song.key, transposition))}
-            {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
-          </span>
-          <button className="btn-action btn-transpose-view" onClick={transposeUp}>+</button>
-        </div>
         <button
-          className={`btn-action ${isLyricsOnly ? 'active' : ''}`}
-          onClick={() => setIsLyricsOnly(!isLyricsOnly)}
+          className="btn-controls-toggle"
+          onClick={() => setShowControlsDrawer(true)}
+          title="Song controls"
         >
-          {isLyricsOnly ? 'Chords' : 'Lyrics'}
+          <span className="controls-icon">☰</span>
         </button>
-        <button
-          className={`btn-action btn-columns ${columnMode !== null ? 'active' : ''}`}
-          onClick={() => {
-            if (columnMode === null) {
-              // In auto mode: toggle to the opposite of what auto chose
-              setColumnMode(autoColumnCount === 2 ? 1 : 2);
-            } else {
-              // In forced mode: go back to auto
-              setColumnMode(null);
-            }
-          }}
-          title={columnMode === null ? 'Auto columns - click to change' : 'Click to return to auto'}
-        >
-          {(columnMode !== null ? columnMode : autoColumnCount) === 2 ? 'Compact' : 'Column'}
-        </button>
-        <div className="zoom-controls-view">
-          <button className="btn-action btn-zoom-view btn-zoom-out" onClick={zoomOut}>
-            <span className="zoom-icon-small">A</span>
-          </button>
-          <button className="btn-action btn-zoom-view btn-zoom-in" onClick={zoomIn}>
-            <span className="zoom-icon-large">A</span>
-          </button>
+      )}
+
+      {/* Controls Drawer */}
+      {showControlsDrawer && (
+        <div className="controls-drawer-overlay" onClick={() => setShowControlsDrawer(false)}>
+          <div className="controls-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-handle" onClick={() => setShowControlsDrawer(false)} />
+
+            <div className="drawer-section">
+              <label className="drawer-label">Key / Transpose</label>
+              <div className="transpose-controls-drawer">
+                <button className="btn-drawer btn-transpose" onClick={transposeDown}>−</button>
+                <span
+                  className="transpose-display-drawer"
+                  onClick={() => {
+                    setShowControlsDrawer(false);
+                    setShowKeySelectorModal(true);
+                  }}
+                >
+                  {convertKeyToFlat(transposeChord(song.key, transposition))}
+                  {transposition !== 0 && (
+                    <span className="transpose-offset">
+                      {transposition > 0 ? '+' : ''}{transposition}
+                    </span>
+                  )}
+                </span>
+                <button className="btn-drawer btn-transpose" onClick={transposeUp}>+</button>
+              </div>
+            </div>
+
+            <div className="drawer-section">
+              <label className="drawer-label">Display</label>
+              <div className="drawer-row">
+                <button
+                  className={`btn-drawer-toggle ${!isLyricsOnly ? 'active' : ''}`}
+                  onClick={() => setIsLyricsOnly(false)}
+                >
+                  Chords
+                </button>
+                <button
+                  className={`btn-drawer-toggle ${isLyricsOnly ? 'active' : ''}`}
+                  onClick={() => setIsLyricsOnly(true)}
+                >
+                  Lyrics Only
+                </button>
+              </div>
+            </div>
+
+            <div className="drawer-section">
+              <label className="drawer-label">Layout</label>
+              <div className="drawer-row">
+                <button
+                  className={`btn-drawer-toggle ${columnMode === null ? 'active' : ''}`}
+                  onClick={() => setColumnMode(null)}
+                >
+                  Auto
+                </button>
+                <button
+                  className={`btn-drawer-toggle ${columnMode === 1 ? 'active' : ''}`}
+                  onClick={() => setColumnMode(1)}
+                >
+                  Single
+                </button>
+                <button
+                  className={`btn-drawer-toggle ${columnMode === 2 ? 'active' : ''}`}
+                  onClick={() => setColumnMode(2)}
+                >
+                  Compact
+                </button>
+              </div>
+            </div>
+
+            <div className="drawer-section">
+              <label className="drawer-label">Text Size</label>
+              <div className="zoom-controls-drawer">
+                <button className="btn-drawer btn-zoom" onClick={zoomOut}>
+                  <span className="zoom-a-small">A</span>
+                </button>
+                <span className="zoom-display">{fontSize}px</span>
+                <button className="btn-drawer btn-zoom" onClick={zoomIn}>
+                  <span className="zoom-a-large">A</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
       )}
 
       {/* Navigation Buttons - Fixed position */}
@@ -1208,12 +1280,12 @@ const SongView = () => {
       <div
         ref={contentRef}
         className={`song-view-content ${isExpanded ? 'expanded' : ''}`}
-        onClick={toggleExpanded}
+        onClick={canExpand ? toggleExpanded : undefined}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ cursor: 'pointer' }}
-        title={isExpanded ? 'Click to exit expanded view' : 'Click to expand view'}
+        style={{ cursor: canExpand ? 'pointer' : 'default' }}
+        title={canExpand ? (isExpanded ? 'Click to exit expanded view' : 'Click to expand view') : undefined}
       >
         <ChordProDisplay
           content={song.content}
