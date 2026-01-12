@@ -4,6 +4,7 @@ import './FullscreenButton.css';
 const FullscreenButton = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
+  const [shouldShow, setShouldShow] = useState(true);
 
   useEffect(() => {
     // Check if fullscreen is supported (not available on iOS Safari)
@@ -15,6 +16,21 @@ const FullscreenButton = () => {
       elem.msRequestFullscreen
     );
     setIsSupported(fullscreenSupported);
+
+    // Hide on small screens and PWA
+    const checkShouldShow = () => {
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                    window.navigator.standalone === true;
+      const isSmallScreen = window.innerWidth <= 768;
+      setShouldShow(!isPWA && !isSmallScreen);
+    };
+
+    checkShouldShow();
+    window.addEventListener('resize', checkShouldShow);
+
+    // Also listen for display-mode changes
+    const displayModeQuery = window.matchMedia('(display-mode: standalone)');
+    displayModeQuery.addEventListener('change', checkShouldShow);
 
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -30,6 +46,8 @@ const FullscreenButton = () => {
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      window.removeEventListener('resize', checkShouldShow);
+      displayModeQuery.removeEventListener('change', checkShouldShow);
     };
   }, []);
 
@@ -64,8 +82,8 @@ const FullscreenButton = () => {
     }
   };
 
-  // Don't render button if fullscreen is not supported (e.g., iOS Safari)
-  if (!isSupported) {
+  // Don't render button if fullscreen is not supported, on small screens, or in PWA
+  if (!isSupported || !shouldShow) {
     return null;
   }
 
