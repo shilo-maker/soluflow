@@ -63,6 +63,7 @@ const SongView = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showControlsDrawer, setShowControlsDrawer] = useState(false);
+  const drawerTouchStartY = useRef(null);
   const [expandedFontSize, setExpandedFontSize] = useState(16);
   const [canExpand, setCanExpand] = useState(true); // Disabled on mobile/PWA
   const [autoFontSize, setAutoFontSize] = useState(16);
@@ -1151,7 +1152,24 @@ const SongView = () => {
       {/* Controls Drawer */}
       {showControlsDrawer && (
         <div className="controls-drawer-overlay" onClick={() => setShowControlsDrawer(false)}>
-          <div className="controls-drawer" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="controls-drawer"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => {
+              drawerTouchStartY.current = e.touches[0].clientY;
+            }}
+            onTouchEnd={(e) => {
+              if (drawerTouchStartY.current !== null) {
+                const touchEndY = e.changedTouches[0].clientY;
+                const swipeDistance = touchEndY - drawerTouchStartY.current;
+                // If swiped down more than 50px, close the drawer
+                if (swipeDistance > 50) {
+                  setShowControlsDrawer(false);
+                }
+                drawerTouchStartY.current = null;
+              }
+            }}
+          >
             <div className="drawer-handle" onClick={() => setShowControlsDrawer(false)} />
 
             <div className="drawer-section">
