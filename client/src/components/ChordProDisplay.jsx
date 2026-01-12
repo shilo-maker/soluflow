@@ -75,11 +75,16 @@ const ChordProDisplay = React.memo(({
   onAddNote = null,
   onUpdateNote = null,
   onDeleteNote = null,
-  disableColumnCalculation = false
+  disableColumnCalculation = false,
+  forcedColumnCount = null, // null = auto, 1 = single column, 2 = two columns
+  onAutoColumnCountChange = null // callback to report auto-calculated column count
 }) => {
   const contentRef = useRef(null);
   const canvasRef = useRef(null);
-  const [columnCount, setColumnCount] = useState(1);
+  const [autoColumnCount, setAutoColumnCount] = useState(1);
+
+  // Use forced column count if provided, otherwise use auto-calculated
+  const columnCount = forcedColumnCount !== null ? forcedColumnCount : autoColumnCount;
   const { language } = useLanguage();
   const isHebrew = language === 'he';
 
@@ -127,16 +132,16 @@ const ChordProDisplay = React.memo(({
 
         // Never use 2 columns on mobile (768px or less)
         if (viewportWidth <= 768) {
-          setColumnCount(1);
+          setAutoColumnCount(1);
           return;
         }
 
         // Use 2 columns if content would require scrolling (leave 200px buffer for headers/controls)
         // This means if content is taller than viewport, we go to 2 columns
         if (contentHeight > viewportHeight - 200) {
-          setColumnCount(2);
+          setAutoColumnCount(2);
         } else {
-          setColumnCount(1);
+          setAutoColumnCount(1);
         }
 
         rafId = null;
@@ -155,7 +160,14 @@ const ChordProDisplay = React.memo(({
       }
       window.removeEventListener('resize', checkHeight);
     };
-  }, [content, fontSize, transposition]);
+  }, [content, fontSize, transposition, disableColumnCalculation]);
+
+  // Report auto column count changes to parent
+  useEffect(() => {
+    if (onAutoColumnCountChange) {
+      onAutoColumnCountChange(autoColumnCount);
+    }
+  }, [autoColumnCount, onAutoColumnCountChange]);
 
   // Cleanup canvas on unmount to prevent memory leak
   useEffect(() => {
@@ -516,10 +528,17 @@ const ChordProDisplay = React.memo(({
   // Memoize the parsed content to avoid re-parsing on every render
   const parsed = useMemo(() => parseChordPro(transposedContent), [transposedContent]);
 
+  // Build class name with forced column indicator
+  const className = [
+    'chordpro-display',
+    forcedColumnCount === 2 ? 'columns-forced-2' : '',
+    forcedColumnCount === 1 ? 'columns-forced-1' : ''
+  ].filter(Boolean).join(' ');
+
   return (
     <div
       ref={contentRef}
-      className="chordpro-display"
+      className={className}
       dir={dir}
       style={{
         fontSize: `${fontSize}px`,

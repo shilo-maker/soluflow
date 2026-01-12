@@ -49,6 +49,8 @@ const SongView = () => {
   const [error, setError] = useState(null);
   const [isLyricsOnly, setIsLyricsOnly] = useState(false);
   const [fontSize, setFontSize] = useState(16);
+  const [columnMode, setColumnMode] = useState(null); // null = auto, 1 = single, 2 = two columns
+  const [autoColumnCount, setAutoColumnCount] = useState(1); // tracks what auto mode calculated
   const [transposition, setTransposition] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -1134,6 +1136,21 @@ const SongView = () => {
         >
           {isLyricsOnly ? 'Chords' : 'Lyrics'}
         </button>
+        <button
+          className={`btn-action btn-columns ${columnMode !== null ? 'active' : ''}`}
+          onClick={() => {
+            if (columnMode === null) {
+              // In auto mode: toggle to the opposite of what auto chose
+              setColumnMode(autoColumnCount === 2 ? 1 : 2);
+            } else {
+              // In forced mode: go back to auto
+              setColumnMode(null);
+            }
+          }}
+          title={columnMode === null ? 'Auto columns - click to change' : 'Click to return to auto'}
+        >
+          {(columnMode !== null ? columnMode : autoColumnCount) === 2 ? 'Compact' : 'Column'}
+        </button>
         <div className="zoom-controls-view">
           <button className="btn-action btn-zoom-view btn-zoom-out" onClick={zoomOut}>
             <span className="zoom-icon-small">A</span>
@@ -1205,6 +1222,8 @@ const SongView = () => {
           fontSize={isExpanded ? expandedFontSize : fontSize}
           transposition={transposition}
           songKey={song.key}
+          forcedColumnCount={columnMode}
+          onAutoColumnCountChange={setAutoColumnCount}
         />
       </div>
 

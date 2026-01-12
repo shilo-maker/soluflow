@@ -250,6 +250,20 @@
     box-sizing: border-box;
   }
 
+  /* Override mobile single-column when user explicitly forces 2 columns */
+  .chordpro-display.columns-forced-2 {
+    column-count: 2 !important;
+    column-gap: 40px !important;
+    column-rule: 2px solid #dee2e6 !important;
+  }
+
+  /* Override when user explicitly forces 1 column (redundant but explicit) */
+  .chordpro-display.columns-forced-1 {
+    column-count: 1 !important;
+    column-gap: 0 !important;
+    column-rule: none !important;
+  }
+
   .chord-lyric-pair {
     padding-right: 30px; /* Slightly less padding on mobile */
     max-width: 100%;
