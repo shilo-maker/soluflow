@@ -738,7 +738,7 @@
 .btn-controls-toggle {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -966,7 +966,7 @@
 @media (max-width: 768px) {
   .btn-controls-toggle {
     bottom: 15px;
-    right: 15px;
+    left: 15px;
     width: 45px;
     height: 45px;
   }

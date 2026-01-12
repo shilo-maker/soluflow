@@ -274,8 +274,6 @@ const Service = () => {
     socketRef.current.on('became-leader', ({ serviceId }) => {
       console.log('You are now the leader of service:', serviceId);
       setIsLeader(true);
-      setToastMessage('You are now the service leader');
-      setShowToast(true);
     });
 
     socketRef.current.on('leader-changed', ({ newLeaderId }) => {
@@ -295,13 +293,11 @@ const Service = () => {
       const newIsLeader = newLeaderId === user.id;
       setIsLeader(newIsLeader);
 
-      // Show toast notification
-      if (newIsLeader) {
-        setToastMessage('You are now the service leader');
-      } else {
+      // Show toast notification only when someone else becomes leader
+      if (!newIsLeader) {
         setToastMessage('Service leader has been changed');
+        setShowToast(true);
       }
-      setShowToast(true);
     });
 
     socketRef.current.on('room-update', ({ leaderSocketId, followerCount }) => {
