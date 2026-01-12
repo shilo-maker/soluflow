@@ -65,12 +65,12 @@
   position: relative;
   display: inline;
   white-space: pre-wrap;
-  padding-right: 0.3em; /* Small padding to prevent chord overlap without breaking words */
+  padding-right: 0.8em; /* Padding to prevent chord overlap */
 }
 
 [dir="rtl"] .chord-segment {
   padding-right: 0;
-  padding-left: 0.3em;
+  padding-left: 0.8em;
 }
 
 .text-segment {
