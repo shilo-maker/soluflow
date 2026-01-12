@@ -80,7 +80,6 @@ const ChordProDisplay = React.memo(({
   onAutoColumnCountChange = null // callback to report auto-calculated column count
 }) => {
   const contentRef = useRef(null);
-  const canvasRef = useRef(null);
   const [autoColumnCount, setAutoColumnCount] = useState(1);
 
   // Use forced column count if provided, otherwise use auto-calculated
@@ -168,15 +167,6 @@ const ChordProDisplay = React.memo(({
       onAutoColumnCountChange(autoColumnCount);
     }
   }, [autoColumnCount, onAutoColumnCountChange]);
-
-  // Cleanup canvas on unmount to prevent memory leak
-  useEffect(() => {
-    return () => {
-      if (canvasRef.current) {
-        canvasRef.current = null;
-      }
-    };
-  }, []);
 
   const parseChordPro = (text) => {
     const lines = text.split('\n');
@@ -401,14 +391,51 @@ const ChordProDisplay = React.memo(({
     );
   };
 
-  // Helper function to measure text width (reuses canvas for performance)
-  const measureTextWidth = (text, fontSize, fontFamily) => {
-    if (!canvasRef.current) {
-      canvasRef.current = document.createElement('canvas');
+  // Build inline chord-lyric segments so chords follow text when it wraps
+  const buildChordLyricSegments = (chords, lyrics) => {
+    const segments = [];
+    let lastPosition = 0;
+
+    // Sort chords by position to ensure correct order
+    const sortedChords = [...chords].sort((a, b) => a.position - b.position);
+
+    sortedChords.forEach((chord, i) => {
+      // Add text before this chord (if any)
+      if (chord.position > lastPosition) {
+        const textBefore = lyrics.substring(lastPosition, chord.position);
+        if (textBefore) {
+          segments.push({ type: 'text', content: textBefore });
+        }
+      }
+
+      // Add the chord with its following text
+      // Find where the next chord starts (or end of string)
+      const nextChordPos = sortedChords[i + 1]?.position ?? lyrics.length;
+      const textAfterChord = lyrics.substring(chord.position, nextChordPos);
+
+      segments.push({
+        type: 'chord-text',
+        chord: chord.chord,
+        text: textAfterChord
+      });
+
+      lastPosition = nextChordPos;
+    });
+
+    // Add any remaining text after the last chord
+    if (lastPosition < lyrics.length) {
+      const remainingText = lyrics.substring(lastPosition);
+      if (remainingText) {
+        segments.push({ type: 'text', content: remainingText });
+      }
     }
-    const context = canvasRef.current.getContext('2d');
-    context.font = `${fontSize}px ${fontFamily}`;
-    return context.measureText(text).width;
+
+    // If no chords at all, just return the lyrics as a single text segment
+    if (segments.length === 0 && lyrics) {
+      segments.push({ type: 'text', content: lyrics });
+    }
+
+    return segments;
   };
 
   const renderItem = (item, index) => {
@@ -425,84 +452,30 @@ const ChordProDisplay = React.memo(({
           );
         }
 
-        // For RTL, use right-aligned positioning
-        const isRTL = dir === 'rtl';
-        const fontFamily = "'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif";
-
-        // Calculate positions for all chords, preventing overlaps
-        const chordPositions = [];
-        const minSpacing = 5; // Minimum pixels between chords
-
-        // Calculate the total lyrics width for positioning reference
-        const lyricsWidth = measureTextWidth(item.lyrics, fontSize, fontFamily);
-
-        // For RTL, we need to position chords differently
-        // Instead of using right: Xpx (which positions from right edge),
-        // we'll calculate positions that work within the container
-        const maxSafePosition = Math.max(lyricsWidth + 50, 300);
-
-        item.chords.forEach((c, i) => {
-          // Measure actual text width up to this chord position
-          const textBeforeChord = item.lyrics.substring(0, c.position);
-          const textWidth = measureTextWidth(textBeforeChord, fontSize, fontFamily);
-
-          // Measure the width of this chord
-          const chordWidth = measureTextWidth(c.chord, fontSize, fontFamily);
-
-          let position = textWidth;
-
-          // Check for overlap with previous chord
-          if (i > 0) {
-            const prevChord = chordPositions[i - 1];
-            const prevEnd = prevChord.position + prevChord.width + minSpacing;
-
-            // If this chord would overlap, push it to the right (or left for RTL)
-            if (position < prevEnd) {
-              position = prevEnd;
-            }
-          }
-
-          // Clamp position to prevent extreme overflow
-          // Leave room for the chord itself plus some padding
-          const maxPosition = maxSafePosition - chordWidth - 10;
-          if (position > maxPosition && maxPosition > 0) {
-            position = maxPosition;
-          }
-
-          chordPositions.push({
-            chord: c.chord,
-            position: position,
-            width: chordWidth
-          });
-        });
+        // Build segments where each chord is attached to its text
+        const segments = buildChordLyricSegments(item.chords, item.lyrics);
 
         return (
-          <div key={index} className="chord-lyric-pair">
-            <div className="chord-line">
-              {chordPositions.map((c, i) => {
-                // For RTL, use right positioning; for LTR, use left positioning
-                const position = isRTL
-                  ? { right: `${c.position}px` }
-                  : { left: `${c.position}px` };
-
+          <div key={index} className="chord-lyric-line">
+            {segments.map((segment, i) => {
+              if (segment.type === 'text') {
                 return (
-                  <span
-                    key={i}
-                    className="chord"
-                    style={{
-                      position: 'absolute',
-                      ...position,
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {c.chord}
+                  <span key={i} className="text-segment">
+                    {segment.content}
                   </span>
                 );
-              })}
-            </div>
-            <div className="lyric-line">
-              {item.lyrics || '\u00A0'}
-            </div>
+              } else {
+                // chord-text segment
+                return (
+                  <span key={i} className="chord-segment">
+                    <span className="chord">{segment.chord}</span>
+                    <span className="text-segment">{segment.text}</span>
+                  </span>
+                );
+              }
+            })}
+            {/* Add non-breaking space if line is empty to maintain height */}
+            {segments.length === 0 && '\u00A0'}
           </div>
         );
 

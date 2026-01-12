@@ -49,21 +49,63 @@
   height: 1.2em;
 }
 
+/* New inline chord-lyric structure - chords follow text when wrapping */
+.chord-lyric-line {
+  margin-bottom: 0.3em;
+  padding-top: 1.4em; /* Space above for chords - important for first line of each column */
+  line-height: 1.8; /* Normal line height, padding-top handles chord space */
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.chord-segment {
+  position: relative;
+  display: inline;
+  white-space: pre-wrap;
+}
+
+.text-segment {
+  white-space: pre-wrap;
+}
+
+.chord {
+  position: absolute;
+  top: -1.3em;
+  left: 0;
+  color: var(--theme-chord-color, var(--color-primary));
+  font-weight: 700;
+  font-size: calc(0.93em * var(--theme-chord-size, 1));
+  direction: ltr;
+  unicode-bidi: embed;
+  font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
+  white-space: nowrap;
+}
+
+/* RTL support - position chord on right side of segment */
+[dir="rtl"] .chord {
+  left: auto;
+  right: 0;
+}
+
+/* Legacy support for old chord-lyric-pair structure (if still used elsewhere) */
 .chord-lyric-pair {
   position: relative;
   margin-bottom: 0.3em;
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
-  padding-right: 40px; /* Reserve space for chords that extend beyond lyrics */
+  padding-right: 40px;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: visible; /* Allow chords to extend beyond container */
+  overflow-x: visible;
 }
 
 [dir="rtl"] .chord-lyric-pair {
   padding-right: 0;
-  padding-left: 40px; /* Reserve space on left for RTL */
+  padding-left: 40px;
 }
 
 .chord-line {
@@ -71,20 +113,11 @@
   height: 1.4em;
   color: var(--theme-chord-color, var(--color-primary));
   font-weight: 600;
-  font-size: calc(0.93em * var(--theme-chord-size, 1)); /* Relative to parent font size with theme multiplier */
+  font-size: calc(0.93em * var(--theme-chord-size, 1));
   direction: ltr;
   font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
-  overflow: visible; /* Allow chords to extend beyond if needed */
+  overflow: visible;
   max-width: 100%;
-}
-
-.chord {
-  color: var(--theme-chord-color, var(--color-primary));
-  font-weight: 700;
-  font-size: calc(1em * var(--theme-chord-size, 1)); /* Apply theme chord size */
-  direction: ltr;
-  unicode-bidi: embed;
-  font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
 }
 
 .lyric-line {
