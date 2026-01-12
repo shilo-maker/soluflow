@@ -53,7 +53,7 @@
 .chord-lyric-line {
   margin-bottom: 0.3em;
   padding-top: 1.4em; /* Space above for chords - important for first line of each column */
-  line-height: 1.8; /* Normal line height, padding-top handles chord space */
+  line-height: 2.4; /* Increased line height to prevent chord overlap on wrapped lines */
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
@@ -63,10 +63,14 @@
 
 .chord-segment {
   position: relative;
-  display: inline-block;
+  display: inline;
   white-space: pre-wrap;
-  vertical-align: top; /* Align all segments at top to prevent uneven chord positioning */
-  /* min-width is set dynamically via inline style based on chord length */
+  padding-right: 0.3em; /* Small padding to prevent chord overlap without breaking words */
+}
+
+[dir="rtl"] .chord-segment {
+  padding-right: 0;
+  padding-left: 0.3em;
 }
 
 .text-segment {

@@ -466,13 +466,10 @@ const ChordProDisplay = React.memo(({
                 );
               } else {
                 // chord-text segment
-                // Calculate min-width based on chord length to prevent overlap
-                const chordLength = segment.chord.length;
-                const minWidth = `${Math.max(chordLength * 0.6, 1.2)}em`;
                 return (
-                  <span key={i} className="chord-segment" style={{ minWidth }}>
+                  <span key={i} className="chord-segment">
                     <span className="chord">{segment.chord}</span>
-                    <span className="text-segment">{segment.text}</span>
+                    <span className="text-segment">{segment.text || '\u200B'}</span>
                   </span>
                 );
               }
