@@ -756,15 +756,12 @@ const Service = () => {
     }
   };
 
-  const handleSharePDFWhatsApp = async () => {
-    if (!selectedService || !serviceDetails || !serviceDetails.songs) {
-      setToastMessage('No songs to share');
-      setShowToast(true);
-      return;
-    }
+  const handleSharePDFWhatsApp = async (serviceToShare = null) => {
+    // Use provided service or fall back to selected service
+    const service = serviceToShare || selectedService;
 
-    if (serviceDetails.songs.length === 0) {
-      setToastMessage('No songs in setlist');
+    if (!service) {
+      setToastMessage('No service selected');
       setShowToast(true);
       return;
     }
@@ -772,45 +769,43 @@ const Service = () => {
     try {
       setIsGeneratingPDF(true);
 
-      // Generate PDF as blob
-      const { blob, filename } = await generateMultiSongPDFBlob(selectedService, serviceDetails.songs, { fontSize });
+      // Fetch fresh service details to ensure we have the songs
+      const details = await serviceService.getServiceById(service.id);
 
-      // Create a File object from the blob
-      const file = new File([blob], filename, { type: 'application/pdf' });
-
-      // Check if Web Share API with files is supported
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: selectedService.title || 'Setlist',
-          text: `${selectedService.venue || selectedService.title || 'Setlist'} - SoluFlow`
-        });
-        setToastMessage('PDF shared successfully!');
-      } else {
-        // Fallback: Download the file and show message to share manually
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Try to open WhatsApp with a message
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`Check out this setlist: ${selectedService.venue || selectedService.title || 'Setlist'}\n\nGenerated with SoluFlow`)}`;
-        window.open(whatsappUrl, '_blank');
-
-        setToastMessage('PDF downloaded. Share it via WhatsApp!');
+      if (!details || !details.songs || details.songs.length === 0) {
+        setToastMessage('No songs in setlist');
+        setShowToast(true);
+        setIsGeneratingPDF(false);
+        return;
       }
+
+      // Generate PDF as blob
+      const { blob, filename } = await generateMultiSongPDFBlob(service, details.songs, { fontSize });
+
+      // Download the PDF file
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Open WhatsApp with a message
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${service.venue || service.title || 'Setlist'}\n\nGenerated with SoluFlow`)}`;
+      window.open(whatsappUrl, '_blank');
+
+      setToastMessage('PDF downloaded. Attach it in WhatsApp!');
       setShowToast(true);
     } catch (err) {
       console.error('Error sharing PDF:', err);
+      console.error('Error stack:', err.stack);
       if (err.name === 'AbortError') {
         // User cancelled the share
         setToastMessage('Share cancelled');
       } else {
-        setToastMessage('Failed to share PDF');
+        setToastMessage(`Failed to share PDF: ${err.message}`);
       }
       setShowToast(true);
     } finally {
@@ -1136,13 +1131,8 @@ const Service = () => {
                           onClick={(e) => {
                             e.stopPropagation();
                             setOpenMenuId(null);
-                            // Select service first if not selected, then share
-                            if (selectedService?.id !== service.id) {
-                              handleSelectService(service);
-                              setTimeout(() => handleSharePDFWhatsApp(), 100);
-                            } else {
-                              handleSharePDFWhatsApp();
-                            }
+                            // Pass the service directly to avoid race conditions
+                            handleSharePDFWhatsApp(service);
                           }}
                         >
                           WhatsApp

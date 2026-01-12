@@ -1,12 +1,13 @@
 /**
  * Chord Transposition Utility
  * Supports English notation (C, D, E, F, G, A, B) with sharps/flats
+ * Uses music theory standard: each key has specific sharp/flat notation
  */
 
-// Chromatic scale - all 12 semitones
+// Chromatic scale - all 12 semitones (using sharps as canonical)
 const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-// Alternative notations (flats)
+// Alternative notations (flats to sharps)
 const FLAT_NOTES = {
   'Db': 'C#',
   'Eb': 'D#',
@@ -15,17 +16,41 @@ const FLAT_NOTES = {
   'Bb': 'A#'
 };
 
-// Reverse mapping for preferred flat notation
-const SHARP_TO_FLAT = {
-  'C#': 'Db',
-  'D#': 'Eb',
-  'F#': 'Gb',
-  'G#': 'Ab',
-  'A#': 'Bb'
-};
+/**
+ * Key-based accidental notation mapping
+ * Based on standard music theory - each key determines how accidentals are written
+ *
+ * | Key     | Accidentals used                    |
+ * |---------|-------------------------------------|
+ * | C       | None (all natural)                  |
+ * | G       | F#                                  |
+ * | D       | F#, C#                              |
+ * | A       | F#, C#, G#                          |
+ * | E       | F#, C#, G#, D#                      |
+ * | B       | F#, C#, G#, D#, A#                  |
+ * | F#/Gb   | All sharps (F#, C#, G#, D#, A#, E#) |
+ * | C#/Db   | All sharps                          |
+ * | F       | Bb                                  |
+ * | Bb      | Bb, Eb                              |
+ * | Eb      | Bb, Eb, Ab                          |
+ * | Ab      | Bb, Eb, Ab, Db                      |
+ */
 
-// Keys that should always display as flats (uncommon sharp keys)
-const KEYS_PREFER_FLAT = ['A#', 'C#', 'D#', 'G#'];
+// Keys that use FLAT notation (based on circle of fifths)
+// Index: 0=C, 1=C#, 2=D, 3=Eb, 4=E, 5=F, 6=F#, 7=G, 8=Ab, 9=A, 10=Bb, 11=B
+const FLAT_KEYS = new Set([3, 5, 8, 10]); // Eb, F, Ab, Bb
+
+// Chromatic scale using flats
+const CHROMATIC_SCALE_FLATS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+/**
+ * Gets the correct chromatic scale based on the key
+ * @param {number} keyIndex - The key index (0-11)
+ * @returns {Array} - The appropriate chromatic scale (sharps or flats)
+ */
+const getScaleForKey = (keyIndex) => {
+  return FLAT_KEYS.has(keyIndex) ? CHROMATIC_SCALE_FLATS : CHROMATIC_SCALE;
+};
 
 /**
  * Normalizes a note to its sharp equivalent
@@ -34,15 +59,6 @@ const KEYS_PREFER_FLAT = ['A#', 'C#', 'D#', 'G#'];
  */
 const normalizeNote = (note) => {
   return FLAT_NOTES[note] || note;
-};
-
-/**
- * Determines if we should prefer flat notation based on the original chord
- * @param {string} originalChord - The original chord
- * @returns {boolean} - True if flats are preferred
- */
-const preferFlats = (originalChord) => {
-  return originalChord.includes('b') && !originalChord.includes('#');
 };
 
 /**
@@ -92,10 +108,10 @@ const parseChord = (chord) => {
  * Transposes a single note by a given number of semitones
  * @param {string} note - The note to transpose (e.g., 'C', 'F#', 'Bb')
  * @param {number} semitones - Number of semitones to transpose (positive or negative)
- * @param {boolean} useFlats - Whether to use flat notation
+ * @param {number|null} targetKeyIndex - The target key index for notation (0-11), null to use legacy behavior
  * @returns {string} - Transposed note
  */
-const transposeNote = (note, semitones, useFlats = false) => {
+const transposeNote = (note, semitones, targetKeyIndex = null) => {
   const normalizedNote = normalizeNote(note);
   const currentIndex = CHROMATIC_SCALE.indexOf(normalizedNote);
 
@@ -110,14 +126,14 @@ const transposeNote = (note, semitones, useFlats = false) => {
     newIndex += 12;
   }
 
-  const transposedNote = CHROMATIC_SCALE[newIndex];
-
-  // Convert to flat if preferred
-  if (useFlats && SHARP_TO_FLAT[transposedNote]) {
-    return SHARP_TO_FLAT[transposedNote];
+  // If we have a target key, use its scale for notation
+  if (targetKeyIndex !== null) {
+    const scale = getScaleForKey(targetKeyIndex);
+    return scale[newIndex];
   }
 
-  return transposedNote;
+  // Legacy behavior: return sharp notation
+  return CHROMATIC_SCALE[newIndex];
 };
 
 /**
@@ -125,20 +141,25 @@ const transposeNote = (note, semitones, useFlats = false) => {
  * Supports slash chords (e.g., C/G, Am7/E)
  * @param {string} chord - The chord to transpose (e.g., 'Am7', 'C#maj7', 'C/G')
  * @param {number} semitones - Number of semitones to transpose (can be negative)
+ * @param {number|null} targetKeyIndex - The target key index for notation (0-11)
  * @returns {string} - Transposed chord
  */
-export const transposeChord = (chord, semitones) => {
-  if (!chord || semitones === 0) {
+export const transposeChord = (chord, semitones, targetKeyIndex = null) => {
+  if (!chord) {
+    return chord;
+  }
+
+  // If no transposition and no key context, return as-is
+  if (semitones === 0 && targetKeyIndex === null) {
     return chord;
   }
 
   const { root, suffix, bass } = parseChord(chord);
-  const useFlats = preferFlats(chord);
-  const transposedRoot = transposeNote(root, semitones, useFlats);
+  const transposedRoot = transposeNote(root, semitones, targetKeyIndex);
 
   // If there's a bass note (slash chord), transpose it too
   if (bass) {
-    const transposedBass = transposeNote(bass, semitones, useFlats);
+    const transposedBass = transposeNote(bass, semitones, targetKeyIndex);
     return `${transposedRoot}${suffix}/${transposedBass}`;
   }
 
@@ -146,19 +167,36 @@ export const transposeChord = (chord, semitones) => {
 };
 
 /**
+ * Gets the chromatic index of a key (0-11)
+ * @param {string} key - The key name (e.g., 'C', 'F#', 'Bb')
+ * @returns {number} - The index (0-11) or -1 if not found
+ */
+export const getKeyIndex = (key) => {
+  if (!key) return -1;
+  const normalizedKey = normalizeNote(key.replace(/m.*$/, '')); // Remove minor suffix
+  return CHROMATIC_SCALE.indexOf(normalizedKey);
+};
+
+/**
  * Transposes all chords in a ChordPro formatted text
  * @param {string} chordProText - The ChordPro formatted text
  * @param {number} semitones - Number of semitones to transpose
+ * @param {number|null} targetKeyIndex - The target key index for notation
  * @returns {string} - Transposed ChordPro text
  */
-export const transposeChordPro = (chordProText, semitones) => {
-  if (!chordProText || semitones === 0) {
+export const transposeChordPro = (chordProText, semitones, targetKeyIndex = null) => {
+  if (!chordProText) {
+    return chordProText;
+  }
+
+  // If no transposition and no key context, return as-is
+  if (semitones === 0 && targetKeyIndex === null) {
     return chordProText;
   }
 
   // Replace all chords in [brackets]
   return chordProText.replace(/\[([^\]]+)\]/g, (match, chord) => {
-    const transposed = transposeChord(chord, semitones);
+    const transposed = transposeChord(chord, semitones, targetKeyIndex);
     return `[${transposed}]`;
   });
 };
@@ -167,38 +205,76 @@ export const transposeChordPro = (chordProText, semitones) => {
  * Updates the key metadata in ChordPro text
  * @param {string} chordProText - The ChordPro formatted text
  * @param {number} semitones - Number of semitones to transpose
+ * @param {number|null} targetKeyIndex - The target key index for notation
  * @returns {string} - ChordPro text with updated key
  */
-export const transposeKey = (chordProText, semitones) => {
+export const transposeKey = (chordProText, semitones, targetKeyIndex = null) => {
   if (!chordProText || semitones === 0) {
     return chordProText;
   }
 
   return chordProText.replace(/\{key:\s*([^}]+)\}/g, (match, key) => {
-    const transposedKey = transposeChord(key.trim(), semitones);
+    const transposedKey = transposeChord(key.trim(), semitones, targetKeyIndex);
     return `{key: ${transposedKey}}`;
   });
 };
 
 /**
  * Main transpose function - transposes both chords and key in ChordPro text
+ * Uses key-based notation (sharps or flats) according to music theory
  * @param {string} chordProText - The ChordPro formatted text
  * @param {number} semitones - Number of semitones to transpose (-11 to +11)
+ * @param {string|null} songKey - The original song key (e.g., 'G', 'Bb') for determining notation
  * @returns {string} - Fully transposed ChordPro text
  */
-export const transpose = (chordProText, semitones) => {
-  if (!chordProText || semitones === 0) {
+export const transpose = (chordProText, semitones, songKey = null) => {
+  if (!chordProText) {
     return chordProText;
   }
 
   // Clamp semitones to reasonable range
   const clampedSemitones = Math.max(-11, Math.min(11, semitones));
 
+  // Calculate target key index for proper notation
+  let targetKeyIndex = null;
+  if (songKey) {
+    const originalKeyIndex = getKeyIndex(songKey);
+    if (originalKeyIndex !== -1) {
+      targetKeyIndex = (originalKeyIndex + clampedSemitones + 12) % 12;
+    }
+  }
+
+  // If no transposition and no key context, return as-is
+  if (clampedSemitones === 0 && targetKeyIndex === null) {
+    return chordProText;
+  }
+
   let result = chordProText;
-  result = transposeChordPro(result, clampedSemitones);
-  result = transposeKey(result, clampedSemitones);
+  result = transposeChordPro(result, clampedSemitones, targetKeyIndex);
+  result = transposeKey(result, clampedSemitones, targetKeyIndex);
 
   return result;
+};
+
+/**
+ * Applies key-based notation to ChordPro text without transposition
+ * Converts all accidentals to match the key's standard notation (sharps or flats)
+ * @param {string} chordProText - The ChordPro formatted text
+ * @param {string} songKey - The song key (e.g., 'G', 'Bb', 'F#')
+ * @returns {string} - ChordPro text with standardized notation
+ */
+export const applyKeyNotation = (chordProText, songKey) => {
+  if (!chordProText || !songKey) {
+    return chordProText;
+  }
+
+  const keyIndex = getKeyIndex(songKey);
+  if (keyIndex === -1) {
+    return chordProText;
+  }
+
+  // Use transposeChordPro with 0 semitones but with key context
+  return transposeChordPro(chordProText, 0, keyIndex);
 };
 
 /**
@@ -275,20 +351,26 @@ export const getAllKeys = () => {
 };
 
 /**
- * Checks if a key should use flat notation
- * @param {string} key - The key to check (e.g., 'A#', 'Bb')
+ * Checks if a key index should use flat notation
+ * Based on standard music theory key signatures
+ * @param {number} keyIndex - The key index (0-11)
  * @returns {boolean} - True if flat notation should be used
  */
 export const shouldUseFlats = (key) => {
   if (!key) return false;
-  const normalizedKey = normalizeNote(key);
-  return KEYS_PREFER_FLAT.includes(normalizedKey);
+  const keyIndex = getKeyIndex(key);
+  return FLAT_KEYS.has(keyIndex);
 };
 
+// Preferred display name for each key index
+// Based on user's table: C#/Db→C#, Eb (not D#), F#/Gb→F#, Ab (not G#), Bb (not A#)
+const KEY_DISPLAY_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+
 /**
- * Converts a key to its flat equivalent if it's a sharp key that should display as flat
- * @param {string} key - The key to convert (e.g., 'A#' -> 'Bb', 'A#m' -> 'Bbm')
- * @returns {string} - The converted key
+ * Converts a key to its standard display name
+ * Uses music theory conventions: Eb (not D#), Ab (not G#), Bb (not A#)
+ * @param {string} key - The key to convert (e.g., 'A#' -> 'Bb', 'D#m' -> 'Ebm')
+ * @returns {string} - The converted key with standard display name
  */
 export const convertKeyToFlat = (key) => {
   if (!key) return key;
@@ -298,68 +380,11 @@ export const convertKeyToFlat = (key) => {
   if (!match) return key;
 
   const [, root, suffix] = match;
-  const normalizedRoot = normalizeNote(root);
+  const keyIndex = getKeyIndex(root);
 
-  // Only convert if this root should prefer flats
-  if (KEYS_PREFER_FLAT.includes(normalizedRoot) && SHARP_TO_FLAT[normalizedRoot]) {
-    return SHARP_TO_FLAT[normalizedRoot] + suffix;
-  }
+  if (keyIndex === -1) return key;
 
-  return key;
+  // Return the preferred display name with the suffix
+  return KEY_DISPLAY_NAMES[keyIndex] + suffix;
 };
 
-/**
- * Converts a single chord to flat notation if needed
- * @param {string} chord - The chord to convert (e.g., 'A#m7' -> 'Bbm7', 'D#/G#' -> 'Eb/Ab')
- * @param {boolean} useFlats - Whether to use flat notation
- * @returns {string} - The converted chord
- */
-export const convertChordToFlat = (chord, useFlats = false) => {
-  if (!chord || !useFlats) return chord;
-
-  // Handle slash chords
-  const slashIndex = chord.indexOf('/');
-  if (slashIndex !== -1) {
-    const mainChord = chord.substring(0, slashIndex);
-    const bassNote = chord.substring(slashIndex + 1);
-    return convertChordToFlat(mainChord, true) + '/' + convertSingleNoteToFlat(bassNote);
-  }
-
-  // Parse the chord root and suffix
-  const match = chord.match(/^([A-G][#b]?)(.*)/);
-  if (!match) return chord;
-
-  const [, root, suffix] = match;
-  const flatRoot = convertSingleNoteToFlat(root);
-
-  return flatRoot + suffix;
-};
-
-/**
- * Converts a single note to flat if it's a sharp
- * @param {string} note - The note to convert
- * @returns {string} - The converted note
- */
-const convertSingleNoteToFlat = (note) => {
-  if (!note) return note;
-  const normalizedNote = normalizeNote(note);
-  return SHARP_TO_FLAT[normalizedNote] || note;
-};
-
-/**
- * Converts all chords in ChordPro text to flat notation based on the key
- * @param {string} chordProText - The ChordPro formatted text
- * @param {string} key - The song's key
- * @returns {string} - ChordPro text with chords in flat notation if needed
- */
-export const convertToFlatNotation = (chordProText, key) => {
-  if (!chordProText || !shouldUseFlats(key)) {
-    return chordProText;
-  }
-
-  // Replace all chords in [brackets] with flat equivalents
-  return chordProText.replace(/\[([^\]]+)\]/g, (match, chord) => {
-    const flatChord = convertChordToFlat(chord, true);
-    return `[${flatChord}]`;
-  });
-};

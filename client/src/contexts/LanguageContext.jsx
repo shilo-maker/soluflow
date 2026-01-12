@@ -103,7 +103,13 @@ export const LanguageProvider = ({ children }) => {
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    // Return default values when used outside provider (e.g., PDF generation)
+    return {
+      language: 'he',
+      setLanguage: () => {},
+      t: (key) => key,
+      isRTL: true
+    };
   }
   return context;
 };

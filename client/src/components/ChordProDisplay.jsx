@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import './ChordProDisplay.css';
-import { transpose, convertToFlatNotation, transposeChord } from '../utils/transpose';
+import { transpose } from '../utils/transpose';
 import InlineNoteMarker from './InlineNoteMarker';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -99,14 +99,10 @@ const ChordProDisplay = React.memo(({
     return name;
   };
 
-  // Transpose the content if needed, and convert to flat notation if key requires it
+  // Transpose the content if needed, using key-based notation (sharps or flats)
   const transposedContent = useMemo(() => {
-    let result = transpose(content, transposition);
-    // Calculate the transposed key to determine if we should use flats
-    const transposedKey = songKey ? transposeChord(songKey, transposition) : null;
-    // Apply flat notation conversion for keys like A#, C#, D#, G#
-    result = convertToFlatNotation(result, transposedKey);
-    return result;
+    // The transpose function now handles key-based notation internally
+    return transpose(content, transposition, songKey);
   }, [content, transposition, songKey]);
 
   // Calculate if we need 2 columns based on content height
