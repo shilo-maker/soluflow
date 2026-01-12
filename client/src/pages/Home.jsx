@@ -164,7 +164,7 @@ const Home = () => {
                 <div className="service-info">
                   <div className="service-title">{service.title}</div>
                   <div className="service-details">
-                    {service.date} • {service.time}
+                    {service.date} • {service.time?.slice(0, 5)}
                   </div>
                 </div>
               </div>
