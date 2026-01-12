@@ -65,8 +65,7 @@ const SongView = () => {
   const [showControlsDrawer, setShowControlsDrawer] = useState(false);
   const drawerTouchStartY = useRef(null);
   const [expandedFontSize, setExpandedFontSize] = useState(16);
-  const [canExpand, setCanExpand] = useState(true); // Disabled on mobile/PWA
-  const [autoFontSize, setAutoFontSize] = useState(16);
+    const [autoFontSize, setAutoFontSize] = useState(16);
   const contentRef = useRef(null);
 
   // Real-time sync state
@@ -90,25 +89,6 @@ const SongView = () => {
     isFollowModeRef.current = isFollowMode;
   }, [isFollowMode]);
 
-  // Check if expanded mode should be disabled (mobile or PWA)
-  useEffect(() => {
-    const checkCanExpand = () => {
-      // Check if running as PWA (standalone mode)
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                    window.navigator.standalone === true;
-
-      // Check if small screen (mobile)
-      const isSmallScreen = window.innerWidth <= 768;
-
-      // Disable expand on mobile or PWA
-      setCanExpand(!isPWA && !isSmallScreen);
-    };
-
-    checkCanExpand();
-    window.addEventListener('resize', checkCanExpand);
-
-    return () => window.removeEventListener('resize', checkCanExpand);
-  }, []);
 
   // Keep setlistContext and song ID refs in sync for socket handlers
   useEffect(() => {
@@ -1139,15 +1119,13 @@ const SongView = () => {
       )}
 
       {/* Controls Button - Opens drawer */}
-      {!isExpanded && (
-        <button
-          className="btn-controls-toggle"
-          onClick={() => setShowControlsDrawer(true)}
-          title="Song controls"
-        >
-          <span className="controls-icon">☰</span>
-        </button>
-      )}
+      <button
+        className="btn-controls-toggle"
+        onClick={() => setShowControlsDrawer(true)}
+        title="Song controls"
+      >
+        <span className="controls-icon">☰</span>
+      </button>
 
       {/* Controls Drawer */}
       {showControlsDrawer && (
@@ -1298,12 +1276,12 @@ const SongView = () => {
       <div
         ref={contentRef}
         className={`song-view-content ${isExpanded ? 'expanded' : ''}`}
-        onClick={canExpand ? toggleExpanded : undefined}
+        onClick={toggleExpanded}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ cursor: canExpand ? 'pointer' : 'default' }}
-        title={canExpand ? (isExpanded ? 'Click to exit expanded view' : 'Click to expand view') : undefined}
+        style={{ cursor: 'pointer' }}
+        title={isExpanded ? 'Click to exit expanded view' : 'Click to expand view'}
       >
         <ChordProDisplay
           content={song.content}
