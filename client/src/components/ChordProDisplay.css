@@ -63,8 +63,10 @@
 
 .chord-segment {
   position: relative;
-  display: inline;
+  display: inline-block;
   white-space: pre-wrap;
+  vertical-align: top; /* Align all segments at top to prevent uneven chord positioning */
+  /* min-width is set dynamically via inline style based on chord length */
 }
 
 .text-segment {
