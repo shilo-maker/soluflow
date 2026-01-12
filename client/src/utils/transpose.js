@@ -168,13 +168,43 @@ export const transposeChord = (chord, semitones, targetKeyIndex = null) => {
 
 /**
  * Gets the chromatic index of a key (0-11)
- * @param {string} key - The key name (e.g., 'C', 'F#', 'Bb')
+ * @param {string} key - The key name (e.g., 'C', 'F#', 'Bb', 'Am', 'C#m')
  * @returns {number} - The index (0-11) or -1 if not found
  */
 export const getKeyIndex = (key) => {
   if (!key) return -1;
   const normalizedKey = normalizeNote(key.replace(/m.*$/, '')); // Remove minor suffix
   return CHROMATIC_SCALE.indexOf(normalizedKey);
+};
+
+/**
+ * Checks if a key is minor
+ * @param {string} key - The key name (e.g., 'Am', 'C#m', 'C')
+ * @returns {boolean} - True if the key is minor
+ */
+const isMinorKey = (key) => {
+  if (!key) return false;
+  // Match 'm' that's not part of 'maj' - minor keys are like 'Am', 'C#m', 'Bbm'
+  return /^[A-G][#b]?m(?!aj)/.test(key);
+};
+
+/**
+ * Gets the key index for notation purposes (sharps vs flats)
+ * For minor keys, returns the relative major index (3 semitones up)
+ * This ensures Am uses same notation as C, C#m same as E, Dm same as F, etc.
+ * @param {string} key - The key name (e.g., 'C', 'Am', 'F#m')
+ * @returns {number} - The notation key index (0-11) or -1 if not found
+ */
+const getNotationKeyIndex = (key) => {
+  const keyIndex = getKeyIndex(key);
+  if (keyIndex === -1) return -1;
+
+  // If it's a minor key, return relative major (3 semitones up)
+  if (isMinorKey(key)) {
+    return (keyIndex + 3) % 12;
+  }
+
+  return keyIndex;
 };
 
 /**
@@ -222,9 +252,10 @@ export const transposeKey = (chordProText, semitones, targetKeyIndex = null) => 
 /**
  * Main transpose function - transposes both chords and key in ChordPro text
  * Uses key-based notation (sharps or flats) according to music theory
+ * Minor keys use their relative major's notation (Am uses C's, C#m uses E's, etc.)
  * @param {string} chordProText - The ChordPro formatted text
  * @param {number} semitones - Number of semitones to transpose (-11 to +11)
- * @param {string|null} songKey - The original song key (e.g., 'G', 'Bb') for determining notation
+ * @param {string|null} songKey - The original song key (e.g., 'G', 'Bb', 'Am') for determining notation
  * @returns {string} - Fully transposed ChordPro text
  */
 export const transpose = (chordProText, semitones, songKey = null) => {
@@ -236,11 +267,14 @@ export const transpose = (chordProText, semitones, songKey = null) => {
   const clampedSemitones = Math.max(-11, Math.min(11, semitones));
 
   // Calculate target key index for proper notation
+  // Use getNotationKeyIndex to handle minor keys (converts to relative major)
   let targetKeyIndex = null;
   if (songKey) {
-    const originalKeyIndex = getKeyIndex(songKey);
-    if (originalKeyIndex !== -1) {
-      targetKeyIndex = (originalKeyIndex + clampedSemitones + 12) % 12;
+    const originalNotationIndex = getNotationKeyIndex(songKey);
+    if (originalNotationIndex !== -1) {
+      // Transpose the notation index by the same amount
+      // This keeps minor keys using their relative major's notation after transposition
+      targetKeyIndex = (originalNotationIndex + clampedSemitones + 12) % 12;
     }
   }
 
@@ -259,8 +293,9 @@ export const transpose = (chordProText, semitones, songKey = null) => {
 /**
  * Applies key-based notation to ChordPro text without transposition
  * Converts all accidentals to match the key's standard notation (sharps or flats)
+ * Minor keys use their relative major's notation (Am uses C's, Dm uses F's, etc.)
  * @param {string} chordProText - The ChordPro formatted text
- * @param {string} songKey - The song key (e.g., 'G', 'Bb', 'F#')
+ * @param {string} songKey - The song key (e.g., 'G', 'Bb', 'F#', 'Am', 'C#m')
  * @returns {string} - ChordPro text with standardized notation
  */
 export const applyKeyNotation = (chordProText, songKey) => {
@@ -268,7 +303,8 @@ export const applyKeyNotation = (chordProText, songKey) => {
     return chordProText;
   }
 
-  const keyIndex = getKeyIndex(songKey);
+  // Use notation index (converts minor to relative major)
+  const keyIndex = getNotationKeyIndex(songKey);
   if (keyIndex === -1) {
     return chordProText;
   }
@@ -351,14 +387,16 @@ export const getAllKeys = () => {
 };
 
 /**
- * Checks if a key index should use flat notation
+ * Checks if a key should use flat notation
  * Based on standard music theory key signatures
- * @param {number} keyIndex - The key index (0-11)
+ * Minor keys use their relative major's notation
+ * @param {string} key - The key (e.g., 'C', 'F', 'Am', 'Dm')
  * @returns {boolean} - True if flat notation should be used
  */
 export const shouldUseFlats = (key) => {
   if (!key) return false;
-  const keyIndex = getKeyIndex(key);
+  // Use notation index (converts minor to relative major)
+  const keyIndex = getNotationKeyIndex(key);
   return FLAT_KEYS.has(keyIndex);
 };
 
