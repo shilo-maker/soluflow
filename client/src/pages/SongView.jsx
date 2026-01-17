@@ -62,6 +62,7 @@ const SongView = () => {
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showHeader, setShowHeader] = useState(true);
   const [showControlsDrawer, setShowControlsDrawer] = useState(false);
   const drawerTouchStartY = useRef(null);
   const [expandedFontSize, setExpandedFontSize] = useState(16);
@@ -1067,7 +1068,7 @@ const SongView = () => {
   return (
     <div className={`song-view-page ${isExpanded ? 'expanded-mode' : ''}`}>
       {/* Header */}
-      {!isExpanded && (
+      {!isExpanded && showHeader && (
       <div className="song-view-header">
         <div className="header-top-row">
           <button className="btn-back" onClick={() => navigate(-1)}>
@@ -1276,12 +1277,12 @@ const SongView = () => {
       <div
         ref={contentRef}
         className={`song-view-content ${isExpanded ? 'expanded' : ''}`}
-        onClick={toggleExpanded}
+        onClick={() => setShowHeader(prev => !prev)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{ cursor: 'pointer' }}
-        title={isExpanded ? 'Click to exit expanded view' : 'Click to expand view'}
+        title={showHeader ? 'Click to hide header' : 'Click to show header'}
       >
         <ChordProDisplay
           content={song.content}
