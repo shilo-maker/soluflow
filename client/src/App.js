@@ -109,14 +109,14 @@ function AppContent() {
 
             {/* Root route - conditional based on auth */}
             <Route path="/" element={
-              isAuthenticated ? <Navigate to="/home" replace /> : <GuestLanding />
+              isAuthenticated ? <Navigate to="/library" replace /> : <GuestLanding />
             } />
 
             {/* Song view - public for guests */}
             <Route path="/song/:id" element={<SongView />} />
 
             {/* Protected routes */}
-            <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+            <Route path="/home" element={<Navigate to="/library" replace />} />
             <Route path="/service" element={<PrivateRoute><Service /></PrivateRoute>} />
             <Route path="/service/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
             <Route path="/library" element={<PrivateRoute><Library /></PrivateRoute>} />

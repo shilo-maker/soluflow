@@ -9,10 +9,10 @@ const BottomNav = () => {
   return (
     <nav className="bottom-nav">
       <NavLink
-        to="/home"
+        to="/library"
         className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
       >
-        <div className="nav-label">{t('bottomNav.home').toUpperCase()}</div>
+        <div className="nav-label">{t('bottomNav.library').toUpperCase()}</div>
       </NavLink>
 
       <NavLink
@@ -20,13 +20,6 @@ const BottomNav = () => {
         className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
       >
         <div className="nav-label">{t('service.title').toUpperCase()}</div>
-      </NavLink>
-
-      <NavLink
-        to="/library"
-        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-      >
-        <div className="nav-label">{t('bottomNav.library').toUpperCase()}</div>
       </NavLink>
     </nav>
   );
