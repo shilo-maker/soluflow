@@ -523,10 +523,10 @@ const ChordProDisplay = React.memo(({
                     // Only add hyphens if chord width is close to or exceeds text width
                     // (meaning there's risk of overlap with adjacent chord)
                     if (chordWidth >= textWidth - 10) {
-                      const gapNeeded = Math.max(0, chordWidth - textWidth) + 12;
+                      const gapNeeded = Math.max(0, chordWidth - textWidth) + 8; // 8px min gap
                       const hyphenWidth = 6;
                       const hyphenCount = Math.max(2, Math.ceil(gapNeeded / hyphenWidth));
-                      connector = '-'.repeat(Math.min(hyphenCount, 4));
+                      connector = '-'.repeat(Math.min(hyphenCount, 6));
                     }
                   }
 
