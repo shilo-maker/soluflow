@@ -513,17 +513,20 @@ const ChordProDisplay = React.memo(({
                   const extraSpaceNeeded = chordPixelEstimate - trimmedLength;
 
                   if (trimmedLength === 0 || /^[\s.,!?;:]+$/.test(currentText.trim())) {
-                    // No real text - need spacing for chord
+                    // No real text - need wide spacing for chord
                     spacingClass = ' chord-segment-wide';
                   } else if (!endsWithSpace && !nextStartsWithSpace) {
-                    // Breaking a word - add hyphens to fill the gap
-                    // Hyphens make the segment wider naturally, preventing chord overlap
-                    if (trimmedLength <= 2) {
-                      // Very short text needs more hyphens
-                      connector = '--';
-                    } else if (extraSpaceNeeded > 0) {
-                      // Chord wider than text - add hyphen(s) proportional to gap
-                      connector = '-'.repeat(Math.min(Math.ceil(extraSpaceNeeded), 2));
+                    // Word is split across chord segments - check if we need hyphens
+                    const chordWidth = chordLength * 10; // ~10px per chord character
+                    const textWidth = trimmedLength * 8; // ~8px per Hebrew character
+
+                    // Only add hyphens if chord width is close to or exceeds text width
+                    // (meaning there's risk of overlap with adjacent chord)
+                    if (chordWidth >= textWidth - 10) {
+                      const gapNeeded = Math.max(0, chordWidth - textWidth) + 12;
+                      const hyphenWidth = 6;
+                      const hyphenCount = Math.max(2, Math.ceil(gapNeeded / hyphenWidth));
+                      connector = '-'.repeat(Math.min(hyphenCount, 4));
                     }
                   }
 
