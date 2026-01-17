@@ -212,7 +212,8 @@
     "create": "Create",
     "workspaceSettings": "Workspace Settings",
     "maxWorkspacesReached": "Maximum 4 team workspaces reached",
-    "workspaceNameRequired": "Workspace name is required"
+    "workspaceNameRequired": "Workspace name is required",
+    "workspaceSuffix": "Workspace"
   },
   "errors": {
     "emailRequired": "Email is required",

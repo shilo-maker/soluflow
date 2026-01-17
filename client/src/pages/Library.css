@@ -1,15 +1,18 @@
 .library-page {
   padding: 80px 20px 80px 20px;
-  max-width: 800px;
-  margin: 0 auto;
   min-height: 100vh;
   background-color: transparent;
+}
+
+.library-content {
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .search-section {
   display: flex;
   gap: 10px;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   position: sticky;
   top: 70px;
   z-index: 10;

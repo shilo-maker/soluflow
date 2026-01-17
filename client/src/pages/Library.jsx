@@ -507,6 +507,7 @@ const Library = () => {
 
   return (
     <div className="library-page">
+      <div className="library-content">
       <div className="search-section">
         <input
           type="text"
@@ -769,6 +770,7 @@ const Library = () => {
         isVisible={showToast}
         onClose={handleCloseToast}
       />
+      </div>
     </div>
   );
 };

@@ -212,7 +212,8 @@
     "create": "צור",
     "workspaceSettings": "הגדרות סביבת עבודה",
     "maxWorkspacesReached": "הגעת למקסימום של 4 סביבות צוות",
-    "workspaceNameRequired": "שם סביבת העבודה נדרש"
+    "workspaceNameRequired": "שם סביבת העבודה נדרש",
+    "workspaceSuffix": "סביבה"
   },
   "errors": {
     "emailRequired": "אימייל נדרש",
