@@ -733,13 +733,14 @@ const updateSongTransposition = async (req, res) => {
     // Update transposition
     await serviceSong.update({ transposition });
 
+    // Return the new transposition value (not stale data from the original query)
     res.json({
       message: 'Transposition updated successfully',
       serviceSong: {
         id: serviceSong.id,
         service_id: serviceSong.service_id,
         song_id: serviceSong.song_id,
-        transposition: serviceSong.transposition
+        transposition: transposition  // Use the value we just set, not the stale model value
       }
     });
   } catch (error) {

@@ -15,6 +15,7 @@ const GuestServiceView = () => {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef(null);
   const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
+  const currentSongIdRef = useRef(null); // Track current song ID for socket handler validation
 
   const [serviceDetails, setServiceDetails] = useState(null);
   const [selectedSongIndex, setSelectedSongIndex] = useState(0);
@@ -67,6 +68,9 @@ const GuestServiceView = () => {
   useEffect(() => {
     if (serviceDetails?.songs?.[selectedSongIndex]) {
       const currentSong = serviceDetails.songs[selectedSongIndex];
+      // Update ref for socket handler validation
+      currentSongIdRef.current = currentSong.id?.toString();
+
       const savedTransposition = currentSong.transposition || 0;
       console.log('[GuestServiceView] Loading transposition for song:', currentSong.title, '=', savedTransposition);
       setTransposition(savedTransposition);
@@ -140,16 +144,25 @@ const GuestServiceView = () => {
 
     // Listen for leader events (only if in follow mode)
     // Use isFollowModeRef.current to always get the latest value without causing socket reconnection
-    socketRef.current.on('leader-navigated', ({ songId, songIndex }) => {
+    socketRef.current.on('leader-navigated', ({ songId, songIndex, transposition: leaderTransposition }) => {
       if (isFollowModeRef.current) {
-        console.log('Leader navigated to song:', songId, songIndex);
+        console.log('Leader navigated to song:', songId, songIndex, 'transposition:', leaderTransposition);
         setSelectedSongIndex(songIndex);
+        // Apply transposition immediately if provided (no race condition)
+        if (leaderTransposition !== undefined) {
+          setTransposition(leaderTransposition);
+        }
       }
     });
 
-    socketRef.current.on('leader-transposed', ({ transposition: newTransposition }) => {
+    socketRef.current.on('leader-transposed', ({ transposition: newTransposition, songId: eventSongId }) => {
       if (isFollowModeRef.current) {
-        console.log('Leader transposed to:', newTransposition);
+        // Verify songId matches current song to prevent applying wrong transposition
+        if (eventSongId && eventSongId.toString() !== currentSongIdRef.current) {
+          console.log('[GuestServiceView] Ignoring transposition for different song:', eventSongId, 'vs current:', currentSongIdRef.current);
+          return;
+        }
+        console.log('Leader transposed to:', newTransposition, 'for song:', eventSongId);
         setTransposition(newTransposition);
       }
     });
@@ -167,9 +180,8 @@ const GuestServiceView = () => {
         if (state.currentSongIndex !== undefined) {
           setSelectedSongIndex(state.currentSongIndex);
         }
-        if (state.transposition !== undefined) {
-          setTransposition(state.transposition);
-        }
+        // Don't sync transposition here - it should be loaded from database per song
+        // Transposition will be synced via leader-navigated or leader-transposed events
         if (state.fontSize !== undefined) {
           setFontSize(state.fontSize);
         }

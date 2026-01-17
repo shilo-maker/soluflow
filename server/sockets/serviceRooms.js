@@ -9,12 +9,14 @@ const setupServiceRooms = (io) => {
 
     // Join a service room
     socket.on('join-service', ({ serviceId, userId, userRole, isLeader }) => {
-      console.log(`User ${userId} joining service ${serviceId} as ${isLeader ? 'leader' : 'follower'}`);
+      console.log(`User ${userId} joining service ${serviceId} as ${isLeader ? 'leader' : 'follower'} (role: ${userRole})`);
 
       socket.join(`service-${serviceId}`);
       socket.serviceId = serviceId;
       socket.userId = userId;
       socket.isLeader = isLeader;
+      // Track admin status for security validation (admin/planner can change leadership)
+      socket.isWorkspaceAdmin = userRole === 'admin' || userRole === 'planner';
 
       // Initialize room if doesn't exist
       if (!serviceRooms[serviceId]) {
@@ -66,31 +68,38 @@ const setupServiceRooms = (io) => {
       handleLeaveService(socket, serviceId, io);
     });
 
-    // Leader navigates to a song
-    socket.on('leader-navigate', ({ serviceId, songId, songIndex }) => {
+    // Leader navigates to a song (now includes transposition for the new song)
+    socket.on('leader-navigate', ({ serviceId, songId, songIndex, transposition }) => {
       if (socket.isLeader && serviceRooms[serviceId]) {
-        console.log(`Leader navigating to song ${songId} (index ${songIndex}) in service ${serviceId}`);
+        console.log(`Leader navigating to song ${songId} (index ${songIndex}, transposition ${transposition}) in service ${serviceId}`);
 
         serviceRooms[serviceId].currentState.currentSongId = songId;
         serviceRooms[serviceId].currentState.currentSongIndex = songIndex;
+        if (transposition !== undefined) {
+          serviceRooms[serviceId].currentState.transposition = transposition;
+        }
 
         // Broadcast to all followers in the room (not to leader)
+        // Include transposition so followers get it immediately with navigation
         socket.to(`service-${serviceId}`).emit('leader-navigated', {
           songId,
-          songIndex
+          songIndex,
+          transposition: transposition !== undefined ? transposition : serviceRooms[serviceId].currentState.transposition
         });
       }
     });
 
-    // Leader changes transposition
-    socket.on('leader-transpose', ({ serviceId, transposition }) => {
+    // Leader changes transposition (now includes songId for verification)
+    socket.on('leader-transpose', ({ serviceId, transposition, songId }) => {
       if (socket.isLeader && serviceRooms[serviceId]) {
-        console.log(`Leader transposed to ${transposition} in service ${serviceId}`);
+        console.log(`Leader transposed to ${transposition} for song ${songId || 'current'} in service ${serviceId}`);
 
         serviceRooms[serviceId].currentState.transposition = transposition;
 
+        // Include songId so followers can verify they're on the correct song
         socket.to(`service-${serviceId}`).emit('leader-transposed', {
-          transposition
+          transposition,
+          songId: songId || serviceRooms[serviceId].currentState.currentSongId
         });
       }
     });
@@ -119,8 +128,15 @@ const setupServiceRooms = (io) => {
       }
     });
 
-    // Admin changes service leader
+    // Admin changes service leader (requires current leader or admin)
     socket.on('leader-changed', ({ serviceId, newLeaderId }) => {
+      // Security: Only allow current leader or workspace admins to change leadership
+      // socket.isWorkspaceAdmin is set at join time for admin users
+      if (!socket.isLeader && !socket.isWorkspaceAdmin) {
+        console.warn(`[Security] Unauthorized leader change attempt from socket ${socket.id} for service ${serviceId}`);
+        return;
+      }
+
       console.log(`Leader changed for service ${serviceId} to user ${newLeaderId}`);
 
       // Broadcast to all users in the service room (including the sender)

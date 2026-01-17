@@ -31,6 +31,7 @@ const Service = () => {
   const previousServiceIdRef = useRef(null);
   const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
   const transpositionSaveTimerRef = useRef(null); // Debounce timer for transposition saves
+  const currentSongIdRef = useRef(null); // Track current song ID for socket handler validation
 
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -126,6 +127,7 @@ const Service = () => {
   }, [id, user]);
 
   // Debounced transposition save to database
+  // Fixed: Capture song ID at timer creation and verify it still matches at save time
   useEffect(() => {
     // Clear any existing timer
     if (transpositionSaveTimerRef.current) {
@@ -139,6 +141,9 @@ const Service = () => {
 
     const currentSong = serviceDetails.songs[selectedSongIndex];
     const currentTransposition = transposition;
+    const currentSongId = currentSong.id;
+    const currentServiceId = selectedService.id;
+    const currentSongIdx = selectedSongIndex;
 
     // Skip if transposition matches what's already saved
     if (currentSong.transposition === currentTransposition) {
@@ -148,14 +153,19 @@ const Service = () => {
     // Debounce the save - wait 800ms after last change
     transpositionSaveTimerRef.current = setTimeout(async () => {
       try {
-        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, currentTransposition);
-        // Update local state to reflect the saved value
-        setServiceDetails(prev => ({
-          ...prev,
-          songs: prev.songs.map((song, idx) =>
-            idx === selectedSongIndex ? { ...song, transposition: currentTransposition } : song
-          )
-        }));
+        // Save using the captured song ID (correct song even if user switched)
+        await serviceService.updateSongTransposition(currentServiceId, currentSongId, currentTransposition);
+        // Update local state - find song by ID to handle index changes
+        setServiceDetails(prev => {
+          if (!prev?.songs) return prev;
+          return {
+            ...prev,
+            songs: prev.songs.map((song) =>
+              song.id === currentSongId ? { ...song, transposition: currentTransposition } : song
+            )
+          };
+        });
+        console.log(`[Service] Saved transposition ${currentTransposition} for song ${currentSongId}`);
       } catch (error) {
         console.error('[Service] Failed to save transposition:', error);
       }
@@ -203,17 +213,21 @@ const Service = () => {
     }
 
     const currentSong = serviceDetails.songs[selectedSongIndex];
+    // Update ref for socket handler validation
+    currentSongIdRef.current = currentSong.id?.toString();
+
     // Read transposition from song object (loaded from database)
     const savedTransposition = currentSong.transposition || 0;
 
     console.log('[Service] Song changed - Loading transposition for song', currentSong.id, ':', savedTransposition);
     setTransposition(savedTransposition);
 
-    // Broadcast to followers if user is leader (so they also load this song's saved transposition)
+    // Broadcast to followers if user is leader (include songId for verification)
     if (isLeader && socketRef.current) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
-        transposition: savedTransposition
+        transposition: savedTransposition,
+        songId: currentSong.id
       });
     }
   }, [selectedSongIndex, selectedService, serviceDetails, isLeader]);
@@ -298,16 +312,25 @@ const Service = () => {
 
     // Listen for leader events (only if not leader and in follow mode)
     // Use isFollowModeRef.current to always get the latest value without causing socket reconnection
-    socketRef.current.on('leader-navigated', ({ songId, songIndex }) => {
+    socketRef.current.on('leader-navigated', ({ songId, songIndex, transposition: leaderTransposition }) => {
       if (!userIsLeader && isFollowModeRef.current) {
-        console.log('Leader navigated to song:', songId, songIndex);
+        console.log('Leader navigated to song:', songId, songIndex, 'transposition:', leaderTransposition);
         setSelectedSongIndex(songIndex);
+        // Apply transposition immediately if provided (no race condition)
+        if (leaderTransposition !== undefined) {
+          setTransposition(leaderTransposition);
+        }
       }
     });
 
-    socketRef.current.on('leader-transposed', ({ transposition: newTransposition }) => {
+    socketRef.current.on('leader-transposed', ({ transposition: newTransposition, songId: eventSongId }) => {
       if (!userIsLeader && isFollowModeRef.current) {
-        console.log('Leader transposed to:', newTransposition);
+        // Verify songId matches current song to prevent applying wrong transposition
+        if (eventSongId && eventSongId.toString() !== currentSongIdRef.current) {
+          console.log('[Service] Ignoring transposition for different song:', eventSongId, 'vs current:', currentSongIdRef.current);
+          return;
+        }
+        console.log('Leader transposed to:', newTransposition, 'for song:', eventSongId);
         setTransposition(newTransposition);
       }
     });
@@ -467,11 +490,13 @@ const Service = () => {
     const newTransposition = Math.min(transposition + 1, 11);
     setTransposition(newTransposition);
 
-    // Broadcast to followers if user is leader (API save is handled by debounced useEffect)
-    if (isLeader && socketRef.current && selectedService) {
+    // Broadcast to followers if user is leader (include songId for verification)
+    const currentSong = currentSetList[selectedSongIndex];
+    if (isLeader && socketRef.current && selectedService && currentSong) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
-        transposition: newTransposition
+        transposition: newTransposition,
+        songId: currentSong.id
       });
     }
   };
@@ -480,11 +505,13 @@ const Service = () => {
     const newTransposition = Math.max(transposition - 1, -11);
     setTransposition(newTransposition);
 
-    // Broadcast to followers if user is leader (API save is handled by debounced useEffect)
-    if (isLeader && socketRef.current && selectedService) {
+    // Broadcast to followers if user is leader (include songId for verification)
+    const currentSong = currentSetList[selectedSongIndex];
+    if (isLeader && socketRef.current && selectedService && currentSong) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
-        transposition: newTransposition
+        transposition: newTransposition,
+        songId: currentSong.id
       });
     }
   };
@@ -492,11 +519,13 @@ const Service = () => {
   const resetTransposition = () => {
     setTransposition(0);
 
-    // Broadcast to followers if user is leader (API save is handled by debounced useEffect)
-    if (isLeader && socketRef.current && selectedService) {
+    // Broadcast to followers if user is leader (include songId for verification)
+    const currentSong = currentSetList[selectedSongIndex];
+    if (isLeader && socketRef.current && selectedService && currentSong) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
-        transposition: 0
+        transposition: 0,
+        songId: currentSong.id
       });
     }
   };
@@ -504,11 +533,13 @@ const Service = () => {
   const handleSelectKey = (newTransposition) => {
     setTransposition(newTransposition);
 
-    // Broadcast to followers if user is leader (API save is handled by debounced useEffect)
-    if (isLeader && socketRef.current && selectedService) {
+    // Broadcast to followers if user is leader (include songId for verification)
+    const currentSong = currentSetList[selectedSongIndex];
+    if (isLeader && socketRef.current && selectedService && currentSong) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
-        transposition: newTransposition
+        transposition: newTransposition,
+        songId: currentSong.id
       });
     }
   };
@@ -922,12 +953,13 @@ const Service = () => {
   const handleSelectSong = (index) => {
     setSelectedSongIndex(index);
 
-    // Broadcast to followers if user is leader
+    // Broadcast to followers if user is leader (include transposition for immediate sync)
     if (isLeader && socketRef.current && selectedService && currentSetList[index]) {
       socketRef.current.emit('leader-navigate', {
         serviceId: selectedService.id,
         songId: currentSetList[index].id,
-        songIndex: index
+        songIndex: index,
+        transposition: currentSetList[index].transposition || 0
       });
     }
   };
