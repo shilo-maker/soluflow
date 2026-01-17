@@ -455,9 +455,29 @@ const ChordProDisplay = React.memo(({
         // Build segments where each chord is attached to its text
         const segments = buildChordLyricSegments(item.chords, item.lyrics);
 
+        // Check if there are trailing chords with no lyrics (for line break)
+        let trailingChordsStartIndex = -1;
+        for (let i = segments.length - 1; i >= 0; i--) {
+          const seg = segments[i];
+          if (seg.type === 'chord-text') {
+            const trimmed = (seg.text || '').trim();
+            // Check if this is a chord with no real lyrics (empty, space, or just punctuation)
+            if (trimmed === '' || /^[\s.,!?;:]+$/.test(trimmed)) {
+              trailingChordsStartIndex = i;
+            } else {
+              break; // Found a chord with real lyrics, stop
+            }
+          } else {
+            break;
+          }
+        }
+
         return (
           <div key={index} className="chord-lyric-line">
             {segments.map((segment, i) => {
+              // Add line break before trailing chords without lyrics
+              const needsLineBreak = trailingChordsStartIndex !== -1 && i === trailingChordsStartIndex;
+
               if (segment.type === 'text') {
                 return (
                   <span key={i} className="text-segment">
@@ -466,11 +486,41 @@ const ChordProDisplay = React.memo(({
                 );
               } else {
                 // chord-text segment
+                const nextSegment = segments[i + 1];
+                let connector = '';
+                let spacingClass = '';
+
+                if (nextSegment && nextSegment.type === 'chord-text') {
+                  const currentText = segment.text || '';
+                  const textLength = currentText.length;
+                  const trimmedLength = currentText.trim().length;
+                  const endsWithSpace = /\s$/.test(currentText);
+
+                  // Determine spacing needed based on text length
+                  if (trimmedLength === 0 || /^[\s.,!?;:]+$/.test(currentText.trim())) {
+                    // No real text - need spacing for chord
+                    spacingClass = ' chord-segment-wide';
+                  } else if (textLength < 3) {
+                    // Very short text - need extra spacing
+                    spacingClass = ' chord-segment-spaced';
+                    // Add hyphen if in middle of word
+                    if (!endsWithSpace) {
+                      connector = '-';
+                    }
+                  } else if (textLength < 5) {
+                    // Short text - need some spacing
+                    spacingClass = ' chord-segment-spaced';
+                  }
+                }
+
                 return (
-                  <span key={i} className="chord-segment">
-                    <span className="chord">{segment.chord}</span>
-                    <span className="text-segment">{segment.text || '\u200B'}</span>
-                  </span>
+                  <React.Fragment key={i}>
+                    {needsLineBreak && <span className="chord-line-break"></span>}
+                    <span className={`chord-segment${spacingClass}`}>
+                      <span className="chord">{segment.chord}</span>
+                      <span className="text-segment">{segment.text || '\u200B'}{connector}</span>
+                    </span>
+                  </React.Fragment>
                 );
               }
             })}
@@ -501,9 +551,10 @@ const ChordProDisplay = React.memo(({
   // Memoize the parsed content to avoid re-parsing on every render
   const parsed = useMemo(() => parseChordPro(transposedContent), [transposedContent]);
 
-  // Build class name with forced column indicator
+  // Build class name with column indicators
   const className = [
     'chordpro-display',
+    columnCount === 2 ? 'two-columns' : '',
     forcedColumnCount === 2 ? 'columns-forced-2' : '',
     forcedColumnCount === 1 ? 'columns-forced-1' : ''
   ].filter(Boolean).join(' ');

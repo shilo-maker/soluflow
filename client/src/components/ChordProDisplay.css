@@ -51,26 +51,49 @@
 
 /* New inline chord-lyric structure - chords follow text when wrapping */
 .chord-lyric-line {
-  margin-bottom: 0.3em;
-  padding-top: 1.4em; /* Space above for chords - important for first line of each column */
-  line-height: 2.4; /* Increased line height to prevent chord overlap on wrapped lines */
+  margin-bottom: 0;
+  padding-top: 1.1em; /* Space above for chords */
+  line-height: 1.8; /* Line height for wrapped chord segments */
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
   max-width: 100%;
   box-sizing: border-box;
+  overflow-wrap: break-word;
 }
 
 .chord-segment {
   position: relative;
-  display: inline;
+  display: inline-block;
   white-space: pre-wrap;
-  padding-right: 0.8em; /* Padding to prevent chord overlap */
+  vertical-align: top;
 }
 
-[dir="rtl"] .chord-segment {
+/* Only add padding when chords are close together */
+.chord-segment-spaced {
+  padding-right: 0.8em;
+}
+
+/* Wide spacing for consecutive chords with no/minimal text between them */
+.chord-segment-wide {
+  padding-right: 2.5em;
+}
+
+/* Line break for trailing chords - creates new line with space for chords above */
+.chord-line-break {
+  display: block;
+  height: 0.3em;
+}
+
+
+[dir="rtl"] .chord-segment-spaced {
   padding-right: 0;
   padding-left: 0.8em;
+}
+
+[dir="rtl"] .chord-segment-wide {
+  padding-right: 0;
+  padding-left: 2.5em;
 }
 
 .text-segment {
