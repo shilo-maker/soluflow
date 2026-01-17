@@ -7,13 +7,35 @@
 // Chromatic scale - all 12 semitones (using sharps as canonical)
 const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-// Alternative notations (flats to sharps)
+// Alternative notations (flats to sharps, including double accidentals)
 const FLAT_NOTES = {
   'Db': 'C#',
   'Eb': 'D#',
   'Gb': 'F#',
   'Ab': 'G#',
   'Bb': 'A#'
+};
+
+// Double sharps - each resolves to enharmonic equivalent
+const DOUBLE_SHARPS = {
+  'C##': 'D',
+  'D##': 'E',
+  'E##': 'F#',
+  'F##': 'G',
+  'G##': 'A',
+  'A##': 'B',
+  'B##': 'C#'
+};
+
+// Double flats - each resolves to enharmonic equivalent
+const DOUBLE_FLATS = {
+  'Cbb': 'Bb',
+  'Dbb': 'C',
+  'Ebb': 'D',
+  'Fbb': 'Eb',
+  'Gbb': 'F',
+  'Abb': 'G',
+  'Bbb': 'A'
 };
 
 /**
@@ -54,16 +76,26 @@ const getScaleForKey = (keyIndex) => {
 
 /**
  * Normalizes a note to its sharp equivalent
- * @param {string} note - The note to normalize (e.g., 'Db' -> 'C#')
+ * Handles single flats, double sharps, and double flats
+ * @param {string} note - The note to normalize (e.g., 'Db' -> 'C#', 'F##' -> 'G', 'Bbb' -> 'A')
  * @returns {string} - Normalized note
  */
 const normalizeNote = (note) => {
+  // Check double accidentals first (they take precedence)
+  if (DOUBLE_SHARPS[note]) {
+    return DOUBLE_SHARPS[note];
+  }
+  if (DOUBLE_FLATS[note]) {
+    return DOUBLE_FLATS[note];
+  }
+  // Then check single flats
   return FLAT_NOTES[note] || note;
 };
 
 /**
  * Parses a chord into root note, suffix, and optional bass note (for slash chords)
- * @param {string} chord - The chord to parse (e.g., 'Am7', 'C#maj7', 'C/G', 'D/F#')
+ * Supports double sharps (##) and double flats (bb)
+ * @param {string} chord - The chord to parse (e.g., 'Am7', 'C#maj7', 'C/G', 'D/F#', 'F##', 'Bbb')
  * @returns {object} - {root: string, suffix: string, bass: string|null}
  */
 const parseChord = (chord) => {
@@ -75,8 +107,8 @@ const parseChord = (chord) => {
     const mainChord = chord.substring(0, slashIndex);
     const bassNote = chord.substring(slashIndex + 1);
 
-    // Parse the main chord part
-    const match = mainChord.match(/^([A-G][#b]?)(.*)/);
+    // Parse the main chord part - support double sharps (##) and double flats (bb)
+    const match = mainChord.match(/^([A-G](?:##|bb|#|b)?)(.*)/);
 
     if (!match) {
       return { root: chord, suffix: '', bass: null };
@@ -90,7 +122,8 @@ const parseChord = (chord) => {
   }
 
   // No slash - standard chord
-  const match = chord.match(/^([A-G][#b]?)(.*)/);
+  // Support double sharps (##) and double flats (bb)
+  const match = chord.match(/^([A-G](?:##|bb|#|b)?)(.*)/);
 
   if (!match) {
     // If we can't parse it, return as-is

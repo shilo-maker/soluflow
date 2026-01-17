@@ -109,6 +109,15 @@ const User = sequelize.define('User', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  indexes: [
+    { fields: ['workspace_id'] },
+    { fields: ['active_workspace_id'] },
+    { fields: ['role'] },
+    { fields: ['is_active'] },
+    { fields: ['email_verified'] },
+    { fields: ['reset_password_token'] },
+    { fields: ['verification_token'] }
+  ],
   hooks: {
     beforeCreate: async (user) => {
       if (user.password_hash) {

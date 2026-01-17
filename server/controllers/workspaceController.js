@@ -594,6 +594,23 @@ const leaveWorkspace = async (req, res) => {
       return res.status(404).json({ error: 'You are not a member of this workspace' });
     }
 
+    // Prevent last admin from leaving
+    if (membership.role === 'admin') {
+      const adminCount = await WorkspaceMember.count({
+        where: {
+          workspace_id: id,
+          role: 'admin'
+        }
+      });
+
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          error: 'Cannot leave as last admin',
+          message: 'Workspace must have at least one admin. Promote another member before leaving.'
+        });
+      }
+    }
+
     // If this is the active workspace, switch to personal workspace first
     if (req.user.active_workspace_id === parseInt(id)) {
       const personalWorkspace = await Workspace.findOne({
@@ -692,6 +709,23 @@ const updateMemberRole = async (req, res) => {
       return res.status(403).json({
         error: 'Cannot change your own role'
       });
+    }
+
+    // Prevent demoting the last admin
+    if (targetMembership.role === 'admin' && role !== 'admin') {
+      const adminCount = await WorkspaceMember.count({
+        where: {
+          workspace_id: id,
+          role: 'admin'
+        }
+      });
+
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          error: 'Cannot demote last admin',
+          message: 'Workspace must have at least one admin. Promote another member first.'
+        });
+      }
     }
 
     // Update the role
@@ -804,6 +838,23 @@ const removeMember = async (req, res) => {
         error: 'Member not found',
         message: 'User is not a member of this workspace'
       });
+    }
+
+    // Prevent removing the last admin
+    if (memberToRemove.role === 'admin') {
+      const adminCount = await WorkspaceMember.count({
+        where: {
+          workspace_id: id,
+          role: 'admin'
+        }
+      });
+
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          error: 'Cannot remove last admin',
+          message: 'Workspace must have at least one admin. Promote another member first.'
+        });
+      }
     }
 
     // Get the user being removed

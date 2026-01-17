@@ -39,7 +39,10 @@ const WorkspaceMember = sequelize.define('WorkspaceMember', {
     {
       unique: true,
       fields: ['workspace_id', 'user_id']
-    }
+    },
+    { fields: ['user_id'] },
+    { fields: ['workspace_id'] },
+    { fields: ['role'] }
   ]
 });
 

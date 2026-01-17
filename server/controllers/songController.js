@@ -224,10 +224,25 @@ const getSongById = async (req, res) => {
 const searchSongs = async (req, res) => {
   try {
     const { q } = req.query;
-    // Use active_workspace_id if workspace_id not provided in query
-    const workspace_id = req.query.workspace_id || req.user?.active_workspace_id;
     const userId = req.user?.id;
     const userRole = req.user?.role;
+
+    // Use active_workspace_id if workspace_id not provided in query
+    let workspace_id = req.query.workspace_id || req.user?.active_workspace_id;
+
+    // Security: Validate user has access to the requested workspace
+    if (workspace_id && userRole !== 'admin') {
+      const membership = await WorkspaceMember.findOne({
+        where: {
+          workspace_id: workspace_id,
+          user_id: userId
+        }
+      });
+      if (!membership) {
+        // User doesn't have access to this workspace, fall back to their active workspace
+        workspace_id = req.user?.active_workspace_id;
+      }
+    }
 
     // Pagination parameters
     const page = Math.max(1, parseInt(req.query.page) || 1);

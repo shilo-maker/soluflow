@@ -644,6 +644,16 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
     }
   }
 
+  // Cleanup global PDF reference to prevent memory leaks
+  const cleanupPdfInstance = () => {
+    if (window.multiSongPdf) {
+      delete window.multiSongPdf;
+    }
+    if (window.multiSongPdfFilename) {
+      delete window.multiSongPdfFilename;
+    }
+  };
+
   // After processing all songs, check if there were any errors
   if (errors.length > 0) {
     const errorSummary = `PDF generation completed with errors:\n` +
@@ -651,6 +661,9 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
       `- Failed songs:\n${errors.map(e => `  • ${e.songTitle} (${e.error})`).join('\n')}`;
 
     console.error(errorSummary);
+
+    // Cleanup on error
+    cleanupPdfInstance();
 
     // If all songs failed, throw an error
     if (successCount === 0) {
@@ -663,8 +676,11 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
 
   console.log(`✅ PDF generation completed successfully for ${successCount} songs`);
 
+  // Final cleanup (should already be cleaned in the loop, but ensure it's done)
+  cleanupPdfInstance();
+
   // Return the filename for potential sharing
-  return window.multiSongPdfFilename || filename;
+  return filename;
 };
 
 /**

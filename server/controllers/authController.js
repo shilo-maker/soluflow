@@ -3,6 +3,26 @@ const { sequelize, User, Service, Workspace, WorkspaceMember } = require('../mod
 const { generateAccessToken, generateGuestToken } = require('../utils/jwt');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
 
+// Password validation helper
+const validatePassword = (password) => {
+  const errors = [];
+
+  if (!password || password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+
+  return errors;
+};
+
 // POST /api/auth/register
 const register = async (req, res) => {
   // Use transaction to ensure all operations succeed or fail together
@@ -15,6 +35,13 @@ const register = async (req, res) => {
     if (!email || !password || !username) {
       await transaction.rollback();
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate password complexity
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({ error: passwordErrors[0], details: passwordErrors });
     }
 
     // Check if user already exists
@@ -448,9 +475,10 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ error: 'Token and password are required' });
     }
 
-    // Validate password length
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    // Validate password complexity
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      return res.status(400).json({ error: passwordErrors[0], details: passwordErrors });
     }
 
     // Hash the token from URL to compare with stored hash

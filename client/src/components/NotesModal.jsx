@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import noteService from '../services/noteService';
 import './NotesModal.css';
 
 const NotesModal = ({ songId, serviceId, songTitle, isOpen, onClose }) => {
+  const modalRef = useRef(null);
+  const firstFocusableRef = useRef(null);
   const [noteContent, setNoteContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -38,13 +40,53 @@ const NotesModal = ({ songId, serviceId, songTitle, isOpen, onClose }) => {
     }
   }, [isOpen, fetchNote, songId, serviceId]);
 
+  // Handle Escape key and focus trap
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+        return;
+      }
+
+      // Focus trap
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Focus the first focusable element when modal opens
+    setTimeout(() => {
+      firstFocusableRef.current?.focus();
+    }, 0);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
       setError('');
       setSaveMessage('');
 
-      await noteService.saveNote(songId, serviceId, noteContent);
+      await noteService.saveNotes(songId, serviceId, noteContent);
 
       setSaveMessage('Note saved successfully!');
       setTimeout(() => {
@@ -69,11 +111,25 @@ const NotesModal = ({ songId, serviceId, songTitle, isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content notes-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={handleClose} role="presentation">
+      <div
+        ref={modalRef}
+        className="modal-content notes-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notes-modal-title"
+      >
         <div className="modal-header">
-          <h2>Notes for: {songTitle}</h2>
-          <button className="modal-close" onClick={handleClose}>×</button>
+          <h2 id="notes-modal-title">Notes for: {songTitle}</h2>
+          <button
+            ref={firstFocusableRef}
+            className="modal-close"
+            onClick={handleClose}
+            aria-label="Close modal"
+          >
+            ×
+          </button>
         </div>
 
         <div className="modal-body">

@@ -1,5 +1,40 @@
 const Note = require('../models/Note');
+const { Service, WorkspaceMember, SharedService } = require('../models');
 const { v4: uuidv4 } = require('uuid');
+
+// Helper: Check if user has access to a service
+const verifyServiceAccess = async (userId, serviceId) => {
+  const service = await Service.findByPk(serviceId);
+  if (!service) {
+    return { hasAccess: false, error: 'Service not found' };
+  }
+
+  // Check if user is a member of the service's workspace
+  const workspaceMembership = await WorkspaceMember.findOne({
+    where: {
+      workspace_id: service.workspace_id,
+      user_id: userId
+    }
+  });
+
+  if (workspaceMembership) {
+    return { hasAccess: true };
+  }
+
+  // Check if service has been shared with user
+  const sharedService = await SharedService.findOne({
+    where: {
+      service_id: serviceId,
+      user_id: userId
+    }
+  });
+
+  if (sharedService) {
+    return { hasAccess: true };
+  }
+
+  return { hasAccess: false, error: 'You do not have access to this service' };
+};
 
 // GET note for a specific song in a service
 const getNoteForSongInService = async (req, res) => {
@@ -13,6 +48,12 @@ const getNoteForSongInService = async (req, res) => {
     }
 
     const userId = req.user.id;
+
+    // Verify user has access to this service
+    const accessCheck = await verifyServiceAccess(userId, serviceId);
+    if (!accessCheck.hasAccess) {
+      return res.status(403).json({ error: accessCheck.error });
+    }
 
     console.log('Fetching note - userId:', userId, 'songId:', songId, 'serviceId:', serviceId);
 
@@ -77,6 +118,12 @@ const createOrUpdateNote = async (req, res) => {
 
     if (!songId || !serviceId) {
       return res.status(400).json({ error: 'Song ID and Service ID are required' });
+    }
+
+    // Verify user has access to this service
+    const accessCheck = await verifyServiceAccess(userId, serviceId);
+    if (!accessCheck.hasAccess) {
+      return res.status(403).json({ error: accessCheck.error });
     }
 
     // Find existing note record
@@ -187,6 +234,12 @@ const toggleNoteVisibility = async (req, res) => {
   try {
     const { songId, serviceId } = req.params;
     const userId = req.user.id;
+
+    // Verify user has access to this service
+    const accessCheck = await verifyServiceAccess(userId, serviceId);
+    if (!accessCheck.hasAccess) {
+      return res.status(403).json({ error: accessCheck.error });
+    }
 
     const note = await Note.findOne({
       where: {

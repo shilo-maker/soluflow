@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import './ReportModal.css';
 
@@ -13,6 +13,8 @@ const REPORT_TYPES = [
 const ReportModal = ({ isOpen, onClose, songId, songTitle }) => {
   const { language } = useLanguage();
   const isHebrew = language === 'he';
+  const modalRef = useRef(null);
+  const closeButtonRef = useRef(null);
 
   const [formData, setFormData] = useState({
     report_type: 'lyrics_error',
@@ -23,6 +25,46 @@ const ReportModal = ({ isOpen, onClose, songId, songTitle }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+
+  // Handle Escape key and focus trap
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      // Focus trap
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Focus close button when modal opens
+    setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 0);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -71,15 +113,26 @@ const ReportModal = ({ isOpen, onClose, songId, songTitle }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="report-modal-overlay" onClick={onClose}>
+    <div className="report-modal-overlay" onClick={onClose} role="presentation">
       <div
+        ref={modalRef}
         className="report-modal"
         onClick={(e) => e.stopPropagation()}
         dir={isHebrew ? 'rtl' : 'ltr'}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-modal-title"
       >
         <div className="report-modal-header">
-          <h2>{isHebrew ? 'דיווח על בעיה' : 'Report an Issue'}</h2>
-          <button className="report-modal-close" onClick={onClose}>&times;</button>
+          <h2 id="report-modal-title">{isHebrew ? 'דיווח על בעיה' : 'Report an Issue'}</h2>
+          <button
+            ref={closeButtonRef}
+            className="report-modal-close"
+            onClick={onClose}
+            aria-label={isHebrew ? 'סגור' : 'Close report modal'}
+          >
+            &times;
+          </button>
         </div>
 
         {success ? (
