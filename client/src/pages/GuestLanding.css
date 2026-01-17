@@ -327,30 +327,6 @@
 .song-card-right {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.listen-button-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #28a745 0%, #218838 100%);
-  border-radius: 50%;
-  text-decoration: none;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-}
-
-.listen-button-card:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.5);
-}
-
-.song-card.selected .listen-button-card {
-  background: white;
 }
 
 .song-key {
