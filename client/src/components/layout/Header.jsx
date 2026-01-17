@@ -46,7 +46,8 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
     try {
       await switchWorkspace(workspaceId);
       setUserMenuOpen(false);
-      window.location.reload();
+      // Navigate to library to refresh content with new workspace
+      navigate('/library');
     } catch (err) {
       console.error('Failed to switch workspace:', err);
     }

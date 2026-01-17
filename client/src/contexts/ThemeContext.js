@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../services/api';
 
@@ -144,7 +144,7 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme, loading]);
 
-  const updateTheme = async (newTheme) => {
+  const updateTheme = useCallback(async (newTheme) => {
     try {
       const response = await api.put('/users/theme/preferences', newTheme);
       const updatedTheme = response.data.themePreferences;
@@ -156,24 +156,28 @@ export const ThemeProvider = ({ children }) => {
       console.error('Error updating theme preferences:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const resetTheme = async () => {
+  const resetTheme = useCallback(async () => {
     try {
-      await updateTheme(defaultTheme);
+      const response = await api.put('/users/theme/preferences', defaultTheme);
+      const updatedTheme = response.data.themePreferences;
+      setTheme(updatedTheme);
+      localStorage.setItem('userTheme', JSON.stringify(updatedTheme));
+      return response.data;
     } catch (error) {
       console.error('Error resetting theme:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     theme,
     updateTheme,
     resetTheme,
     loading,
     defaultTheme
-  };
+  }), [theme, updateTheme, resetTheme, loading]);
 
   return (
     <ThemeContext.Provider value={value}>

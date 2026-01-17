@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import authService from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const token = authService.getToken();
       if (token) {
@@ -32,17 +32,15 @@ export const AuthProvider = ({ children }) => {
           if (cachedUser) {
             try {
               const parsedUser = JSON.parse(cachedUser);
-              console.log('[Auth] Offline mode: Using cached user data');
               setUser(parsedUser);
               setIsAuthenticated(true);
               setLoading(false);
               return;
             } catch (e) {
-              console.warn('[Auth] Failed to parse cached user data');
+              // Continue if parsing fails
             }
           }
           // If no cached data, still allow access with token
-          console.log('[Auth] Offline mode: Token exists but no cached user data');
           setUser({ id: 'offline', username: 'Offline User' });
           setIsAuthenticated(true);
           setLoading(false);
@@ -64,7 +62,6 @@ export const AuthProvider = ({ children }) => {
 
       // If we're offline and have a token, don't log out
       if (!navigator.onLine && authService.getToken()) {
-        console.log('[Auth] Offline: Keeping existing authentication');
         const cachedUser = localStorage.getItem('user');
         if (cachedUser) {
           try {
@@ -85,9 +82,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       const data = await authService.login(email, password);
       setUser(data.user);
@@ -99,9 +96,9 @@ export const AuthProvider = ({ children }) => {
       console.error('Login error:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const register = async (email, password, username, workspaceId, language) => {
+  const register = useCallback(async (email, password, username, workspaceId, language) => {
     try {
       const data = await authService.register(email, password, username, workspaceId, language);
       setUser(data.user);
@@ -113,9 +110,9 @@ export const AuthProvider = ({ children }) => {
       console.error('Register error:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const guestLogin = async (code) => {
+  const guestLogin = useCallback(async (code) => {
     try {
       const data = await authService.guestAuth(code);
       setUser({
@@ -130,17 +127,17 @@ export const AuthProvider = ({ children }) => {
       console.error('Guest login error:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     authService.logout();
     setUser(null);
     setIsAuthenticated(false);
     // Clear cached user data
     localStorage.removeItem('user');
-  };
+  }, []);
 
-  const updateUser = (updatedUserData) => {
+  const updateUser = useCallback((updatedUserData) => {
     setUser(prevUser => {
       const newUser = {
         ...prevUser,
@@ -150,9 +147,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(newUser));
       return newUser;
     });
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     loading,
     isAuthenticated,
@@ -162,7 +159,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     checkAuth,
     updateUser
-  };
+  }), [user, loading, isAuthenticated, login, register, guestLogin, logout, checkAuth, updateUser]);
 
   return (
     <AuthContext.Provider value={value}>

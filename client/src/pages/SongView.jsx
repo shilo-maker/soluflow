@@ -208,17 +208,23 @@ const SongView = () => {
       calculateNormalModeFontSize();
     }, 200);
 
-    // Recalculate on window resize
+    // Throttled resize handler using requestAnimationFrame
+    let resizeTimeout = null;
     const handleResize = () => {
-      if (!isExpanded) {
-        calculateNormalModeFontSize();
-      }
+      if (resizeTimeout) return; // Skip if already scheduled
+      resizeTimeout = requestAnimationFrame(() => {
+        resizeTimeout = null;
+        if (!isExpanded) {
+          calculateNormalModeFontSize();
+        }
+      });
     };
 
     window.addEventListener('resize', handleResize);
 
     return () => {
       clearTimeout(timer);
+      if (resizeTimeout) cancelAnimationFrame(resizeTimeout);
       window.removeEventListener('resize', handleResize);
     };
   }, [song, isExpanded]);
@@ -479,7 +485,7 @@ const SongView = () => {
     // Save original font size
     const originalFontSize = chordDisplay.style.fontSize;
 
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 10; i++) {
       const testSize = (minSize + maxSize) / 2;
 
       // Apply test font size
@@ -943,7 +949,7 @@ const SongView = () => {
     let optimalSize = minSize;
     const buffer = 20; // Larger buffer for normal mode
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 10; i++) {
       const testSize = (minSize + maxSize) / 2;
 
       // Apply test font size
@@ -954,7 +960,6 @@ const SongView = () => {
 
       // Check if content fits
       const contentHeight = chordDisplay.scrollHeight;
-
 
       if (contentHeight <= containerHeight - buffer) {
         optimalSize = testSize;
@@ -1028,7 +1033,7 @@ const SongView = () => {
     let maxSize = Math.min(100, Math.floor(initialFontSize * 1.2)); // Start slightly above estimate
     let optimalSize = minSize;
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 10; i++) {
       const testSize = (minSize + maxSize) / 2;
 
       // Apply test font size
@@ -1038,7 +1043,6 @@ const SongView = () => {
       void chordDisplay.offsetHeight;
 
       // Check if content fits (no scrolling needed) - both height AND width
-      // Add a small buffer (10px) to ensure no cutoff
       const contentHeight = chordDisplay.scrollHeight;
       const containerHeight = container.clientHeight;
       const contentWidth = chordDisplay.scrollWidth;
@@ -1048,17 +1052,13 @@ const SongView = () => {
       const heightFits = contentHeight <= containerHeight - buffer;
       const widthFits = contentWidth <= containerWidth - buffer;
 
-
       if (heightFits && widthFits) {
-        // Content fits with buffer, try larger
         optimalSize = testSize;
         minSize = testSize;
       } else {
-        // Content too large, try smaller
         maxSize = testSize;
       }
 
-      // Stop if we're very close
       if (maxSize - minSize < 0.5) {
         break;
       }

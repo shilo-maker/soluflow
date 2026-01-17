@@ -30,6 +30,7 @@ const Service = () => {
   const socketRef = useRef(null);
   const previousServiceIdRef = useRef(null);
   const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
+  const transpositionSaveTimerRef = useRef(null); // Debounce timer for transposition saves
 
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -105,6 +106,49 @@ const Service = () => {
 
     fetchServices();
   }, [id, user]);
+
+  // Debounced transposition save to database
+  useEffect(() => {
+    // Clear any existing timer
+    if (transpositionSaveTimerRef.current) {
+      clearTimeout(transpositionSaveTimerRef.current);
+    }
+
+    // Don't save if no service or song selected
+    if (!selectedService || !serviceDetails?.songs?.[selectedSongIndex]) {
+      return;
+    }
+
+    const currentSong = serviceDetails.songs[selectedSongIndex];
+    const currentTransposition = transposition;
+
+    // Skip if transposition matches what's already saved
+    if (currentSong.transposition === currentTransposition) {
+      return;
+    }
+
+    // Debounce the save - wait 800ms after last change
+    transpositionSaveTimerRef.current = setTimeout(async () => {
+      try {
+        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, currentTransposition);
+        // Update local state to reflect the saved value
+        setServiceDetails(prev => ({
+          ...prev,
+          songs: prev.songs.map((song, idx) =>
+            idx === selectedSongIndex ? { ...song, transposition: currentTransposition } : song
+          )
+        }));
+      } catch (error) {
+        console.error('[Service] Failed to save transposition:', error);
+      }
+    }, 800);
+
+    return () => {
+      if (transpositionSaveTimerRef.current) {
+        clearTimeout(transpositionSaveTimerRef.current);
+      }
+    };
+  }, [transposition, selectedService, serviceDetails, selectedSongIndex]);
 
   // Fetch service details (with set list) when selected service changes or when navigating back
   useEffect(() => {
@@ -401,34 +445,11 @@ const Service = () => {
     }
   };
 
-  const transposeUp = async () => {
-    console.log('[Service] ===== TRANSPOSE UP CALLED =====');
+  const transposeUp = () => {
     const newTransposition = Math.min(transposition + 1, 11);
-    console.log('[Service] Current transposition:', transposition, 'New:', newTransposition);
     setTransposition(newTransposition);
 
-    // Save transposition to database
-    if (selectedService && serviceDetails?.songs?.[selectedSongIndex]) {
-      const currentSong = serviceDetails.songs[selectedSongIndex];
-      console.log('[Service] Transpose UP - Saving song', currentSong.id, 'in service', selectedService.id, 'with transposition', newTransposition);
-
-      try {
-        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, newTransposition);
-        console.log('[Service] Transposition saved to database');
-
-        // Update local state to reflect the change
-        setServiceDetails(prev => ({
-          ...prev,
-          songs: prev.songs.map((song, idx) =>
-            idx === selectedSongIndex ? { ...song, transposition: newTransposition } : song
-          )
-        }));
-      } catch (error) {
-        console.error('[Service] Failed to save transposition:', error);
-      }
-    }
-
-    // Broadcast to followers if user is leader
+    // Broadcast to followers if user is leader (API save is handled by debounced useEffect)
     if (isLeader && socketRef.current && selectedService) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
@@ -437,32 +458,11 @@ const Service = () => {
     }
   };
 
-  const transposeDown = async () => {
+  const transposeDown = () => {
     const newTransposition = Math.max(transposition - 1, -11);
     setTransposition(newTransposition);
 
-    // Save transposition to database
-    if (selectedService && serviceDetails?.songs?.[selectedSongIndex]) {
-      const currentSong = serviceDetails.songs[selectedSongIndex];
-      console.log('[Service] Transpose DOWN - Saving song', currentSong.id, 'in service', selectedService.id, 'with transposition', newTransposition);
-
-      try {
-        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, newTransposition);
-        console.log('[Service] Transposition saved to database');
-
-        // Update local state to reflect the change
-        setServiceDetails(prev => ({
-          ...prev,
-          songs: prev.songs.map((song, idx) =>
-            idx === selectedSongIndex ? { ...song, transposition: newTransposition } : song
-          )
-        }));
-      } catch (error) {
-        console.error('[Service] Failed to save transposition:', error);
-      }
-    }
-
-    // Broadcast to followers if user is leader
+    // Broadcast to followers if user is leader (API save is handled by debounced useEffect)
     if (isLeader && socketRef.current && selectedService) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
@@ -471,31 +471,10 @@ const Service = () => {
     }
   };
 
-  const resetTransposition = async () => {
+  const resetTransposition = () => {
     setTransposition(0);
 
-    // Save transposition to database
-    if (selectedService && serviceDetails?.songs?.[selectedSongIndex]) {
-      const currentSong = serviceDetails.songs[selectedSongIndex];
-      console.log('[Service] Reset transposition - Saving song', currentSong.id, 'in service', selectedService.id, 'with transposition 0');
-
-      try {
-        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, 0);
-        console.log('[Service] Transposition reset saved to database');
-
-        // Update local state to reflect the change
-        setServiceDetails(prev => ({
-          ...prev,
-          songs: prev.songs.map((song, idx) =>
-            idx === selectedSongIndex ? { ...song, transposition: 0 } : song
-          )
-        }));
-      } catch (error) {
-        console.error('[Service] Failed to save transposition reset:', error);
-      }
-    }
-
-    // Broadcast to followers if user is leader
+    // Broadcast to followers if user is leader (API save is handled by debounced useEffect)
     if (isLeader && socketRef.current && selectedService) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
@@ -504,32 +483,10 @@ const Service = () => {
     }
   };
 
-  const handleSelectKey = async (newTransposition) => {
-    console.log('[Service] handleSelectKey - Setting transposition to:', newTransposition);
+  const handleSelectKey = (newTransposition) => {
     setTransposition(newTransposition);
 
-    // Save transposition to database
-    if (selectedService && serviceDetails?.songs?.[selectedSongIndex]) {
-      const currentSong = serviceDetails.songs[selectedSongIndex];
-      console.log('[Service] Key selected - Saving song', currentSong.id, 'in service', selectedService.id, 'with transposition', newTransposition);
-
-      try {
-        await serviceService.updateSongTransposition(selectedService.id, currentSong.id, newTransposition);
-        console.log('[Service] Transposition saved to database');
-
-        // Update local state to reflect the change
-        setServiceDetails(prev => ({
-          ...prev,
-          songs: prev.songs.map((song, idx) =>
-            idx === selectedSongIndex ? { ...song, transposition: newTransposition } : song
-          )
-        }));
-      } catch (error) {
-        console.error('[Service] Failed to save transposition:', error);
-      }
-    }
-
-    // Broadcast to followers if user is leader
+    // Broadcast to followers if user is leader (API save is handled by debounced useEffect)
     if (isLeader && socketRef.current && selectedService) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,

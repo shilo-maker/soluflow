@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import workspaceService from '../services/workspaceService';
 import { useAuth } from './AuthContext';
 
@@ -52,7 +52,7 @@ export const WorkspaceProvider = ({ children }) => {
   }, [isAuthenticated, loadWorkspaces]);
 
   // Switch active workspace
-  const switchWorkspace = async (workspaceId) => {
+  const switchWorkspace = useCallback(async (workspaceId) => {
     try {
       setLoading(true);
       setError(null);
@@ -60,16 +60,16 @@ export const WorkspaceProvider = ({ children }) => {
       const data = await workspaceService.switchWorkspace(workspaceId);
 
       // Update workspaces list to reflect new active workspace
-      setWorkspaces(prev =>
-        prev.map(ws => ({
+      setWorkspaces(prev => {
+        const updated = prev.map(ws => ({
           ...ws,
           is_active: ws.id === workspaceId
-        }))
-      );
-
-      // Update active workspace
-      const newActive = workspaces.find(ws => ws.id === workspaceId);
-      setActiveWorkspace(newActive);
+        }));
+        // Update active workspace from updated list
+        const newActive = updated.find(ws => ws.id === workspaceId);
+        setActiveWorkspace(newActive);
+        return updated;
+      });
 
       return data;
     } catch (err) {
@@ -79,10 +79,10 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Create new team workspace
-  const createWorkspace = async (name) => {
+  const createWorkspace = useCallback(async (name) => {
     try {
       setLoading(true);
       setError(null);
@@ -100,28 +100,29 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Leave workspace
-  const leaveWorkspace = async (workspaceId) => {
+  const leaveWorkspace = useCallback(async (workspaceId) => {
     try {
       setLoading(true);
       setError(null);
 
       await workspaceService.leaveWorkspace(workspaceId);
 
-      // Remove workspace from list
-      setWorkspaces(prev => prev.filter(ws => ws.id !== workspaceId));
+      // Remove workspace from list and handle active workspace switch
+      setWorkspaces(prev => {
+        const remaining = prev.filter(ws => ws.id !== workspaceId);
+        return remaining;
+      });
 
       // If leaving active workspace, switch to first available
-      if (activeWorkspace?.id === workspaceId) {
-        const remaining = workspaces.filter(ws => ws.id !== workspaceId);
-        if (remaining.length > 0) {
-          await switchWorkspace(remaining[0].id);
-        } else {
-          setActiveWorkspace(null);
+      setActiveWorkspace(current => {
+        if (current?.id === workspaceId) {
+          return null; // Will be updated by loadWorkspaces
         }
-      }
+        return current;
+      });
     } catch (err) {
       console.error('Failed to leave workspace:', err);
       setError(err.message || 'Failed to leave workspace');
@@ -129,10 +130,10 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Delete workspace
-  const deleteWorkspace = async (workspaceId) => {
+  const deleteWorkspace = useCallback(async (workspaceId) => {
     try {
       setLoading(true);
       setError(null);
@@ -142,15 +143,13 @@ export const WorkspaceProvider = ({ children }) => {
       // Remove workspace from list
       setWorkspaces(prev => prev.filter(ws => ws.id !== workspaceId));
 
-      // If deleting active workspace, switch to first available
-      if (activeWorkspace?.id === workspaceId) {
-        const remaining = workspaces.filter(ws => ws.id !== workspaceId);
-        if (remaining.length > 0) {
-          await switchWorkspace(remaining[0].id);
-        } else {
-          setActiveWorkspace(null);
+      // If deleting active workspace, clear it
+      setActiveWorkspace(current => {
+        if (current?.id === workspaceId) {
+          return null;
         }
-      }
+        return current;
+      });
     } catch (err) {
       console.error('Failed to delete workspace:', err);
       setError(err.message || 'Failed to delete workspace');
@@ -158,10 +157,10 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Generate invite link
-  const generateInvite = async (workspaceId, expiresInDays = 7) => {
+  const generateInvite = useCallback(async (workspaceId, expiresInDays = 7) => {
     try {
       setError(null);
       const data = await workspaceService.generateInvite(workspaceId, expiresInDays);
@@ -171,10 +170,10 @@ export const WorkspaceProvider = ({ children }) => {
       setError(err.message || 'Failed to generate invite');
       throw err;
     }
-  };
+  }, []);
 
   // Accept invite
-  const acceptInvite = async (token) => {
+  const acceptInvite = useCallback(async (token) => {
     try {
       setLoading(true);
       setError(null);
@@ -192,7 +191,7 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loadWorkspaces]);
 
   // Check if user can join more workspaces (max 5)
   const canJoinMore = workspaces.length < 5;
@@ -201,7 +200,7 @@ export const WorkspaceProvider = ({ children }) => {
   const teamCount = workspaces.filter(ws => ws.workspace_type === 'organization').length;
   const canCreateOrganization = teamCount < 4;
 
-  const value = {
+  const value = useMemo(() => ({
     workspaces,
     activeWorkspace,
     loading,
@@ -216,7 +215,7 @@ export const WorkspaceProvider = ({ children }) => {
     deleteWorkspace,
     generateInvite,
     acceptInvite
-  };
+  }), [workspaces, activeWorkspace, loading, error, canJoinMore, canCreateOrganization, teamCount, loadWorkspaces, switchWorkspace, createWorkspace, leaveWorkspace, deleteWorkspace, generateInvite, acceptInvite]);
 
   return (
     <WorkspaceContext.Provider value={value}>

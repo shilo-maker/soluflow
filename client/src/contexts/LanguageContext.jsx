@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../services/api';
 import enTranslations from '../locales/en.json';
@@ -38,7 +38,7 @@ export const LanguageProvider = ({ children }) => {
   }, [user]);
 
   // Function to get translation by key path (e.g., "common.login")
-  const t = (key, defaultValue = '') => {
+  const t = useCallback((key, defaultValue = '') => {
     const keys = key.split('.');
     let value = translations[language];
 
@@ -51,10 +51,10 @@ export const LanguageProvider = ({ children }) => {
     }
 
     return value || defaultValue || key;
-  };
+  }, [language]);
 
   // Function to change language and update user profile
-  const setLanguage = async (newLanguage) => {
+  const setLanguage = useCallback(async (newLanguage) => {
     if (!['en', 'he'].includes(newLanguage)) {
       console.error('Invalid language:', newLanguage);
       return;
@@ -84,14 +84,14 @@ export const LanguageProvider = ({ children }) => {
       document.documentElement.lang = oldLanguage;
       throw error;
     }
-  };
+  }, [user]);
 
-  const value = {
+  const value = useMemo(() => ({
     language,
     setLanguage,
     t,
     isRTL
-  };
+  }), [language, setLanguage, t, isRTL]);
 
   return (
     <LanguageContext.Provider value={value}>
