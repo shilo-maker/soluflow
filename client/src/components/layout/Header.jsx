@@ -84,7 +84,10 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
         <div className="header-actions">
           {/* Workspace name */}
           {user && !user.isGuest && activeWorkspace && (
-            <span className="header-workspace-text">
+            <span
+              className="header-workspace-text"
+              style={{ color: currentPreset.accentColor }}
+            >
               ({t('workspace.workspaceSuffix')}) {activeWorkspace.workspace_type === 'personal'
                 ? t('workspace.personalWorkspace')
                 : activeWorkspace.name

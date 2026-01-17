@@ -118,7 +118,7 @@
 .header-workspace-text {
   font-size: 22px;
   font-weight: 700;
-  color: rgb(56, 178, 172);
+  /* color is set via inline style based on theme */
   max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
