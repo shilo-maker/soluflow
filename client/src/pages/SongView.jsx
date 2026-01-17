@@ -66,7 +66,9 @@ const SongView = () => {
   const [showControlsDrawer, setShowControlsDrawer] = useState(false);
   const drawerTouchStartY = useRef(null);
   const [expandedFontSize, setExpandedFontSize] = useState(16);
-    const [autoFontSize, setAutoFontSize] = useState(16);
+  const [autoFontSize, setAutoFontSize] = useState(16);
+  const [savedFontSize, setSavedFontSize] = useState(null); // to restore when header is shown
+  const [savedColumnMode, setSavedColumnMode] = useState(null); // to restore when header is shown
   const contentRef = useRef(null);
 
   // Real-time sync state
@@ -477,6 +479,89 @@ const SongView = () => {
       }, 200); // Give time for new content to render
     }
   }, [id, song, isExpanded]);
+
+  // Calculate optimal font size when header is hidden (fullscreen mode)
+  const calculateFullscreenFontSize = () => {
+    if (!contentRef.current) return;
+
+    const container = contentRef.current;
+    const chordDisplay = container.querySelector('.chordpro-display');
+    if (!chordDisplay) return;
+
+    // Use viewport height as available space (full screen mode)
+    const availableHeight = window.innerHeight - 20; // small buffer
+
+    console.log('=== Fullscreen Font Size Calculation ===');
+    console.log('Available height:', availableHeight);
+
+    // Binary search for the largest font size that fits vertically
+    let minSize = 10;
+    let maxSize = 50;
+    let optimalSize = minSize;
+
+    // Save original font size
+    const originalFontSize = chordDisplay.style.fontSize;
+
+    for (let i = 0; i < 15; i++) {
+      const testSize = (minSize + maxSize) / 2;
+
+      // Apply test font size
+      chordDisplay.style.fontSize = `${testSize}px`;
+
+      // Force reflow
+      void chordDisplay.offsetHeight;
+
+      // Check if content fits vertically (height is the constraint, not width)
+      const contentHeight = chordDisplay.scrollHeight;
+
+      const fits = contentHeight <= availableHeight;
+
+      console.log(`Test ${i + 1}: size=${testSize.toFixed(1)}px, contentHeight=${contentHeight}, fits=${fits}`);
+
+      if (fits) {
+        optimalSize = testSize;
+        minSize = testSize;
+      } else {
+        maxSize = testSize;
+      }
+
+      if (maxSize - minSize < 0.5) break;
+    }
+
+    // Restore original font size temporarily (React will apply the new one)
+    chordDisplay.style.fontSize = originalFontSize;
+
+    console.log('Final optimal size:', Math.floor(optimalSize));
+    console.log('=========================================');
+
+    return Math.floor(optimalSize);
+  };
+
+  // Auto-calculate font size when header is hidden
+  useEffect(() => {
+    if (!showHeader && song) {
+      // Save current settings before changing
+      setSavedFontSize(fontSize);
+      setSavedColumnMode(columnMode);
+
+      // Force single column in fullscreen mode
+      setColumnMode(1);
+
+      // Wait for DOM to update with header-hidden class
+      setTimeout(() => {
+        const optimalSize = calculateFullscreenFontSize();
+        if (optimalSize) {
+          setFontSize(optimalSize);
+        }
+      }, 100);
+    } else if (showHeader && savedFontSize !== null) {
+      // Restore saved settings when header is shown
+      setFontSize(savedFontSize);
+      setColumnMode(savedColumnMode);
+      setSavedFontSize(null);
+      setSavedColumnMode(null);
+    }
+  }, [showHeader, song]);
 
   if (loading) {
     return (
@@ -1066,7 +1151,7 @@ const SongView = () => {
   };
 
   return (
-    <div className={`song-view-page ${isExpanded ? 'expanded-mode' : ''}`}>
+    <div className={`song-view-page ${!showHeader ? 'header-hidden' : ''}`}>
       {/* Header */}
       {!isExpanded && showHeader && (
       <div className="song-view-header">
@@ -1276,7 +1361,7 @@ const SongView = () => {
       {/* Song Content */}
       <div
         ref={contentRef}
-        className={`song-view-content ${isExpanded ? 'expanded' : ''}`}
+        className="song-view-content"
         onClick={() => setShowHeader(prev => !prev)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -1288,7 +1373,7 @@ const SongView = () => {
           content={song.content}
           isLyricsOnly={isLyricsOnly}
           dir={hasHebrew ? 'rtl' : 'ltr'}
-          fontSize={isExpanded ? expandedFontSize : fontSize}
+          fontSize={fontSize}
           transposition={transposition}
           songKey={song.key}
           forcedColumnCount={columnMode}

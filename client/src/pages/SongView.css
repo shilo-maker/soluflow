@@ -8,6 +8,15 @@
   flex-direction: column;
 }
 
+/* When header is hidden, fill the entire screen */
+.song-view-page.header-hidden {
+  padding: 0;
+  max-width: 100%;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+}
+
 .song-view-header {
   padding-top: 10px;
   margin-bottom: 10px;
@@ -366,7 +375,7 @@
   align-items: flex-start;
   justify-content: flex-start;
   z-index: 9999;
-  overflow: hidden;
+  overflow-y: auto; /* Allow scrolling for long content */
 }
 
 /* Font size in expanded mode is dynamically calculated */

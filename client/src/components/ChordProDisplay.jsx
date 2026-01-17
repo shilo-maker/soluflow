@@ -113,44 +113,46 @@ const ChordProDisplay = React.memo(({
   useEffect(() => {
     if (!contentRef.current || disableColumnCalculation) return;
 
-    let rafId = null;
+    let timeoutId = null;
 
-    // Wait for render to complete
     const checkHeight = () => {
-      // Cancel any pending RAF to avoid stacking up requests
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
+      if (!contentRef.current) return;
+
+      // Temporarily force single column to measure true content height
+      const element = contentRef.current;
+      const originalColumnCount = element.style.columnCount;
+      element.style.columnCount = '1';
+
+      // Force reflow to get accurate measurement
+      const contentHeight = element.scrollHeight;
+      const viewportHeight = window.innerHeight;
+
+      // Restore original column count
+      element.style.columnCount = originalColumnCount;
+
+      // Use 2 columns (compact) if content would require scrolling (leave 150px buffer for headers/controls)
+      // This applies to both mobile and desktop - if content is taller than viewport, go to 2 columns
+      if (contentHeight > viewportHeight - 150) {
+        setAutoColumnCount(2);
+      } else {
+        setAutoColumnCount(1);
       }
-
-      rafId = requestAnimationFrame(() => {
-        if (!contentRef.current) return;
-
-        const contentHeight = contentRef.current.scrollHeight;
-        const viewportHeight = window.innerHeight;
-
-        // Use 2 columns (compact) if content would require scrolling (leave 200px buffer for headers/controls)
-        // This applies to both mobile and desktop - if content is taller than viewport, go to 2 columns
-        if (contentHeight > viewportHeight - 200) {
-          setAutoColumnCount(2);
-        } else {
-          setAutoColumnCount(1);
-        }
-
-        rafId = null;
-      });
     };
 
-    // Initial check
-    checkHeight();
+    // Initial check after a short delay to ensure content is rendered
+    timeoutId = setTimeout(checkHeight, 100);
 
     // Recalculate on window resize (e.g., device rotation)
-    window.addEventListener('resize', checkHeight);
+    const handleResize = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(checkHeight, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-      window.removeEventListener('resize', checkHeight);
+      if (timeoutId) clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
     };
   }, [content, fontSize, transposition, disableColumnCalculation]);
 
@@ -510,16 +512,22 @@ const ChordProDisplay = React.memo(({
                     spacingClass = ' chord-segment-wide';
                   } else if (!endsWithSpace && !nextStartsWithSpace) {
                     // Word is split across chord segments - check if we need hyphens
-                    const chordWidth = chordLength * 10; // ~10px per chord character
-                    const textWidth = trimmedLength * 8; // ~8px per Hebrew character
+                    // Scale pixel estimates based on font size (base estimates are for 16px)
+                    const scaleFactor = fontSize / 16;
+                    const chordWidth = chordLength * 10 * scaleFactor; // ~10px per chord char at 16px
+
+                    // Count only base characters (exclude Hebrew vowels/nikkud which don't add width)
+                    // Hebrew combining marks are in range U+0591 to U+05C7
+                    const baseCharsOnly = currentText.trim().replace(/[\u0591-\u05C7]/g, '');
+                    const visualCharCount = baseCharsOnly.length;
+                    const textWidth = visualCharCount * 10 * scaleFactor; // ~10px per base char at 16px
 
                     // Only add hyphens if chord width is close to or exceeds text width
-                    // (meaning there's risk of overlap with adjacent chord)
-                    if (chordWidth >= textWidth - 10) {
-                      const gapNeeded = Math.max(0, chordWidth - textWidth) + 8; // 8px min gap
-                      const hyphenWidth = 6;
+                    if (chordWidth >= textWidth - (8 * scaleFactor)) {
+                      const gapNeeded = Math.max(0, chordWidth - textWidth) + (10 * scaleFactor); // min gap
+                      const hyphenWidth = 6 * scaleFactor;
                       const hyphenCount = Math.max(2, Math.ceil(gapNeeded / hyphenWidth));
-                      connector = '-'.repeat(Math.min(hyphenCount, 6));
+                      connector = '-'.repeat(Math.min(hyphenCount, 8));
                     }
                   }
 

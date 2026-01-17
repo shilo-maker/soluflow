@@ -3,7 +3,13 @@
   line-height: 1.8;
   color: var(--theme-text-color, #333);
   background-color: var(--theme-background-color, #ffffff);
-  /* Column properties are now set dynamically via inline styles */
+}
+
+/* Default 2-column styling for desktop */
+.chordpro-display.two-columns,
+.chordpro-display.columns-forced-2 {
+  column-gap: 40px;
+  column-rule: 2px solid #dee2e6;
 }
 
 .section-container {
@@ -18,23 +24,22 @@
   font-size: 1em; /* Same as base font size for compactness */
   color: var(--color-primary);
   margin-top: 0;
-  margin-bottom: 4px;
+  margin-bottom: 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .section-container:first-child .section-header {
   margin-top: 0;
 }
 
+
 .section-label {
   font-weight: 700;
   font-size: 1em;
   color: var(--color-primary);
-  margin-top: 8px;
-  margin-bottom: 4px;
+  margin-top: 2px;
+  margin-bottom: 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .section-label:first-child {
@@ -45,6 +50,7 @@
   text-align: right;
 }
 
+
 .empty-line {
   height: 1.2em;
 }
@@ -52,14 +58,14 @@
 /* New inline chord-lyric structure - chords follow text when wrapping */
 .chord-lyric-line {
   margin-bottom: 0;
-  padding-top: 1.1em; /* Space above for chords */
-  line-height: 1.8; /* Line height for wrapped chord segments */
+  line-height: 1.3;
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere; /* Allow breaking but prefer natural break points */
+  word-break: keep-all; /* Prevent breaking within words (important for Hebrew) */
 }
 
 .chord-segment {
@@ -67,6 +73,7 @@
   display: inline-block;
   white-space: pre-wrap;
   vertical-align: top;
+  margin-top: 1.0em; /* Space for chord above each segment */
 }
 
 /* Only add padding when chords are close together */
@@ -100,20 +107,28 @@
   white-space: pre-wrap;
 }
 
+/* Standalone text segments (not inside chord-segment) need same margin for alignment */
+.chord-lyric-line > .text-segment {
+  display: inline-block;
+  margin-top: 1.0em;
+  vertical-align: top;
+}
+
 .chord {
   position: absolute;
-  top: -1.3em;
+  top: -1.0em;
   left: 0;
   color: var(--theme-chord-color, var(--color-primary));
   font-weight: 700;
   font-size: calc(0.93em * var(--theme-chord-size, 1));
+  line-height: 1.2;
   direction: ltr;
   unicode-bidi: embed;
   font-family: 'Heebo', 'Rubik', 'Assistant', 'Arial Hebrew', Arial, sans-serif;
   white-space: nowrap;
 }
 
-/* RTL support - position chord on right side of segment */
+/* RTL support - position chord on right side */
 [dir="rtl"] .chord {
   left: auto;
   right: 0;
@@ -158,10 +173,6 @@
 }
 
 /* RTL support for Hebrew */
-[dir="rtl"] .chord {
-  right: auto;
-}
-
 [dir="rtl"] .lyric-line {
   text-align: right;
 }
@@ -312,11 +323,48 @@
     box-sizing: border-box;
   }
 
-  /* Override mobile single-column when user explicitly forces 2 columns */
+  /* Override mobile single-column when auto or user forces 2 columns */
+  .chordpro-display.two-columns,
   .chordpro-display.columns-forced-2 {
     column-count: 2 !important;
-    column-gap: 40px !important;
-    column-rule: 2px solid #dee2e6 !important;
+    column-gap: 16px !important;
+    column-rule: 1px solid #dee2e6 !important;
+  }
+
+  /* Optimize layout for narrow mobile 2-column mode */
+  .chordpro-display.two-columns .chord-segment-spaced,
+  .chordpro-display.columns-forced-2 .chord-segment-spaced {
+    padding-right: 0.4em;
+  }
+  .chordpro-display.two-columns .chord-segment-wide,
+  .chordpro-display.columns-forced-2 .chord-segment-wide {
+    padding-right: 1.2em;
+  }
+  [dir="rtl"] .chordpro-display.two-columns .chord-segment-spaced,
+  [dir="rtl"] .chordpro-display.columns-forced-2 .chord-segment-spaced {
+    padding-right: 0;
+    padding-left: 0.4em;
+  }
+  [dir="rtl"] .chordpro-display.two-columns .chord-segment-wide,
+  [dir="rtl"] .chordpro-display.columns-forced-2 .chord-segment-wide {
+    padding-right: 0;
+    padding-left: 1.2em;
+  }
+  .chordpro-display.two-columns .chord-lyric-line,
+  .chordpro-display.columns-forced-2 .chord-lyric-line {
+    line-height: 1.3;
+  }
+  .chordpro-display.two-columns .empty-line,
+  .chordpro-display.columns-forced-2 .empty-line {
+    height: 0.8em;
+  }
+  .chordpro-display.two-columns .section-container,
+  .chordpro-display.columns-forced-2 .section-container {
+    margin-bottom: 8px;
+  }
+  .chordpro-display.two-columns .section-label,
+  .chordpro-display.columns-forced-2 .section-label {
+    margin-top: 0;
   }
 
   /* Override when user explicitly forces 1 column (redundant but explicit) */
