@@ -455,8 +455,10 @@ const ChordProDisplay = React.memo(({
         // Build segments where each chord is attached to its text
         const segments = buildChordLyricSegments(item.chords, item.lyrics);
 
-        // Check if there are trailing chords with no lyrics (for line break)
+        // Check if there are MULTIPLE trailing chords with no lyrics (for line break)
+        // Only break if there are 2+ trailing chords, not for a single trailing chord
         let trailingChordsStartIndex = -1;
+        let trailingChordCount = 0;
         for (let i = segments.length - 1; i >= 0; i--) {
           const seg = segments[i];
           if (seg.type === 'chord-text') {
@@ -464,12 +466,17 @@ const ChordProDisplay = React.memo(({
             // Check if this is a chord with no real lyrics (empty, space, or just punctuation)
             if (trimmed === '' || /^[\s.,!?;:]+$/.test(trimmed)) {
               trailingChordsStartIndex = i;
+              trailingChordCount++;
             } else {
               break; // Found a chord with real lyrics, stop
             }
           } else {
             break;
           }
+        }
+        // Only use line break if there are multiple trailing chords
+        if (trailingChordCount < 2) {
+          trailingChordsStartIndex = -1;
         }
 
         return (
@@ -495,21 +502,34 @@ const ChordProDisplay = React.memo(({
                   const textLength = currentText.length;
                   const trimmedLength = currentText.trim().length;
                   const endsWithSpace = /\s$/.test(currentText);
+                  const nextText = nextSegment.text || '';
+                  const nextStartsWithSpace = /^\s/.test(nextText);
 
-                  // Determine spacing needed based on text length
+                  // Determine spacing needed
+                  // Latin bold chords are ~1.3x wider per character than Hebrew text
+                  // So we compare chord pixel width (estimated) vs text pixel width
+                  const chordLength = segment.chord.length;
+                  const chordPixelEstimate = chordLength * 1.3; // bold Latin chars are wider
+                  const extraSpaceNeeded = chordPixelEstimate - trimmedLength;
+
                   if (trimmedLength === 0 || /^[\s.,!?;:]+$/.test(currentText.trim())) {
                     // No real text - need spacing for chord
                     spacingClass = ' chord-segment-wide';
-                  } else if (textLength < 3) {
-                    // Very short text - need extra spacing
-                    spacingClass = ' chord-segment-spaced';
-                    // Add hyphen if in middle of word
-                    if (!endsWithSpace) {
-                      connector = '-';
+                  } else if (!endsWithSpace && !nextStartsWithSpace) {
+                    // Breaking a word - add hyphens to fill the gap
+                    // Hyphens make the segment wider naturally, preventing chord overlap
+                    if (trimmedLength <= 2) {
+                      // Very short text needs more hyphens
+                      connector = '--';
+                    } else if (extraSpaceNeeded > 0) {
+                      // Chord wider than text - add hyphen(s) proportional to gap
+                      connector = '-'.repeat(Math.min(Math.ceil(extraSpaceNeeded), 2));
                     }
-                  } else if (textLength < 5) {
-                    // Short text - need some spacing
-                    spacingClass = ' chord-segment-spaced';
+                  }
+
+                  // Add word joiner to prevent line break between segments of the same word
+                  if (!endsWithSpace && !nextStartsWithSpace && trimmedLength > 0) {
+                    connector += '\u2060'; // Word Joiner - prevents line break
                   }
                 }
 
@@ -566,9 +586,7 @@ const ChordProDisplay = React.memo(({
       dir={dir}
       style={{
         fontSize: `${fontSize}px`,
-        columnCount: columnCount,
-        columnGap: columnCount === 2 ? '40px' : '0',
-        columnRule: columnCount === 2 ? '2px solid #dee2e6' : 'none'
+        columnCount: columnCount
       }}
     >
       {renderParsedContent(parsed)}
