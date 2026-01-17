@@ -102,6 +102,18 @@ const SongCard = React.memo(({ song, isSelected, onClick }) => {
           <p className="song-card-authors">{song.authors}</p>
         </div>
         <div className="song-card-right">
+          {song.listen_url && (
+            <a
+              href={song.listen_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="listen-button-card"
+              onClick={(e) => e.stopPropagation()}
+              title="Listen to song"
+            >
+              🎵
+            </a>
+          )}
           <span className="song-key">Key: {convertKeyToFlat(song.key)}</span>
         </div>
       </div>
