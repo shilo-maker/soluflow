@@ -216,13 +216,13 @@
 /* Content Area */
 .guest-content {
   padding: 20px 5%;
-  padding-top: 140px; /* Account for fixed header */
+  padding-top: 200px; /* Account for fixed header with search row wrapping */
   margin: 0 auto;
 }
 
 @media (min-width: 1040px) {
   .guest-content {
-    padding-top: 100px; /* Smaller header on desktop */
+    padding-top: 130px; /* Smaller header on desktop (single row) */
   }
 }
 
