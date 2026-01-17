@@ -504,24 +504,22 @@ const ChordProDisplay = React.memo(({
                   // Latin bold chords are ~1.3x wider per character than Hebrew text
                   // So we compare chord pixel width (estimated) vs text pixel width
                   const chordLength = segment.chord.length;
-                  const chordPixelEstimate = chordLength * 1.3; // bold Latin chars are wider
-                  const extraSpaceNeeded = chordPixelEstimate - trimmedLength;
+
+                  // Scale pixel estimates based on font size (base estimates are for 16px)
+                  const scaleFactor = fontSize / 16;
+                  const chordWidth = chordLength * 12 * scaleFactor; // ~12px per bold chord char at 16px (wider than text)
+
+                  // Count only base characters (exclude Hebrew vowels/nikkud which don't add width)
+                  // Hebrew combining marks are in range U+0591 to U+05C7
+                  const baseCharsOnly = currentText.trim().replace(/[\u0591-\u05C7]/g, '');
+                  const visualCharCount = baseCharsOnly.length;
+                  const textWidth = visualCharCount * 10 * scaleFactor; // ~10px per base char at 16px
 
                   if (trimmedLength === 0 || /^[\s.,!?;:]+$/.test(currentText.trim())) {
                     // No real text - need wide spacing for chord
                     spacingClass = ' chord-segment-wide';
                   } else if (!endsWithSpace && !nextStartsWithSpace) {
                     // Word is split across chord segments - check if we need hyphens
-                    // Scale pixel estimates based on font size (base estimates are for 16px)
-                    const scaleFactor = fontSize / 16;
-                    const chordWidth = chordLength * 10 * scaleFactor; // ~10px per chord char at 16px
-
-                    // Count only base characters (exclude Hebrew vowels/nikkud which don't add width)
-                    // Hebrew combining marks are in range U+0591 to U+05C7
-                    const baseCharsOnly = currentText.trim().replace(/[\u0591-\u05C7]/g, '');
-                    const visualCharCount = baseCharsOnly.length;
-                    const textWidth = visualCharCount * 10 * scaleFactor; // ~10px per base char at 16px
-
                     // Only add hyphens if chord width is close to or exceeds text width
                     if (chordWidth >= textWidth - (8 * scaleFactor)) {
                       const gapNeeded = Math.max(0, chordWidth - textWidth) + (10 * scaleFactor); // min gap
@@ -529,6 +527,10 @@ const ChordProDisplay = React.memo(({
                       const hyphenCount = Math.max(2, Math.ceil(gapNeeded / hyphenWidth));
                       connector = '-'.repeat(Math.min(hyphenCount, 8));
                     }
+                  } else if (chordWidth >= textWidth) {
+                    // Text ends with space or next starts with space, but chord is still wider than text
+                    // Add padding class to prevent overlap
+                    spacingClass = ' chord-segment-spaced';
                   }
 
                   // Add word joiner to prevent line break between segments of the same word
