@@ -13,10 +13,12 @@
   }
 }
 
-/* Sticky Header Bar */
+/* Fixed Header Bar */
 .guest-sticky-header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   background-color: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
@@ -30,6 +32,14 @@
   border-bottom: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 0 0 24px 24px;
   overflow: visible;
+}
+
+@media (min-width: 1024px) {
+  .guest-sticky-header {
+    left: 15%;
+    right: 15%;
+    border-radius: 0 0 24px 24px;
+  }
 }
 
 @media (min-width: 1040px) {
@@ -206,7 +216,14 @@
 /* Content Area */
 .guest-content {
   padding: 20px 5%;
+  padding-top: 140px; /* Account for fixed header */
   margin: 0 auto;
+}
+
+@media (min-width: 1040px) {
+  .guest-content {
+    padding-top: 100px; /* Smaller header on desktop */
+  }
 }
 
 .search-input-library {
