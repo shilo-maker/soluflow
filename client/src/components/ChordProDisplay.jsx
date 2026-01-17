@@ -127,16 +127,9 @@ const ChordProDisplay = React.memo(({
 
         const contentHeight = contentRef.current.scrollHeight;
         const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
 
-        // Never use 2 columns on mobile (768px or less)
-        if (viewportWidth <= 768) {
-          setAutoColumnCount(1);
-          return;
-        }
-
-        // Use 2 columns if content would require scrolling (leave 200px buffer for headers/controls)
-        // This means if content is taller than viewport, we go to 2 columns
+        // Use 2 columns (compact) if content would require scrolling (leave 200px buffer for headers/controls)
+        // This applies to both mobile and desktop - if content is taller than viewport, go to 2 columns
         if (contentHeight > viewportHeight - 200) {
           setAutoColumnCount(2);
         } else {
