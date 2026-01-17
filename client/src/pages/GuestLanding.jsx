@@ -138,21 +138,37 @@ const GuestLanding = () => {
 
   // Fetch all songs on component mount (guest-accessible, no workspace restriction)
   useEffect(() => {
+    let isMounted = true;
+
     const fetchSongs = async () => {
       try {
         setLoading(true);
         const data = await songService.getAllSongs(); // No workspaceId = fetch all songs
-        setSongs(data);
-        setError(null);
+
+        if (isMounted) {
+          setSongs(data);
+          setError(null);
+        }
       } catch (err) {
-        console.error('Error fetching songs:', err);
-        setError('Failed to load songs. Please try again.');
+        // Ignore abort errors
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') return;
+
+        if (isMounted) {
+          console.error('Error fetching songs:', err);
+          setError('Failed to load songs. Please try again.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSongs();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Close expanded song when clicking outside

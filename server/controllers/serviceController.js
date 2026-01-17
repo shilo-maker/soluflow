@@ -448,12 +448,13 @@ const createService = async (req, res) => {
       });
     }
 
-    // Generate unique code (4 characters)
+    // Generate unique code (4 characters) using crypto for better randomness
     const generateCode = () => {
+      const crypto = require('crypto');
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let code = '';
       for (let i = 0; i < 4; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
+        code += chars.charAt(crypto.randomInt(chars.length));
       }
       return code;
     };

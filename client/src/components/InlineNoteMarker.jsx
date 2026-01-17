@@ -45,8 +45,8 @@ const InlineNoteMarker = ({ note, isEditMode, onUpdate, onDelete, onClick }) => 
           placeholder="Enter note..."
         />
         <div className="inline-note-actions">
-          <button onClick={handleSave} className="btn-save-note">✓</button>
-          <button onClick={handleCancel} className="btn-cancel-note">✗</button>
+          <button onClick={handleSave} className="btn-save-note" aria-label="Save note">✓</button>
+          <button onClick={handleCancel} className="btn-cancel-note" aria-label="Cancel">✗</button>
         </div>
       </div>
     );

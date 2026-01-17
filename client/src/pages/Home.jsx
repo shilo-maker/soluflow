@@ -18,8 +18,10 @@ const Home = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
-  // Fetch services and songs on component mount
+  // Fetch services and songs on component mount with cancellation support
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -27,18 +29,32 @@ const Home = () => {
           serviceService.getAllServices(),
           songService.getAllSongs(1)
         ]);
-        setServices(servicesData);
-        setSongs(songsData);
-        setError(null);
+
+        if (isMounted) {
+          setServices(servicesData);
+          setSongs(songsData);
+          setError(null);
+        }
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load data. Please try again.');
+        // Ignore abort errors
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') return;
+
+        if (isMounted) {
+          console.error('Error fetching data:', err);
+          setError('Failed to load data. Please try again.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const upcomingServices = services.filter(s => {

@@ -74,37 +74,55 @@ const Service = () => {
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
-  // Fetch all services on component mount
+  // Fetch all services on component mount with cancellation support
   useEffect(() => {
+    let isMounted = true;
+
     const fetchServices = async () => {
       if (!user) {
-        setLoading(false);
-        setError('Please log in to view your services.');
+        if (isMounted) {
+          setLoading(false);
+          setError('Please log in to view your services.');
+        }
         return;
       }
 
       try {
         setLoading(true);
         const data = await serviceService.getAllServices();
-        setServices(data);
-        setError(null);
 
-        // Set initial selected service
-        if (data.length > 0) {
-          const initialService = id
-            ? data.find(s => s.id === parseInt(id)) || data[0]
-            : data[0];
-          setSelectedService(initialService);
+        if (isMounted) {
+          setServices(data);
+          setError(null);
+
+          // Set initial selected service
+          if (data.length > 0) {
+            const initialService = id
+              ? data.find(s => s.id === parseInt(id)) || data[0]
+              : data[0];
+            setSelectedService(initialService);
+          }
         }
       } catch (err) {
-        console.error('Error fetching services:', err);
-        setError('Failed to load services. Please try again.');
+        // Ignore abort errors
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') return;
+
+        if (isMounted) {
+          console.error('Error fetching services:', err);
+          setError('Failed to load services. Please try again.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchServices();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id, user]);
 
   // Debounced transposition save to database

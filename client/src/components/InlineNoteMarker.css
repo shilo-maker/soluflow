@@ -127,6 +127,12 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
+  /* Ensure minimum touch target size for accessibility */
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-edit-note {
@@ -181,6 +187,12 @@
   font-size: 16px;
   background: transparent;
   transition: background-color 0.2s;
+  /* Ensure minimum touch target size for accessibility */
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-save-note:hover {

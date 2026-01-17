@@ -9,7 +9,7 @@
   background-color: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(15px);
   border-bottom: none;
-  z-index: 1000;
+  z-index: var(--z-navigation);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -186,7 +186,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 200px;
   max-width: 280px;
-  z-index: 1001;
+  z-index: var(--z-dropdown);
   margin-top: 4px;
 }
 

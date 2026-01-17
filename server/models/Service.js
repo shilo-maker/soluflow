@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const crypto = require('crypto');
 
 const Service = sequelize.define('Service', {
   id: {
@@ -95,9 +96,14 @@ const Service = sequelize.define('Service', {
   ],
   hooks: {
     beforeCreate: (service) => {
-      // Generate random 4-character code if not provided
+      // Generate random 4-character code if not provided using crypto for better randomness
       if (!service.code) {
-        service.code = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 4; i++) {
+          code += chars.charAt(crypto.randomInt(chars.length));
+        }
+        service.code = code;
       }
     }
   }

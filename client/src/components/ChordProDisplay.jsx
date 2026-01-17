@@ -369,8 +369,8 @@ const ChordProDisplay = React.memo(({
               placeholder="Enter note..."
             />
             <div className="inline-note-actions">
-              <button onClick={handleSaveNewNote} className="btn-save-note">✓</button>
-              <button onClick={handleCancelNewNote} className="btn-cancel-note">✗</button>
+              <button onClick={handleSaveNewNote} className="btn-save-note" aria-label="Save note">✓</button>
+              <button onClick={handleCancelNewNote} className="btn-cancel-note" aria-label="Cancel">✗</button>
             </div>
           </div>
         )}

@@ -154,25 +154,44 @@ const Library = () => {
     };
   }, [selectedSong]);
 
-  // Fetch songs on component mount
+  // Fetch songs on component mount with cancellation support
   useEffect(() => {
+    const abortController = new AbortController();
+    let isMounted = true;
+
     const fetchSongs = async () => {
       // Fetch songs even if user isn't loaded yet - public songs should be visible to everyone
       try {
         setLoading(true);
         // Don't pass workspace_id to show ALL public songs from all workspaces
         const data = await songService.getAllSongs();
-        setSongs(data);
-        setError(null);
+
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setSongs(data);
+          setError(null);
+        }
       } catch (err) {
-        console.error('Error fetching songs:', err);
-        setError(getFriendlyErrorMessage(err));
+        // Ignore abort errors
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') return;
+
+        if (isMounted) {
+          console.error('Error fetching songs:', err);
+          setError(getFriendlyErrorMessage(err));
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSongs();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, []); // Empty dependency array - fetch once on mount
 
   // Parse search query for #tagname patterns

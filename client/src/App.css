@@ -1,3 +1,26 @@
+/* Z-Index Layering System */
+:root {
+  /* Content layer - internal element stacking */
+  --z-content: 1;
+  --z-content-elevated: 10;
+
+  /* Sticky layer - sticky headers, search bars, dropdowns */
+  --z-sticky: 100;
+
+  /* Navigation layer - fixed header, bottom nav */
+  --z-navigation: 1000;
+  --z-dropdown: 1001;
+
+  /* Modal layer - dialogs, modals */
+  --z-modal: 2000;
+
+  /* Overlay layer - overlays that appear on modals */
+  --z-overlay: 3000;
+
+  /* Toast layer - notifications always on top */
+  --z-toast: 9999;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

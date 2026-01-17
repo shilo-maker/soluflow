@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { sequelize } = require('../config/database');
 const Workspace = require('../models/Workspace');
 const WorkspaceMember = require('../models/WorkspaceMember');
@@ -8,12 +9,24 @@ const Service = require('../models/Service');
 const ServiceSong = require('../models/ServiceSong');
 const SongWorkspace = require('../models/SongWorkspace');
 
-// Admin middleware - check for integration API key
+// Admin middleware - check for integration API key with timing-safe comparison
 const adminAuth = (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
-  if (!apiKey || apiKey !== process.env.INTEGRATION_API_KEY) {
+  const validApiKey = process.env.INTEGRATION_API_KEY;
+
+  if (!apiKey || !validApiKey) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+
+  // Use constant-time comparison to prevent timing attacks
+  const apiKeyBuffer = Buffer.from(apiKey);
+  const validKeyBuffer = Buffer.from(validApiKey);
+
+  if (apiKeyBuffer.length !== validKeyBuffer.length ||
+      !crypto.timingSafeEqual(apiKeyBuffer, validKeyBuffer)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   next();
 };
 

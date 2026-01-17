@@ -103,21 +103,37 @@ const SongView = () => {
   }, [id]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchSong = async () => {
       try {
         setLoading(true);
         const data = await songService.getSongById(id);
-        setSong(data);
-        setError(null);
+
+        if (isMounted) {
+          setSong(data);
+          setError(null);
+        }
       } catch (err) {
-        console.error('Error fetching song:', err);
-        setError('Failed to load song. Please try again.');
+        // Ignore abort errors
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') return;
+
+        if (isMounted) {
+          console.error('Error fetching song:', err);
+          setError('Failed to load song. Please try again.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSong();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   // Initialize and manage transposition when song ID changes
