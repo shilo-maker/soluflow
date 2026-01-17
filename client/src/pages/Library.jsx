@@ -507,28 +507,32 @@ const Library = () => {
 
   return (
     <div className="library-page">
-      <div className="library-content">
-      <div className="search-section">
-        <input
-          type="text"
-          className="search-input-library"
-          placeholder={t('library.searchPlaceholder')}
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setSelectedSong(null); // Clear selection when searching
-          }}
-          aria-label="Search songs by title, author, or key"
-          role="searchbox"
-        />
-        <button
-          className="btn-add"
-          onClick={handleAddSong}
-          aria-label="Add new song to library"
-        >
-          {t('library.add')}
-        </button>
+      {/* Fixed search section */}
+      <div className="search-section-fixed">
+        <div className="search-section-inner">
+          <input
+            type="text"
+            className="search-input-library"
+            placeholder={t('library.searchPlaceholder')}
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSelectedSong(null); // Clear selection when searching
+            }}
+            aria-label="Search songs by title, author, or key"
+            role="searchbox"
+          />
+          <button
+            className="btn-add"
+            onClick={handleAddSong}
+            aria-label="Add new song to library"
+          >
+            {t('library.add')}
+          </button>
+        </div>
       </div>
+
+      <div className="library-content">
 
       {loading && (
         <div className="loading-state" role="status" aria-live="polite" aria-label="Loading songs">

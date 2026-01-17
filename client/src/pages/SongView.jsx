@@ -130,11 +130,9 @@ const SongView = () => {
       return;
     }
 
-    console.log('[SongView] Initializing transposition for song ID:', id);
-
+    
     // If we just received a leader command, skip initialization to avoid override
     if (!isLeader && isFollowMode && leaderCommandReceivedRef.current) {
-      console.log('[SongView] Skipping initialization - waiting for leader command');
       transpositionInitializedRef.current = id;
       // Don't clear the flag here - let the timeout handle it
       return;
@@ -146,14 +144,12 @@ const SongView = () => {
     // Priority 1: Check if we have a stored value for this song from previous views
     if (songTranspositionsRef.current.has(id)) {
       initialTranspose = songTranspositionsRef.current.get(id);
-      console.log('[SongView] Using stored transposition:', initialTranspose);
     }
     // Priority 2: Check if there's transposition in setlist context
     else if (setlistContext?.setlist) {
       const songInSetlist = setlistContext.setlist.find(s => s.id.toString() === id);
       if (songInSetlist && songInSetlist.transposition !== undefined) {
         initialTranspose = songInSetlist.transposition;
-        console.log('[SongView] Using setlist transposition:', initialTranspose);
       }
     }
 
@@ -162,7 +158,6 @@ const SongView = () => {
     songTranspositionsRef.current.set(id, initialTranspose);
     transpositionInitializedRef.current = id;
 
-    console.log('[SongView] Transposition initialized to:', initialTranspose);
   }, [id, setlistContext, isLeader, isFollowMode]);
 
   // Save transposition changes to the map (separate from initialization)
@@ -170,7 +165,6 @@ const SongView = () => {
     if (id && transpositionInitializedRef.current === id) {
       // Only update map after initialization is complete for current song
       songTranspositionsRef.current.set(id, transposition);
-      console.log('[SongView] Saved transposition to memory:', transposition, 'for song:', id);
     }
   }, [transposition, id]);
 
@@ -245,10 +239,8 @@ const SongView = () => {
     const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5002';
     socketRef.current = io(serverUrl);
 
-    console.log('SongView connecting to Socket.IO...', serverUrl);
 
     socketRef.current.on('connect', () => {
-      console.log('SongView Socket.IO connected:', socketRef.current.id);
       setSocketConnected(true);
 
       // Join the service room
@@ -264,13 +256,11 @@ const SongView = () => {
 
     // Handle disconnection
     socketRef.current.on('disconnect', (reason) => {
-      console.log('Socket.IO disconnected:', reason);
       setSocketConnected(false);
     });
 
     // Handle reconnection
     socketRef.current.on('reconnect', (attemptNumber) => {
-      console.log('Socket.IO reconnected after', attemptNumber, 'attempts');
       setSocketConnected(true);
 
       // Rejoin the service room after reconnection
@@ -285,7 +275,6 @@ const SongView = () => {
 
     // Handle reconnection attempts
     socketRef.current.on('reconnect_attempt', (attemptNumber) => {
-      console.log('Socket.IO reconnection attempt', attemptNumber);
     });
 
     // Handle reconnection errors
@@ -307,7 +296,6 @@ const SongView = () => {
       const currentSongId = currentSongIdRef.current;
 
       if (!userIsLeader && isFollowModeRef.current && currentSetlistContext?.setlist) {
-        console.log('[SongView] Follower received leader-navigated:', songId, songIndex);
 
         // Set flag to skip initialization (we'll wait for leader-transpose event)
         leaderCommandReceivedRef.current = true;
@@ -316,7 +304,6 @@ const SongView = () => {
         // Longer timeout for production network conditions
         setTimeout(() => {
           if (leaderCommandReceivedRef.current) {
-            console.log('[SongView] Failsafe: clearing leaderCommandReceivedRef after timeout');
             leaderCommandReceivedRef.current = false;
           }
         }, 2500);
@@ -339,7 +326,6 @@ const SongView = () => {
       const currentSongId = currentSongIdRef.current;
 
       if (!userIsLeader && isFollowModeRef.current) {
-        console.log('[SongView] Follower received leader-transposed:', newTransposition);
         setTransposition(newTransposition);
         songTranspositionsRef.current.set(currentSongId, newTransposition);
 
@@ -356,7 +342,6 @@ const SongView = () => {
 
     socketRef.current.on('leader-changed-font', ({ fontSize: newFontSize }) => {
       if (!userIsLeader && isFollowModeRef.current) {
-        console.log('Leader changed font size to:', newFontSize);
         setFontSize(newFontSize);
       }
     });
@@ -366,7 +351,6 @@ const SongView = () => {
       const currentSongId = currentSongIdRef.current;
 
       if (!userIsLeader && isFollowModeRef.current) {
-        console.log('Syncing state from leader:', state);
         if (state.currentSongIndex !== undefined && currentSetlistContext?.setlist) {
           const syncSong = currentSetlistContext.setlist[state.currentSongIndex];
           if (syncSong && syncSong.id.toString() !== currentSongId) {
@@ -389,12 +373,10 @@ const SongView = () => {
     });
 
     socketRef.current.on('room-update', ({ leaderSocketId, followerCount }) => {
-      console.log('Room update - Leader:', leaderSocketId, 'Followers:', followerCount);
     });
 
     // Handle leader disconnection - switch to free mode
     socketRef.current.on('leader-disconnected', ({ message }) => {
-      console.log('Leader disconnected from service');
       if (!userIsLeader) {
         setIsFollowMode(false); // Automatically switch to free mode
         setToastMessage(message || 'Leader disconnected - switched to free mode');
@@ -404,7 +386,6 @@ const SongView = () => {
 
     // Handle leader reconnection
     socketRef.current.on('leader-reconnected', ({ message }) => {
-      console.log('Leader reconnected to service');
       if (!userIsLeader) {
         setToastMessage(message || 'Leader reconnected - you can enable follow mode');
         setShowToast(true);
@@ -414,7 +395,6 @@ const SongView = () => {
     // Cleanup on unmount or when dependencies change
     return () => {
       if (socketRef.current) {
-        console.log('SongView cleaning up socket listeners');
 
         // Remove all event listeners to prevent memory leaks
         socketRef.current.off('connect');
@@ -473,7 +453,6 @@ const SongView = () => {
   useEffect(() => {
     if (isExpanded && song) {
       // When navigating to a new song in expanded mode, recalculate optimal font size
-      console.log('Song changed in expanded mode, recalculating font size...');
       setTimeout(() => {
         calculateOptimalFontSize();
       }, 200); // Give time for new content to render
@@ -491,8 +470,6 @@ const SongView = () => {
     // Use viewport height as available space (full screen mode)
     const availableHeight = window.innerHeight - 20; // small buffer
 
-    console.log('=== Fullscreen Font Size Calculation ===');
-    console.log('Available height:', availableHeight);
 
     // Binary search for the largest font size that fits vertically
     let minSize = 10;
@@ -516,7 +493,6 @@ const SongView = () => {
 
       const fits = contentHeight <= availableHeight;
 
-      console.log(`Test ${i + 1}: size=${testSize.toFixed(1)}px, contentHeight=${contentHeight}, fits=${fits}`);
 
       if (fits) {
         optimalSize = testSize;
@@ -531,8 +507,6 @@ const SongView = () => {
     // Restore original font size temporarily (React will apply the new one)
     chordDisplay.style.fontSize = originalFontSize;
 
-    console.log('Final optimal size:', Math.floor(optimalSize));
-    console.log('=========================================');
 
     return Math.floor(optimalSize);
   };
@@ -628,7 +602,6 @@ const SongView = () => {
     if (setlistContext?.serviceId && id) {
       try {
         await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
-        console.log('[SongView] Transposition saved to database:', newTransposition);
       } catch (error) {
         console.error('[SongView] Failed to save transposition:', error);
       }
@@ -661,7 +634,6 @@ const SongView = () => {
     if (setlistContext?.serviceId && id) {
       try {
         await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
-        console.log('[SongView] Transposition saved to database:', newTransposition);
       } catch (error) {
         console.error('[SongView] Failed to save transposition:', error);
       }
@@ -693,7 +665,6 @@ const SongView = () => {
     if (setlistContext?.serviceId && id) {
       try {
         await serviceService.updateSongTransposition(setlistContext.serviceId, id, 0);
-        console.log('[SongView] Transposition reset saved to database');
       } catch (error) {
         console.error('[SongView] Failed to save transposition reset:', error);
       }
@@ -725,7 +696,6 @@ const SongView = () => {
     if (setlistContext?.serviceId && id) {
       try {
         await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
-        console.log('[SongView] Key selection saved to database:', newTransposition);
       } catch (error) {
         console.error('[SongView] Failed to save key selection:', error);
       }
@@ -800,7 +770,6 @@ const SongView = () => {
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
-      console.log('[SongView] Leader navigating to next song, emitting navigation');
       socketRef.current.emit('leader-navigate', {
         serviceId: setlistContext.serviceId,
         songId: nextSongId,
@@ -809,13 +778,11 @@ const SongView = () => {
 
       // Emit the transposition for this song - use multiple emissions to ensure delivery in production
       const nextSongTransposition = nextSong.transposition || 0;
-      console.log('[SongView] Leader will emit transposition for next song:', nextSongTransposition);
 
       // Triple retry with staggered timing for maximum reliability
       // First emission after 400ms
       setTimeout(() => {
         if (socketRef.current?.connected) {
-          console.log('[SongView] Leader emitting transposition (1st):', nextSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: nextSongTransposition
@@ -826,7 +793,6 @@ const SongView = () => {
       // Second emission after 700ms
       setTimeout(() => {
         if (socketRef.current?.connected) {
-          console.log('[SongView] Leader emitting transposition (2nd):', nextSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: nextSongTransposition
@@ -837,7 +803,6 @@ const SongView = () => {
       // Third emission after 1000ms (final retry before failsafe)
       setTimeout(() => {
         if (socketRef.current?.connected) {
-          console.log('[SongView] Leader emitting transposition (3rd):', nextSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: nextSongTransposition
@@ -865,7 +830,6 @@ const SongView = () => {
 
     // Broadcast to followers if user is leader
     if (isLeader && socketRef.current && setlistContext?.serviceId) {
-      console.log('[SongView] Leader navigating to previous song, emitting navigation');
       socketRef.current.emit('leader-navigate', {
         serviceId: setlistContext.serviceId,
         songId: prevSongId,
@@ -874,13 +838,11 @@ const SongView = () => {
 
       // Emit the transposition for this song - use multiple emissions to ensure delivery in production
       const prevSongTransposition = prevSong.transposition || 0;
-      console.log('[SongView] Leader will emit transposition for previous song:', prevSongTransposition);
 
       // Triple retry with staggered timing for maximum reliability
       // First emission after 400ms
       setTimeout(() => {
         if (socketRef.current?.connected) {
-          console.log('[SongView] Leader emitting transposition (1st):', prevSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: prevSongTransposition
@@ -891,7 +853,6 @@ const SongView = () => {
       // Second emission after 700ms
       setTimeout(() => {
         if (socketRef.current?.connected) {
-          console.log('[SongView] Leader emitting transposition (2nd):', prevSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: prevSongTransposition
@@ -902,7 +863,6 @@ const SongView = () => {
       // Third emission after 1000ms (final retry before failsafe)
       setTimeout(() => {
         if (socketRef.current?.connected) {
-          console.log('[SongView] Leader emitting transposition (3rd):', prevSongTransposition);
           socketRef.current.emit('leader-transpose', {
             serviceId: setlistContext.serviceId,
             transposition: prevSongTransposition
@@ -950,20 +910,16 @@ const SongView = () => {
 
   // Toggle expanded view
   const toggleExpanded = () => {
-    console.log('toggleExpanded called, current isExpanded:', isExpanded);
 
     if (!isExpanded) {
-      console.log('Entering expanded mode...');
       // Entering expanded mode - calculate optimal font size
       setIsExpanded(true);
 
       // Use setTimeout to allow DOM to update first
       setTimeout(() => {
-        console.log('Calling calculateOptimalFontSize...');
         calculateOptimalFontSize();
       }, 100);
     } else {
-      console.log('Exiting expanded mode...');
       // Exiting expanded mode
       setIsExpanded(false);
     }
@@ -980,8 +936,6 @@ const SongView = () => {
     // Get available height (container's actual height)
     const containerHeight = container.clientHeight;
 
-    console.log('=== Normal Mode Font Size Calculation ===');
-    console.log('Container height:', containerHeight);
 
     // Binary search for optimal font size
     let minSize = 12;
@@ -1001,7 +955,6 @@ const SongView = () => {
       // Check if content fits
       const contentHeight = chordDisplay.scrollHeight;
 
-      console.log(`Test ${i + 1}: fontSize=${testSize.toFixed(2)}px, contentHeight=${contentHeight}px, containerHeight=${containerHeight}px`);
 
       if (contentHeight <= containerHeight - buffer) {
         optimalSize = testSize;
@@ -1016,8 +969,6 @@ const SongView = () => {
     }
 
     const finalSize = Math.floor(optimalSize);
-    console.log('Final normal mode font size:', finalSize);
-    console.log('=========================================');
 
     setAutoFontSize(finalSize);
     setFontSize(finalSize);
@@ -1061,12 +1012,6 @@ const SongView = () => {
     const lineElements = chordDisplay.querySelectorAll('.line-with-notes');
     const totalLines = lineElements.length;
 
-    console.log('=== Font Size Calculation ===');
-    console.log('Viewport dimensions:', { width: viewportWidth, height: viewportHeight });
-    console.log('Padding vertical:', paddingVertical);
-    console.log('Available height:', availableHeight);
-    console.log('Total lines in song:', totalLines);
-    console.log('Line height ratio:', lineHeightRatio);
 
     if (totalLines === 0) {
       console.error('No lines found in content!');
@@ -1077,7 +1022,6 @@ const SongView = () => {
     const neededLineHeight = availableHeight / totalLines;
     const initialFontSize = neededLineHeight / lineHeightRatio;
 
-    console.log('Initial calculated font size:', initialFontSize);
 
     // Binary search for the largest font size that doesn't cause scrolling
     let minSize = 10;
@@ -1104,7 +1048,6 @@ const SongView = () => {
       const heightFits = contentHeight <= containerHeight - buffer;
       const widthFits = contentWidth <= containerWidth - buffer;
 
-      console.log(`Test ${i + 1}: fontSize=${testSize.toFixed(2)}px, h=${contentHeight}/${containerHeight}, w=${contentWidth}/${containerWidth}`);
 
       if (heightFits && widthFits) {
         // Content fits with buffer, try larger
@@ -1121,8 +1064,6 @@ const SongView = () => {
       }
     }
 
-    console.log('Final optimal font size:', Math.floor(optimalSize));
-    console.log('===============================');
 
     // Apply the optimal font size
     setExpandedFontSize(Math.floor(optimalSize));

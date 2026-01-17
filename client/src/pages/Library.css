@@ -1,5 +1,5 @@
 .library-page {
-  padding: 80px 20px 80px 20px;
+  padding: 120px 20px 80px 20px; /* Extra top padding for fixed search */
   min-height: 100vh;
   background-color: transparent;
 }
@@ -9,15 +9,21 @@
   margin: 0 auto;
 }
 
-.search-section {
+/* Fixed search section at top */
+.search-section-fixed {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 10px 20px;
+}
+
+.search-section-inner {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
-  position: sticky;
-  top: 70px;
-  z-index: 10;
-  background-color: transparent;
-  padding: 10px 0;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .search-input-library {
