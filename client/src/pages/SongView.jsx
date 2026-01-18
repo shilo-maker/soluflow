@@ -25,7 +25,7 @@ const SongView = () => {
   const touchStartRef = useRef(null);
   const touchEndRef = useRef(null);
   const socketRef = useRef(null);
-  const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
+  const isFollowModeRef = useRef(false); // Ref to access current follow mode in socket handlers
   const setlistContextRef = useRef(null); // Ref to access current setlist context in socket handlers
   const currentSongIdRef = useRef(null); // Ref to track current song ID
 
@@ -75,7 +75,7 @@ const SongView = () => {
   // Persist follow mode across song navigations using sessionStorage
   const [isFollowMode, setIsFollowMode] = useState(() => {
     const stored = sessionStorage.getItem('followMode');
-    return stored !== null ? stored === 'true' : true;
+    return stored !== null ? stored === 'true' : false; // Default to free mode
   });
   const [isLeader, setIsLeader] = useState(false);
   const [socketConnected, setSocketConnected] = useState(true); // Track socket connection status

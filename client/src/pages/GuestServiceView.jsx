@@ -14,7 +14,7 @@ const GuestServiceView = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef(null);
-  const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
+  const isFollowModeRef = useRef(false); // Ref to access current follow mode in socket handlers
   const currentSongIdRef = useRef(null); // Track current song ID for socket handler validation
 
   const [serviceDetails, setServiceDetails] = useState(null);
@@ -29,8 +29,8 @@ const GuestServiceView = () => {
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [socketConnected, setSocketConnected] = useState(true); // Track socket connection status
 
-  // Real-time sync state (guests are always followers)
-  const [isFollowMode, setIsFollowMode] = useState(true);
+  // Real-time sync state (guests start in free mode but can choose to follow)
+  const [isFollowMode, setIsFollowMode] = useState(false);
 
   // Keep ref in sync with state for socket handlers
   useEffect(() => {

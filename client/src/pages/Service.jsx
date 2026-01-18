@@ -29,7 +29,7 @@ const Service = () => {
   const songPillsRef = useRef(null);
   const socketRef = useRef(null);
   const previousServiceIdRef = useRef(null);
-  const isFollowModeRef = useRef(true); // Ref to access current follow mode in socket handlers
+  const isFollowModeRef = useRef(false); // Ref to access current follow mode in socket handlers
   const transpositionSaveTimerRef = useRef(null); // Debounce timer for transposition saves
   const currentSongIdRef = useRef(null); // Track current song ID for socket handler validation
 
@@ -60,7 +60,7 @@ const Service = () => {
   const [showPastEvents, setShowPastEvents] = useState(false);
 
   // Real-time sync state
-  const [isFollowMode, setIsFollowMode] = useState(true); // Default to follow mode
+  const [isFollowMode, setIsFollowMode] = useState(false); // Default to free mode
 
   // Keep ref in sync with state for socket handlers
   useEffect(() => {
