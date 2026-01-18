@@ -335,12 +335,8 @@ const Service = () => {
       }
     });
 
-    socketRef.current.on('leader-changed-font', ({ fontSize: newFontSize }) => {
-      if (!userIsLeader && isFollowModeRef.current) {
-        console.log('Leader changed font size to:', newFontSize);
-        setFontSize(newFontSize);
-      }
-    });
+    // Font size, display mode, and layout are personal preferences - not synced
+    // Only navigation and transpose are synced with followers
 
     socketRef.current.on('sync-state', (state) => {
       if (!userIsLeader) {
@@ -350,9 +346,7 @@ const Service = () => {
         }
         // Don't sync transposition here - it should be loaded from database per song
         // Transposition will be synced via leader-transposed event when leader actively changes it
-        if (state.fontSize !== undefined) {
-          setFontSize(state.fontSize);
-        }
+        // Font size is personal preference - not synced
       }
     });
 
@@ -422,7 +416,6 @@ const Service = () => {
         socketRef.current.off('reconnect_failed');
         socketRef.current.off('leader-navigated');
         socketRef.current.off('leader-transposed');
-        socketRef.current.off('leader-changed-font');
         socketRef.current.off('sync-state');
         socketRef.current.off('became-leader');
         socketRef.current.off('leader-changed');
@@ -463,27 +456,13 @@ const Service = () => {
   const zoomIn = () => {
     const newFontSize = Math.min(fontSize + 2, 24);
     setFontSize(newFontSize);
-
-    // Broadcast to followers if user is leader
-    if (isLeader && socketRef.current && selectedService) {
-      socketRef.current.emit('leader-font-size', {
-        serviceId: selectedService.id,
-        fontSize: newFontSize
-      });
-    }
+    // Font size is a personal preference - not synced with followers
   };
 
   const zoomOut = () => {
     const newFontSize = Math.max(fontSize - 2, 10);
     setFontSize(newFontSize);
-
-    // Broadcast to followers if user is leader
-    if (isLeader && socketRef.current && selectedService) {
-      socketRef.current.emit('leader-font-size', {
-        serviceId: selectedService.id,
-        fontSize: newFontSize
-      });
-    }
+    // Font size is a personal preference - not synced with followers
   };
 
   const transposeUp = () => {

@@ -28,6 +28,7 @@ const SongView = () => {
   const isFollowModeRef = useRef(false); // Ref to access current follow mode in socket handlers
   const setlistContextRef = useRef(null); // Ref to access current setlist context in socket handlers
   const currentSongIdRef = useRef(null); // Ref to track current song ID
+  const isInternalNavigationRef = useRef(false); // Track if we're navigating within setlist (don't disconnect socket)
 
   // Store transposition per song ID to remember transposition when navigating
   const songTranspositionsRef = useRef(new Map());
@@ -97,6 +98,13 @@ const SongView = () => {
   useEffect(() => {
     setlistContextRef.current = setlistContext;
   }, [setlistContext]);
+
+  // Keep isLeader state in sync with setlistContext
+  useEffect(() => {
+    if (setlistContext?.isLeader !== undefined) {
+      setIsLeader(setlistContext.isLeader);
+    }
+  }, [setlistContext?.isLeader]);
 
   useEffect(() => {
     currentSongIdRef.current = id;
@@ -248,14 +256,30 @@ const SongView = () => {
   // Socket.IO connection for real-time sync
   // Extract serviceId to use as a stable dependency - socket stays connected across song navigations
   const serviceId = setlistContext?.serviceId;
+  const connectedServiceIdRef = useRef(null); // Track which service we're connected to
 
   useEffect(() => {
     if (!serviceId) return;
 
-    // In SongView, we're always a follower (leader controls from Service page)
-    // Check if we're passed the isLeader flag from Service page
-    const userIsLeader = setlistContextRef.current?.isLeader === true;
+    // In SongView, check if we're passed the isLeader flag from Service page
+    // Read directly from setlistContext (not ref) since ref might not be set yet on first render
+    const userIsLeader = setlistContext?.isLeader === true;
     setIsLeader(userIsLeader);
+
+    // Skip socket setup if already connected to this service
+    if (socketRef.current?.connected && connectedServiceIdRef.current === serviceId) {
+      console.log('[SongView] Socket already connected to service', serviceId);
+      return;
+    }
+
+    // Disconnect previous socket if connected to a different service
+    if (socketRef.current && connectedServiceIdRef.current !== serviceId) {
+      console.log('[SongView] Switching service, disconnecting old socket');
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
+    connectedServiceIdRef.current = serviceId;
 
     // Connect to Socket.IO server
     const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5002';
@@ -346,6 +370,7 @@ const SongView = () => {
             }, 2500);
           }
 
+          isInternalNavigationRef.current = true;
           navigate(`/song/${newSong.id}`, {
             state: {
               ...currentSetlistContext,
@@ -381,11 +406,8 @@ const SongView = () => {
       }
     });
 
-    socketRef.current.on('leader-changed-font', ({ fontSize: newFontSize }) => {
-      if (!userIsLeader && isFollowModeRef.current) {
-        setFontSize(newFontSize);
-      }
-    });
+    // Font size, display mode, and layout are personal preferences - not synced
+    // Only navigation and transpose are synced with followers
 
     socketRef.current.on('sync-state', (state) => {
       const currentSetlistContext = setlistContextRef.current;
@@ -395,6 +417,7 @@ const SongView = () => {
         if (state.currentSongIndex !== undefined && currentSetlistContext?.setlist) {
           const syncSong = currentSetlistContext.setlist[state.currentSongIndex];
           if (syncSong && syncSong.id.toString() !== currentSongId) {
+            isInternalNavigationRef.current = true;
             navigate(`/song/${syncSong.id}`, {
               state: {
                 ...currentSetlistContext,
@@ -407,9 +430,7 @@ const SongView = () => {
         if (state.transposition !== undefined) {
           setTransposition(state.transposition);
         }
-        if (state.fontSize !== undefined) {
-          setFontSize(state.fontSize);
-        }
+        // Font size is personal preference - not synced
       }
     });
 
@@ -435,7 +456,15 @@ const SongView = () => {
 
     // Cleanup on unmount or when dependencies change
     return () => {
+      // Skip cleanup if we're navigating within the setlist (socket should stay connected)
+      if (isInternalNavigationRef.current) {
+        console.log('[SongView] Cleanup: internal navigation, keeping socket connected');
+        isInternalNavigationRef.current = false; // Reset for next time
+        return;
+      }
+
       if (socketRef.current) {
+        console.log('[SongView] Cleanup: leaving service, disconnecting socket');
 
         // Remove all event listeners to prevent memory leaks
         socketRef.current.off('connect');
@@ -446,7 +475,6 @@ const SongView = () => {
         socketRef.current.off('reconnect_failed');
         socketRef.current.off('leader-navigated');
         socketRef.current.off('leader-transposed');
-        socketRef.current.off('leader-changed-font');
         socketRef.current.off('sync-state');
         socketRef.current.off('room-update');
         socketRef.current.off('leader-disconnected');
@@ -456,9 +484,10 @@ const SongView = () => {
         socketRef.current.emit('leave-service', { serviceId: serviceId });
         socketRef.current.disconnect();
         socketRef.current = null;
+        connectedServiceIdRef.current = null;
       }
     };
-  }, [serviceId, user, navigate]); // Only reconnect socket when service changes, not when song changes
+  }, [serviceId, user]); // Removed navigate - it's stable and doesn't need to trigger reconnection
 
   // Keyboard navigation - must be before early returns
   useEffect(() => {
@@ -467,6 +496,7 @@ const SongView = () => {
 
       if (e.key === 'ArrowRight' && hasNext) {
         const nextSongId = setlistContext.setlist[currentSetlistIndex + 1].id;
+        isInternalNavigationRef.current = true;
         navigate(`/song/${nextSongId}`, {
           state: {
             ...setlistContext,
@@ -476,6 +506,7 @@ const SongView = () => {
         });
       } else if (e.key === 'ArrowLeft' && hasPrevious) {
         const prevSongId = setlistContext.setlist[currentSetlistIndex - 1].id;
+        isInternalNavigationRef.current = true;
         navigate(`/song/${prevSongId}`, {
           state: {
             ...setlistContext,
@@ -601,27 +632,13 @@ const SongView = () => {
   const zoomIn = () => {
     const newFontSize = Math.min(fontSize + 2, 28);
     setFontSize(newFontSize);
-
-    // Broadcast to followers if user is leader
-    if (isLeader && socketRef.current && setlistContext?.serviceId) {
-      socketRef.current.emit('leader-font-size', {
-        serviceId: setlistContext.serviceId,
-        fontSize: newFontSize
-      });
-    }
+    // Font size is a personal preference - not synced with followers
   };
 
   const zoomOut = () => {
     const newFontSize = Math.max(fontSize - 2, 12);
     setFontSize(newFontSize);
-
-    // Broadcast to followers if user is leader
-    if (isLeader && socketRef.current && setlistContext?.serviceId) {
-      socketRef.current.emit('leader-font-size', {
-        serviceId: setlistContext.serviceId,
-        fontSize: newFontSize
-      });
-    }
+    // Font size is a personal preference - not synced with followers
   };
 
   const transposeUp = async () => {
@@ -825,6 +842,8 @@ const SongView = () => {
       });
     }
 
+    // Mark as internal navigation to keep socket connected
+    isInternalNavigationRef.current = true;
     navigate(`/song/${nextSongId}`, {
       state: {
         ...setlistContext,
@@ -854,6 +873,8 @@ const SongView = () => {
       });
     }
 
+    // Mark as internal navigation to keep socket connected
+    isInternalNavigationRef.current = true;
     navigate(`/song/${prevSongId}`, {
       state: {
         ...setlistContext,

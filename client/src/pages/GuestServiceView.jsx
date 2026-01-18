@@ -167,12 +167,8 @@ const GuestServiceView = () => {
       }
     });
 
-    socketRef.current.on('leader-changed-font', ({ fontSize: newFontSize }) => {
-      if (isFollowModeRef.current) {
-        console.log('Leader changed font size to:', newFontSize);
-        setFontSize(newFontSize);
-      }
-    });
+    // Font size, display mode, and layout are personal preferences - not synced
+    // Only navigation and transpose are synced with followers
 
     socketRef.current.on('sync-state', (state) => {
       if (isFollowModeRef.current) {
@@ -182,9 +178,7 @@ const GuestServiceView = () => {
         }
         // Don't sync transposition here - it should be loaded from database per song
         // Transposition will be synced via leader-navigated or leader-transposed events
-        if (state.fontSize !== undefined) {
-          setFontSize(state.fontSize);
-        }
+        // Font size is personal preference - not synced
       }
     });
 
@@ -223,7 +217,6 @@ const GuestServiceView = () => {
         socketRef.current.off('reconnect_failed');
         socketRef.current.off('leader-navigated');
         socketRef.current.off('leader-transposed');
-        socketRef.current.off('leader-changed-font');
         socketRef.current.off('sync-state');
         socketRef.current.off('room-update');
         socketRef.current.off('leader-disconnected');
