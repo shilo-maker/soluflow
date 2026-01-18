@@ -505,6 +505,31 @@ const SongView = () => {
     };
   }, [serviceId, user]); // Removed navigate - it's stable and doesn't need to trigger reconnection
 
+  // Handle online/offline events for socket connection
+  useEffect(() => {
+    if (!serviceId) return;
+
+    const handleOnline = () => {
+      console.log('[SongView] Back online - attempting socket reconnect');
+      if (socketRef.current && !socketRef.current.connected) {
+        socketRef.current.connect();
+      }
+    };
+
+    const handleOffline = () => {
+      console.log('[SongView] Went offline - socket disconnected');
+      setSocketConnected(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [serviceId]);
+
   // Keyboard navigation - must be before early returns
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -682,7 +707,7 @@ const SongView = () => {
     }
 
     // Broadcast to followers if user is leader (include songId for verification)
-    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+    if (isLeader && socketRef.current?.connected && socketConnected && setlistContext?.serviceId) {
       socketRef.current.emit('leader-transpose', {
         serviceId: setlistContext.serviceId,
         transposition: newTransposition,
@@ -715,7 +740,7 @@ const SongView = () => {
     }
 
     // Broadcast to followers if user is leader (include songId for verification)
-    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+    if (isLeader && socketRef.current?.connected && socketConnected && setlistContext?.serviceId) {
       socketRef.current.emit('leader-transpose', {
         serviceId: setlistContext.serviceId,
         transposition: newTransposition,
@@ -747,7 +772,7 @@ const SongView = () => {
     }
 
     // Broadcast to followers if user is leader (include songId for verification)
-    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+    if (isLeader && socketRef.current?.connected && socketConnected && setlistContext?.serviceId) {
       socketRef.current.emit('leader-transpose', {
         serviceId: setlistContext.serviceId,
         transposition: 0,
@@ -779,7 +804,7 @@ const SongView = () => {
     }
 
     // Broadcast to followers if user is leader (include songId for verification)
-    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+    if (isLeader && socketRef.current?.connected && socketConnected && setlistContext?.serviceId) {
       socketRef.current.emit('leader-transpose', {
         serviceId: setlistContext.serviceId,
         transposition: newTransposition,
@@ -849,7 +874,7 @@ const SongView = () => {
     // Broadcast to followers if user is leader
     // Include transposition in navigation event for immediate sync
     const nextSongTransposition = nextSong.transposition || 0;
-    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+    if (isLeader && socketRef.current?.connected && socketConnected && setlistContext?.serviceId) {
       socketRef.current.emit('leader-navigate', {
         serviceId: setlistContext.serviceId,
         songId: nextSongId,
@@ -880,7 +905,7 @@ const SongView = () => {
     // Broadcast to followers if user is leader
     // Include transposition in navigation event for immediate sync
     const prevSongTransposition = prevSong.transposition || 0;
-    if (isLeader && socketRef.current && setlistContext?.serviceId) {
+    if (isLeader && socketRef.current?.connected && socketConnected && setlistContext?.serviceId) {
       socketRef.current.emit('leader-navigate', {
         serviceId: setlistContext.serviceId,
         songId: prevSongId,

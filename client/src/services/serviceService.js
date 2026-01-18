@@ -1,16 +1,59 @@
 import api from './api';
+import offlineStorage from '../utils/offlineStorage';
 
 const serviceService = {
   // Get all services for authenticated user
   getAllServices: async () => {
-    const response = await api.get('/services');
-    return response.data;
+    try {
+      const response = await api.get('/services');
+      const services = response.data;
+
+      // Save to IndexedDB for offline use
+      if (services && services.length > 0) {
+        for (const service of services) {
+          await offlineStorage.saveService(service).catch(err =>
+            console.warn('Failed to cache service:', err)
+          );
+        }
+      }
+
+      return services;
+    } catch (error) {
+      // Fallback to IndexedDB on network failure
+      console.warn('Network error, trying offline storage:', error.message);
+      const offlineServices = await offlineStorage.getAllServices();
+      if (offlineServices && offlineServices.length > 0) {
+        console.log('Returning services from offline storage');
+        return offlineServices;
+      }
+      throw error;
+    }
   },
 
   // Get single service by ID (with full set list)
   getServiceById: async (id) => {
-    const response = await api.get(`/services/${id}`);
-    return response.data;
+    try {
+      const response = await api.get(`/services/${id}`);
+      const service = response.data;
+
+      // Save to IndexedDB for offline use
+      if (service) {
+        await offlineStorage.saveService(service).catch(err =>
+          console.warn('Failed to cache service:', err)
+        );
+      }
+
+      return service;
+    } catch (error) {
+      // Fallback to IndexedDB on network failure
+      console.warn('Network error, trying offline storage:', error.message);
+      const offlineService = await offlineStorage.getService(parseInt(id, 10));
+      if (offlineService) {
+        console.log('Returning service from offline storage');
+        return offlineService;
+      }
+      throw error;
+    }
   },
 
   // Get service by code (for guest access)

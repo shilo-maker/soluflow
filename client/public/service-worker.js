@@ -14,6 +14,7 @@ const STATIC_ASSETS = [
   '/offline.html',
   '/manifest.json',
   '/solu_flow_logo.png',
+  '/favicon.ico',
   '/favicon.png',
   '/apple-touch-icon.png',
   '/icon-192x192.png',

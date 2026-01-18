@@ -140,7 +140,7 @@ class OfflineStorage {
       });
     } catch (error) {
       console.error('Error getting all songs from offline storage:', error);
-      return [];
+      throw error;
     }
   }
 
@@ -237,7 +237,7 @@ class OfflineStorage {
       });
     } catch (error) {
       console.error('Error getting all services from offline storage:', error);
-      return [];
+      throw error;
     }
   }
 

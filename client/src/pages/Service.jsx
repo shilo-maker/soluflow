@@ -223,14 +223,14 @@ const Service = () => {
     setTransposition(savedTransposition);
 
     // Broadcast to followers if user is leader (include songId for verification)
-    if (isLeader && socketRef.current) {
+    if (isLeader && socketRef.current?.connected && socketConnected && selectedService) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
         transposition: savedTransposition,
         songId: currentSong.id
       });
     }
-  }, [selectedSongIndex, selectedService, serviceDetails, isLeader]);
+  }, [selectedSongIndex, selectedService, serviceDetails, isLeader, socketConnected]);
 
   // Socket.IO connection and real-time sync
   useEffect(() => {
@@ -254,9 +254,14 @@ const Service = () => {
 
     checkWorkspaceAdmin();
 
-    // Connect to Socket.IO server
+    // Connect to Socket.IO server with reconnection config
     const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5002';
-    socketRef.current = io(serverUrl);
+    socketRef.current = io(serverUrl, {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000
+    });
 
     console.log('Connecting to Socket.IO...', serverUrl);
 
@@ -431,6 +436,31 @@ const Service = () => {
     };
   }, [selectedService, user]); // Removed isFollowMode - using ref instead to prevent socket reconnection
 
+  // Handle online/offline events for socket connection
+  useEffect(() => {
+    if (!selectedService) return;
+
+    const handleOnline = () => {
+      console.log('[Service] Back online - attempting socket reconnect');
+      if (socketRef.current && !socketRef.current.connected) {
+        socketRef.current.connect();
+      }
+    };
+
+    const handleOffline = () => {
+      console.log('[Service] Went offline - socket disconnected');
+      setSocketConnected(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [selectedService]);
+
   // Get the set list for the selected service
   const currentSetList = serviceDetails?.songs || [];
   const currentItem = currentSetList[selectedSongIndex];
@@ -471,7 +501,7 @@ const Service = () => {
 
     // Broadcast to followers if user is leader (include songId for verification)
     const currentSong = currentSetList[selectedSongIndex];
-    if (isLeader && socketRef.current && selectedService && currentSong) {
+    if (isLeader && socketRef.current?.connected && socketConnected && selectedService && currentSong) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
         transposition: newTransposition,
@@ -486,7 +516,7 @@ const Service = () => {
 
     // Broadcast to followers if user is leader (include songId for verification)
     const currentSong = currentSetList[selectedSongIndex];
-    if (isLeader && socketRef.current && selectedService && currentSong) {
+    if (isLeader && socketRef.current?.connected && socketConnected && selectedService && currentSong) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
         transposition: newTransposition,
@@ -500,7 +530,7 @@ const Service = () => {
 
     // Broadcast to followers if user is leader (include songId for verification)
     const currentSong = currentSetList[selectedSongIndex];
-    if (isLeader && socketRef.current && selectedService && currentSong) {
+    if (isLeader && socketRef.current?.connected && socketConnected && selectedService && currentSong) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
         transposition: 0,
@@ -514,7 +544,7 @@ const Service = () => {
 
     // Broadcast to followers if user is leader (include songId for verification)
     const currentSong = currentSetList[selectedSongIndex];
-    if (isLeader && socketRef.current && selectedService && currentSong) {
+    if (isLeader && socketRef.current?.connected && socketConnected && selectedService && currentSong) {
       socketRef.current.emit('leader-transpose', {
         serviceId: selectedService.id,
         transposition: newTransposition,
@@ -889,7 +919,7 @@ const Service = () => {
         setIsLeader(newLeaderId === user.id);
 
         // Broadcast leader change via socket
-        if (socketRef.current) {
+        if (socketRef.current?.connected && socketConnected) {
           socketRef.current.emit('leader-changed', {
             serviceId: serviceToPassLeadership.id,
             newLeaderId: newLeaderId
@@ -933,7 +963,7 @@ const Service = () => {
     setSelectedSongIndex(index);
 
     // Broadcast to followers if user is leader (include transposition for immediate sync)
-    if (isLeader && socketRef.current && selectedService && currentSetList[index]) {
+    if (isLeader && socketRef.current?.connected && socketConnected && selectedService && currentSetList[index]) {
       socketRef.current.emit('leader-navigate', {
         serviceId: selectedService.id,
         songId: currentSetList[index].id,

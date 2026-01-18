@@ -81,9 +81,14 @@ const GuestServiceView = () => {
   useEffect(() => {
     if (!serviceDetails || !serviceDetails.id) return;
 
-    // Connect to Socket.IO server
+    // Connect to Socket.IO server with reconnection config
     const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5002';
-    socketRef.current = io(serverUrl);
+    socketRef.current = io(serverUrl, {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000
+    });
 
     console.log('Guest connecting to Socket.IO...', serverUrl);
 
@@ -228,6 +233,31 @@ const GuestServiceView = () => {
       }
     };
   }, [serviceDetails, user]); // Removed isFollowMode - using ref instead to prevent socket reconnection
+
+  // Handle online/offline events for socket connection
+  useEffect(() => {
+    if (!serviceDetails) return;
+
+    const handleOnline = () => {
+      console.log('[GuestServiceView] Back online - attempting socket reconnect');
+      if (socketRef.current && !socketRef.current.connected) {
+        socketRef.current.connect();
+      }
+    };
+
+    const handleOffline = () => {
+      console.log('[GuestServiceView] Went offline - socket disconnected');
+      setSocketConnected(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [serviceDetails]);
 
   const currentSetList = serviceDetails?.songs || [];
   const currentSong = currentSetList[selectedSongIndex];
