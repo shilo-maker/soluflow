@@ -8,6 +8,25 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: slideDown 0.3s ease-out;
   max-width: 90%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.offline-indicator.compact {
+  padding: 10px 14px;
+  border-radius: 50%;
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.offline-indicator.compact:hover {
+  padding: 12px 24px;
+  border-radius: 8px;
+  min-width: auto;
+  min-height: auto;
 }
 
 @keyframes slideDown {
@@ -37,20 +56,37 @@
   gap: 10px;
 }
 
+.offline-indicator.compact .offline-indicator-content {
+  gap: 0;
+}
+
+.offline-indicator.compact:hover .offline-indicator-content {
+  gap: 10px;
+}
+
 .offline-indicator-icon {
   font-size: 20px;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .offline-indicator-text {
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
   .offline-indicator {
     top: 10px;
+    left: 10px;
     padding: 10px 20px;
+  }
+
+  .offline-indicator.compact {
+    padding: 8px 12px;
+    min-width: 36px;
+    min-height: 36px;
   }
 
   .offline-indicator-icon {
