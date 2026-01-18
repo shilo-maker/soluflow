@@ -154,57 +154,25 @@ const Library = () => {
     };
   }, [selectedSong]);
 
-  // Fetch songs on component mount with cancellation support and offline caching
+  // Fetch songs on component mount with cancellation support
+  // Note: Offline caching is handled by songService via IndexedDB (offlineStorage)
   useEffect(() => {
     const abortController = new AbortController();
     let isMounted = true;
-
-    const SONGS_CACHE_KEY = 'soluflow_songs_cache';
-    const CACHE_TIMESTAMP_KEY = 'soluflow_songs_cache_timestamp';
-
-    const getCachedSongs = () => {
-      try {
-        const cached = localStorage.getItem(SONGS_CACHE_KEY);
-        return cached ? JSON.parse(cached) : null;
-      } catch {
-        return null;
-      }
-    };
-
-    const cacheSongs = (songs) => {
-      try {
-        localStorage.setItem(SONGS_CACHE_KEY, JSON.stringify(songs));
-        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-      } catch (e) {
-        console.warn('Failed to cache songs to localStorage:', e);
-      }
-    };
 
     const fetchSongs = async () => {
       // Fetch songs even if user isn't loaded yet - public songs should be visible to everyone
       try {
         setLoading(true);
 
-        // If offline, use cached data immediately
-        if (!navigator.onLine) {
-          const cachedSongs = getCachedSongs();
-          if (cachedSongs && isMounted) {
-            setSongs(cachedSongs);
-            setError(null);
-            setLoading(false);
-            return;
-          }
-        }
-
-        // Don't pass workspace_id to show ALL public songs from all workspaces
+        // songService.getAllSongs() handles offline caching via IndexedDB automatically
+        // It will return cached data if network request fails
         const data = await songService.getAllSongs();
 
         // Only update state if component is still mounted
         if (isMounted) {
           setSongs(data);
           setError(null);
-          // Cache songs for offline use
-          cacheSongs(data);
         }
       } catch (err) {
         // Ignore abort errors
@@ -212,14 +180,7 @@ const Library = () => {
 
         if (isMounted) {
           console.error('Error fetching songs:', err);
-          // Try to load from cache on error (e.g., network failure)
-          const cachedSongs = getCachedSongs();
-          if (cachedSongs) {
-            setSongs(cachedSongs);
-            setError(null);
-          } else {
-            setError(getFriendlyErrorMessage(err));
-          }
+          setError(getFriendlyErrorMessage(err));
         }
       } finally {
         if (isMounted) {

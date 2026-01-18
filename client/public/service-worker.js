@@ -11,10 +11,13 @@ const API_CACHE_NAME = `soluflow-api-v${CACHE_VERSION}`;
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/offline.html',
   '/manifest.json',
   '/solu_flow_logo.png',
   '/favicon.png',
   '/apple-touch-icon.png',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
 ];
 
 // External font URLs to cache for offline support
@@ -139,7 +142,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   // For HTML documents (including index.html) - Network first with cache for offline
-  if (request.headers.get('accept').includes('text/html')) {
+  const acceptHeader = request.headers.get('accept') || '';
+  if (acceptHeader.includes('text/html')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -159,11 +163,17 @@ self.addEventListener('fetch', (event) => {
               console.log('[Service Worker] Serving HTML from cache (offline mode)');
               return cachedResponse;
             }
-            // If no cached HTML, return offline page
-            return new Response(
-              '<html><body><h1>Offline</h1><p>Please check your internet connection.</p></body></html>',
-              { headers: { 'Content-Type': 'text/html' } }
-            );
+            // If no cached HTML, return dedicated offline page
+            return caches.match('/offline.html').then((offlinePage) => {
+              if (offlinePage) {
+                return offlinePage;
+              }
+              // Fallback if offline.html not cached
+              return new Response(
+                '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline - SoluFlow</title><style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#1a1a2e;color:#fff}.offline{text-align:center;padding:2rem}h1{color:#d4a560;margin-bottom:1rem}p{opacity:0.8}</style></head><body><div class="offline"><h1>You\'re Offline</h1><p>Please check your internet connection and try again.</p></div></body></html>',
+                { headers: { 'Content-Type': 'text/html' } }
+              );
+            });
           });
         })
     );

@@ -118,16 +118,17 @@ export const WorkspaceProvider = ({ children }) => {
       const data = await workspaceService.switchWorkspace(workspaceId);
 
       // Update workspaces list to reflect new active workspace
-      setWorkspaces(prev => {
-        const updated = prev.map(ws => ({
-          ...ws,
-          is_active: ws.id === workspaceId
-        }));
-        // Update active workspace from updated list
-        const newActive = updated.find(ws => ws.id === workspaceId);
-        setActiveWorkspace(newActive);
-        return updated;
-      });
+      const updated = workspaces.map(ws => ({
+        ...ws,
+        is_active: ws.id === workspaceId
+      }));
+      const newActive = updated.find(ws => ws.id === workspaceId);
+
+      setWorkspaces(updated);
+      setActiveWorkspace(newActive);
+
+      // Update cache with new active workspace
+      cacheWorkspaces(updated, newActive);
 
       return data;
     } catch (err) {
@@ -137,7 +138,7 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspaces, cacheWorkspaces]);
 
   // Create new team workspace
   const createWorkspace = useCallback(async (name) => {
@@ -148,7 +149,11 @@ export const WorkspaceProvider = ({ children }) => {
       const newWorkspace = await workspaceService.createWorkspace(name);
 
       // Add new workspace to list
-      setWorkspaces(prev => [...prev, newWorkspace]);
+      const updated = [...workspaces, newWorkspace];
+      setWorkspaces(updated);
+
+      // Update cache with new workspace list
+      cacheWorkspaces(updated, activeWorkspace);
 
       return newWorkspace;
     } catch (err) {
@@ -158,7 +163,7 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspaces, activeWorkspace, cacheWorkspaces]);
 
   // Leave workspace
   const leaveWorkspace = useCallback(async (workspaceId) => {
@@ -168,19 +173,16 @@ export const WorkspaceProvider = ({ children }) => {
 
       await workspaceService.leaveWorkspace(workspaceId);
 
-      // Remove workspace from list and handle active workspace switch
-      setWorkspaces(prev => {
-        const remaining = prev.filter(ws => ws.id !== workspaceId);
-        return remaining;
-      });
+      // Remove workspace from list
+      const remaining = workspaces.filter(ws => ws.id !== workspaceId);
+      setWorkspaces(remaining);
 
       // If leaving active workspace, switch to first available
-      setActiveWorkspace(current => {
-        if (current?.id === workspaceId) {
-          return null; // Will be updated by loadWorkspaces
-        }
-        return current;
-      });
+      const newActive = activeWorkspace?.id === workspaceId ? null : activeWorkspace;
+      setActiveWorkspace(newActive);
+
+      // Update cache
+      cacheWorkspaces(remaining, newActive);
     } catch (err) {
       console.error('Failed to leave workspace:', err);
       setError(err.message || 'Failed to leave workspace');
@@ -188,7 +190,7 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspaces, activeWorkspace, cacheWorkspaces]);
 
   // Delete workspace
   const deleteWorkspace = useCallback(async (workspaceId) => {
@@ -199,15 +201,15 @@ export const WorkspaceProvider = ({ children }) => {
       await workspaceService.deleteWorkspace(workspaceId);
 
       // Remove workspace from list
-      setWorkspaces(prev => prev.filter(ws => ws.id !== workspaceId));
+      const remaining = workspaces.filter(ws => ws.id !== workspaceId);
+      setWorkspaces(remaining);
 
       // If deleting active workspace, clear it
-      setActiveWorkspace(current => {
-        if (current?.id === workspaceId) {
-          return null;
-        }
-        return current;
-      });
+      const newActive = activeWorkspace?.id === workspaceId ? null : activeWorkspace;
+      setActiveWorkspace(newActive);
+
+      // Update cache
+      cacheWorkspaces(remaining, newActive);
     } catch (err) {
       console.error('Failed to delete workspace:', err);
       setError(err.message || 'Failed to delete workspace');
@@ -215,7 +217,7 @@ export const WorkspaceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspaces, activeWorkspace, cacheWorkspaces]);
 
   // Generate invite link
   const generateInvite = useCallback(async (workspaceId, expiresInDays = 7) => {
