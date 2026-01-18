@@ -14,9 +14,8 @@ root.render(
   </React.StrictMode>
 );
 
-// Unregister service worker during development to prevent caching issues
-// Re-enable for production builds
-serviceWorkerRegistration.unregister();
+// Register service worker for offline support (PWA)
+serviceWorkerRegistration.register();
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

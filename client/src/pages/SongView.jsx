@@ -113,14 +113,47 @@ const SongView = () => {
   useEffect(() => {
     let isMounted = true;
 
+    const SONG_CACHE_KEY = `soluflow_song_${id}`;
+
+    const getCachedSong = () => {
+      try {
+        const cached = localStorage.getItem(SONG_CACHE_KEY);
+        return cached ? JSON.parse(cached) : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const cacheSong = (songData) => {
+      try {
+        localStorage.setItem(SONG_CACHE_KEY, JSON.stringify(songData));
+      } catch (e) {
+        console.warn('Failed to cache song to localStorage:', e);
+      }
+    };
+
     const fetchSong = async () => {
       try {
         setLoading(true);
+
+        // If offline, use cached data immediately
+        if (!navigator.onLine) {
+          const cachedSong = getCachedSong();
+          if (cachedSong && isMounted) {
+            setSong(cachedSong);
+            setError(null);
+            setLoading(false);
+            return;
+          }
+        }
+
         const data = await songService.getSongById(id);
 
         if (isMounted) {
           setSong(data);
           setError(null);
+          // Cache song for offline use
+          cacheSong(data);
         }
       } catch (err) {
         // Ignore abort errors
@@ -128,7 +161,14 @@ const SongView = () => {
 
         if (isMounted) {
           console.error('Error fetching song:', err);
-          setError('Failed to load song. Please try again.');
+          // Try to load from cache on error
+          const cachedSong = getCachedSong();
+          if (cachedSong) {
+            setSong(cachedSong);
+            setError(null);
+          } else {
+            setError('Failed to load song. Please try again.');
+          }
         }
       } finally {
         if (isMounted) {
@@ -266,6 +306,13 @@ const SongView = () => {
     const userIsLeader = setlistContext?.isLeader === true;
     setIsLeader(userIsLeader);
 
+    // Skip socket setup if offline - real-time sync not available
+    if (!navigator.onLine) {
+      console.log('[SongView] Offline - skipping socket connection');
+      setSocketConnected(false);
+      return;
+    }
+
     // Skip socket setup if already connected to this service
     if (socketRef.current?.connected && connectedServiceIdRef.current === serviceId) {
       console.log('[SongView] Socket already connected to service', serviceId);
@@ -283,7 +330,12 @@ const SongView = () => {
 
     // Connect to Socket.IO server
     const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5002';
-    socketRef.current = io(serverUrl);
+    socketRef.current = io(serverUrl, {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000
+    });
 
 
     socketRef.current.on('connect', () => {

@@ -19,7 +19,40 @@ export const WorkspaceProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load user's workspaces
+  // LocalStorage cache keys for offline support
+  const WORKSPACES_CACHE_KEY = 'soluflow_workspaces_cache';
+  const ACTIVE_WORKSPACE_KEY = 'soluflow_active_workspace';
+
+  const getCachedWorkspaces = useCallback(() => {
+    try {
+      const cached = localStorage.getItem(WORKSPACES_CACHE_KEY);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const cacheWorkspaces = useCallback((data, active) => {
+    try {
+      localStorage.setItem(WORKSPACES_CACHE_KEY, JSON.stringify(data));
+      if (active) {
+        localStorage.setItem(ACTIVE_WORKSPACE_KEY, JSON.stringify(active));
+      }
+    } catch (e) {
+      console.warn('Failed to cache workspaces to localStorage:', e);
+    }
+  }, []);
+
+  const getCachedActiveWorkspace = useCallback(() => {
+    try {
+      const cached = localStorage.getItem(ACTIVE_WORKSPACE_KEY);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Load user's workspaces with offline support
   const loadWorkspaces = useCallback(async () => {
     if (!isAuthenticated) {
       setWorkspaces([]);
@@ -30,19 +63,44 @@ export const WorkspaceProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+
+      // If offline, use cached data immediately
+      if (!navigator.onLine) {
+        const cachedData = getCachedWorkspaces();
+        if (cachedData) {
+          setWorkspaces(cachedData);
+          const active = cachedData.find(ws => ws.is_active) || getCachedActiveWorkspace();
+          setActiveWorkspace(active || null);
+          setLoading(false);
+          return;
+        }
+      }
+
       const data = await workspaceService.getAllWorkspaces();
       setWorkspaces(data);
 
       // Set active workspace (the one marked as active)
       const active = data.find(ws => ws.is_active);
       setActiveWorkspace(active || null);
+
+      // Cache for offline use
+      cacheWorkspaces(data, active);
     } catch (err) {
       console.error('Failed to load workspaces:', err);
-      setError(err.message || 'Failed to load workspaces');
+      // Try to load from cache on error
+      const cachedData = getCachedWorkspaces();
+      if (cachedData) {
+        setWorkspaces(cachedData);
+        const active = cachedData.find(ws => ws.is_active) || getCachedActiveWorkspace();
+        setActiveWorkspace(active || null);
+        setError(null);
+      } else {
+        setError(err.message || 'Failed to load workspaces');
+      }
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, getCachedWorkspaces, getCachedActiveWorkspace, cacheWorkspaces]);
 
   // Load workspaces when user logs in
   useEffect(() => {

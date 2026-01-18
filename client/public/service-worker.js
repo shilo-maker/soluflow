@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-globals */
 
 // Service Worker for SoluFlow - Offline Support
-// Version is updated automatically on each build
-const CACHE_VERSION = Date.now();
+// Increment version manually when deploying significant updates
+const CACHE_VERSION = '1.0.0';
 const CACHE_NAME = `soluflow-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `soluflow-api-v${CACHE_VERSION}`;
 
@@ -13,6 +13,14 @@ const STATIC_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/solu_flow_logo.png',
+  '/favicon.png',
+  '/apple-touch-icon.png',
+];
+
+// External font URLs to cache for offline support
+const FONT_ORIGINS = [
+  'https://fonts.googleapis.com',
+  'https://fonts.gstatic.com'
 ];
 
 // Install event - cache static assets
@@ -56,7 +64,31 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip cross-origin requests
+  // Handle Google Fonts - cache for offline use
+  if (FONT_ORIGINS.some(origin => url.origin === origin)) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(request).then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        }).catch(() => {
+          // Font failed to load - return empty response, CSS fallbacks will handle it
+          return new Response('', { status: 404 });
+        });
+      })
+    );
+    return;
+  }
+
+  // Skip other cross-origin requests
   if (url.origin !== location.origin) {
     return;
   }
