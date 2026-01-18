@@ -541,6 +541,34 @@
   box-shadow: var(--shadow-md);
 }
 
+.song-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.listen-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: white;
+  background: linear-gradient(135deg, var(--color-success, #28a745) 0%, #34ce57 100%);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.listen-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
 .song-display {
   background-color: white;
   border-radius: var(--border-radius-lg);

@@ -1246,7 +1246,20 @@ const Service = () => {
             >
               <div className="song-header">
                 <div className="song-info">
-                  <h2 className="song-title">{currentSong.title}</h2>
+                  <div className="song-title-row">
+                    <h2 className="song-title">{currentSong.title}</h2>
+                    {currentSong.listen_url && (
+                      <a
+                        href={currentSong.listen_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="listen-link"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        🎵 Listen
+                      </a>
+                    )}
+                  </div>
                   <p className="song-authors">{currentSong.authors}</p>
                 </div>
                 <div className="song-meta">
