@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
 import { stripChords } from '../utils/transpose';
 import './ServiceEditModal.css';
 
 const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSave, onUpdate }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     title: '',
     datetime: '',
@@ -243,7 +245,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content service-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{service ? 'Edit Service' : 'Create Service'}</h2>
+          <h2>{service ? t('serviceEdit.editTitle') : t('serviceEdit.createTitle')}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
@@ -252,7 +254,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
             {error && <div className="modal-error">{error}</div>}
 
             <div className="form-group">
-              <label htmlFor="datetime">Date & Time *</label>
+              <label htmlFor="datetime">{t('serviceEdit.dateTime')} *</label>
               <input
                 type="datetime-local"
                 id="datetime"
@@ -264,21 +266,21 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
             </div>
 
             <div className="form-group">
-              <label htmlFor="location">Venue *</label>
+              <label htmlFor="location">{t('serviceEdit.venue')} *</label>
               <input
                 type="text"
                 id="location"
                 name="location"
                 value={formData.location}
                 onChange={handleChange}
-                placeholder="e.g., Oasis Church"
+                placeholder={t('serviceEdit.venuePlaceholder')}
                 required
               />
             </div>
 
             {formData.datetime && formData.location && (
               <div className="title-preview">
-                <strong>Service Title:</strong> {(() => {
+                <strong>{t('serviceEdit.serviceTitle')}:</strong> {(() => {
                   const dateObj = new Date(formData.datetime);
                   const day = String(dateObj.getDate()).padStart(2, '0');
                   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -290,12 +292,51 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
             {/* Setlist Section - Show for both create and edit modes */}
             <div className="setlist-section">
               <h3 className="setlist-section-title">
-                {service ? 'Edit Setlist' : 'Add Songs to Setlist'}
+                {service ? t('serviceEdit.editSetlist') : t('serviceEdit.addToSetlist')}
               </h3>
 
               <div className="setlist-mini-builder">
+                  {/* Available Songs */}
+                  <div className="available-songs-mini">
+                    <input
+                      type="text"
+                      className="song-search-mini"
+                      placeholder={t('serviceEdit.searchSongs')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <div className="available-songs-list">
+                      {loadingSongs ? (
+                        <div className="loading-songs-mini">{t('serviceEdit.loading')}</div>
+                      ) : filteredSongs.length === 0 ? (
+                        <div className="no-songs-mini">
+                          {searchQuery ? t('serviceEdit.noSongsFound') : t('serviceEdit.noSongsAvailable')}
+                        </div>
+                      ) : (
+                        filteredSongs.map(song => (
+                          <div key={song.id} className="available-song-item-mini">
+                            <div className="song-info-mini">
+                              <div className="song-title-mini">{song.title}</div>
+                              <div className="song-meta-mini">{song.authors}</div>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn-add-mini"
+                              onClick={() => handleAddSong(song)}
+                            >
+                              +
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                <div className="setlist-divider"></div>
+
                 {/* Current Setlist */}
                 <div className="setlist-current-mini">
+                  <h4>{t('serviceEdit.currentSetlist')}</h4>
                   <div className="setlist-with-controls-mini">
                     <div className="reorder-controls-side-mini">
                       <button
@@ -321,7 +362,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                     </div>
                     <div className="selected-songs-list">
                     {setlist.length === 0 ? (
-                      <div className="no-songs-selected">No songs selected yet</div>
+                      <div className="no-songs-selected">{t('serviceEdit.noSongsSelected')}</div>
                     ) : (
                       setlist.map((song, index) => (
                         <div
@@ -352,47 +393,10 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                   </div>
                   {setlist.length > 0 && (
                     <div className="setlist-hint-mini">
-                      Tap a song to select, then use arrows to reorder
+                      {t('serviceEdit.reorderHint')}
                     </div>
                   )}
                 </div>
-
-                  {/* Available Songs */}
-                  <div className="available-songs-mini">
-                    <h4>Available Songs</h4>
-                    <input
-                      type="text"
-                      className="song-search-mini"
-                      placeholder="Search songs..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <div className="available-songs-list">
-                      {loadingSongs ? (
-                        <div className="loading-songs-mini">Loading...</div>
-                      ) : filteredSongs.length === 0 ? (
-                        <div className="no-songs-mini">
-                          {searchQuery ? 'No songs found' : 'No songs available'}
-                        </div>
-                      ) : (
-                        filteredSongs.map(song => (
-                          <div key={song.id} className="available-song-item-mini">
-                            <div className="song-info-mini">
-                              <div className="song-title-mini">{song.title}</div>
-                              <div className="song-meta-mini">{song.authors}</div>
-                            </div>
-                            <button
-                              type="button"
-                              className="btn-add-mini"
-                              onClick={() => handleAddSong(song)}
-                            >
-                              +
-                            </button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -405,14 +409,14 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                 onClick={onClose}
                 disabled={saving}
               >
-                Cancel
+                {t('serviceEdit.cancel')}
               </button>
               <button
                 type="submit"
                 className="btn-save"
                 disabled={saving}
               >
-                {saving ? 'Saving...' : (service ? 'Update Service' : 'Create Service')}
+                {saving ? t('serviceEdit.saving') : (service ? t('serviceEdit.updateButton') : t('serviceEdit.createButton'))}
               </button>
             </div>
           </div>

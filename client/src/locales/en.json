@@ -284,5 +284,29 @@
     "filterLabel": "Filter by tags",
     "clearFilter": "Clear filter",
     "noTags": "No tags yet"
+  },
+  "serviceEdit": {
+    "createTitle": "Create Service",
+    "editTitle": "Edit Service",
+    "dateTime": "Date & Time",
+    "venue": "Venue",
+    "venuePlaceholder": "e.g., Oasis Church",
+    "serviceTitle": "Service Title",
+    "addToSetlist": "Add Songs to Setlist",
+    "editSetlist": "Edit Setlist",
+    "availableSongs": "Available Songs",
+    "currentSetlist": "Current Setlist",
+    "searchSongs": "Search songs...",
+    "noSongsSelected": "No songs selected yet",
+    "noSongsFound": "No songs found",
+    "noSongsAvailable": "No songs available",
+    "loading": "Loading...",
+    "reorderHint": "Tap a song to select, then use arrows to reorder",
+    "cancel": "Cancel",
+    "createButton": "Create Service",
+    "updateButton": "Update Service",
+    "saving": "Saving...",
+    "dateRequired": "Date and time is required",
+    "venueRequired": "Location/Venue is required"
   }
 }

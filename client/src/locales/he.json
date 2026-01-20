@@ -284,5 +284,29 @@
     "filterLabel": "סנן לפי תגיות",
     "clearFilter": "נקה סינון",
     "noTags": "אין תגיות עדיין"
+  },
+  "serviceEdit": {
+    "createTitle": "יצירת אסיפה",
+    "editTitle": "עריכת אסיפה",
+    "dateTime": "תאריך ושעה",
+    "venue": "מיקום",
+    "venuePlaceholder": "לדוגמה, קהילת נווה שלום",
+    "serviceTitle": "כותרת האסיפה",
+    "addToSetlist": "הוסף שירים",
+    "editSetlist": "עריכת רשימת שירים",
+    "availableSongs": "שירים זמינים",
+    "currentSetlist": "רשימת השירים",
+    "searchSongs": "חפש שירים...",
+    "noSongsSelected": "לא נבחרו שירים עדיין",
+    "noSongsFound": "לא נמצאו שירים",
+    "noSongsAvailable": "אין שירים זמינים",
+    "loading": "טוען...",
+    "reorderHint": "לחץ על שיר לבחירה, ואז השתמש בחצים לשינוי סדר",
+    "cancel": "ביטול",
+    "createButton": "צור אסיפה",
+    "updateButton": "עדכן אסיפה",
+    "saving": "שומר...",
+    "dateRequired": "תאריך ושעה נדרשים",
+    "venueRequired": "מיקום נדרש"
   }
 }

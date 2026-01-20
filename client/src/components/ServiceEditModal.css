@@ -222,9 +222,15 @@
 }
 
 .setlist-mini-builder {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 15px;
+}
+
+.setlist-divider {
+  height: 1px;
+  background-color: #dee2e6;
+  margin: 5px 0;
 }
 
 .setlist-current-mini,
@@ -289,11 +295,18 @@
   cursor: not-allowed;
 }
 
-.selected-songs-list,
-.available-songs-list {
+.selected-songs-list {
   border: 1px solid #dee2e6;
   border-radius: 4px;
   max-height: 500px;
+  overflow-y: auto;
+  background-color: #f8f9fa;
+}
+
+.available-songs-list {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  max-height: 250px;
   overflow-y: auto;
   background-color: #f8f9fa;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
