@@ -530,6 +530,16 @@
   font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.next-song-indicator:hover {
+  background-color: #e4e4e4;
+}
+
+.next-song-indicator:active {
+  transform: scale(0.98);
 }
 
 .next-label {

@@ -1368,11 +1368,11 @@ const SongView = () => {
 
       {/* Next Song Indicator - below song content */}
       {!isExpanded && nextSong && (
-        <div className="next-song-indicator">
+        <div className="next-song-indicator" onClick={goToNextSong} style={{ cursor: 'pointer' }}>
           <span className="next-label">{isRTL ? 'הבא ←' : 'Next:'}</span>
           <span className="next-song-title">{nextSong.title}</span>
           <span className="next-song-meta">
-            {convertKeyToFlat(nextSong.key)}{nextSong.bpm ? ` • ${nextSong.bpm} BPM${nextSong.time_signature ? ` (${nextSong.time_signature})` : ''}` : ''}
+            {convertKeyToFlat(transposeChord(nextSong.key, nextSong.transposition || 0))}{nextSong.bpm ? ` • ${nextSong.bpm} BPM${nextSong.time_signature ? ` (${nextSong.time_signature})` : ''}` : ''}
           </span>
         </div>
       )}
