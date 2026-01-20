@@ -69,6 +69,43 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+
+    <!-- Force cache clear for old users - runs BEFORE React loads -->
+    <script>
+      (function() {
+        var APP_VERSION = '2';
+        var storedVersion = localStorage.getItem('soluflow_app_version');
+
+        if (storedVersion !== APP_VERSION) {
+          console.log('App version changed, clearing caches...');
+          localStorage.setItem('soluflow_app_version', APP_VERSION);
+
+          // Unregister all service workers
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              registrations.forEach(function(registration) {
+                registration.unregister();
+              });
+            });
+          }
+
+          // Clear all caches
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              names.forEach(function(name) {
+                caches.delete(name);
+              });
+            });
+          }
+
+          // Reload after a short delay to let cleanup finish
+          setTimeout(function() {
+            window.location.reload(true);
+          }, 500);
+        }
+      })();
+    </script>
+
     <div id="root"></div>
     <!--
       This HTML file is a template.
