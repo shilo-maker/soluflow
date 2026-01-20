@@ -20,23 +20,12 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
-  const [touchStartY, setTouchStartY] = useState(null);
-  const [touchCurrentY, setTouchCurrentY] = useState(null);
-  const [longPressTimer, setLongPressTimer] = useState(null);
-  const [isDraggingEnabled, setIsDraggingEnabled] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setSetlist(currentSetlist || []);
       fetchAvailableSongs();
     }
-
-    // Cleanup timer on unmount
-    return () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-      }
-    };
   }, [isOpen, currentSetlist]);
 
   const fetchAvailableSongs = async () => {
@@ -93,6 +82,20 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     setSetlist(prev => prev.filter(s => s.id !== songId));
   };
 
+  const handleMoveUp = (index) => {
+    if (index === 0) return;
+    const newSetlist = [...setlist];
+    [newSetlist[index - 1], newSetlist[index]] = [newSetlist[index], newSetlist[index - 1]];
+    setSetlist(newSetlist);
+  };
+
+  const handleMoveDown = (index) => {
+    if (index === setlist.length - 1) return;
+    const newSetlist = [...setlist];
+    [newSetlist[index], newSetlist[index + 1]] = [newSetlist[index + 1], newSetlist[index]];
+    setSetlist(newSetlist);
+  };
+
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -113,78 +116,6 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
-  };
-
-  // Touch handlers for mobile support with long press
-  const handleTouchStart = (e, index) => {
-    const touch = e.touches[0];
-    setTouchStartY(touch.clientY);
-
-    // Start long press timer (500ms)
-    const timer = setTimeout(() => {
-      setIsDraggingEnabled(true);
-      setDraggedIndex(index);
-      // Optional: Add haptic feedback if available
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }, 500);
-
-    setLongPressTimer(timer);
-  };
-
-  const handleTouchMove = (e, index) => {
-    const touch = e.touches[0];
-
-    // If dragging hasn't been enabled yet, check if user is scrolling
-    if (!isDraggingEnabled) {
-      // If user moved more than 10px, cancel the long press timer (they're scrolling)
-      if (touchStartY && Math.abs(touch.clientY - touchStartY) > 10) {
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          setLongPressTimer(null);
-        }
-      }
-      return; // Allow normal scrolling
-    }
-
-    // Only if dragging is enabled (after long press)
-    if (draggedIndex === null) return;
-
-    e.preventDefault(); // Prevent scrolling while dragging
-    setTouchCurrentY(touch.clientY);
-
-    // Find which item the touch is currently over
-    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
-    const songItem = elements.find(el => el.classList.contains('setlist-song-item'));
-
-    if (songItem) {
-      const allItems = Array.from(document.querySelectorAll('.setlist-song-item'));
-      const hoverIndex = allItems.indexOf(songItem);
-
-      if (hoverIndex !== -1 && hoverIndex !== draggedIndex) {
-        const newSetlist = [...setlist];
-        const draggedItem = newSetlist[draggedIndex];
-        newSetlist.splice(draggedIndex, 1);
-        newSetlist.splice(hoverIndex, 0, draggedItem);
-
-        setSetlist(newSetlist);
-        setDraggedIndex(hoverIndex);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    // Clear long press timer if it's still running
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-
-    setDraggedIndex(null);
-    setTouchStartY(null);
-    setTouchCurrentY(null);
-    setIsDraggingEnabled(false);
   };
 
   const handleSave = () => {
@@ -221,13 +152,23 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
                   >
-                    <div
-                      className="drag-handle"
-                      onTouchStart={(e) => handleTouchStart(e, index)}
-                      onTouchMove={(e) => handleTouchMove(e, index)}
-                      onTouchEnd={handleTouchEnd}
-                    >
-                      ⋮⋮
+                    <div className="reorder-buttons">
+                      <button
+                        className="btn-reorder btn-move-up"
+                        onClick={() => handleMoveUp(index)}
+                        disabled={index === 0}
+                        aria-label="Move up"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        className="btn-reorder btn-move-down"
+                        onClick={() => handleMoveDown(index)}
+                        disabled={index === setlist.length - 1}
+                        aria-label="Move down"
+                      >
+                        ▼
+                      </button>
                     </div>
                     <div className="song-number">{index + 1}</div>
                     <div className="song-details">
