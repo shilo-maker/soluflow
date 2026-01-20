@@ -8,8 +8,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
-    date: '',
-    time: '',
+    datetime: '',
     location: '',
     isPublic: true
   });
@@ -25,10 +24,19 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   useEffect(() => {
     if (service) {
       // Edit mode - populate with existing service data
+      // Combine date and time into datetime-local format
+      let datetime = '';
+      if (service.date) {
+        datetime = service.date;
+        if (service.time) {
+          datetime += 'T' + service.time;
+        } else {
+          datetime += 'T12:00';
+        }
+      }
       setFormData({
         title: service.title || '',
-        date: service.date || '',
-        time: service.time || '',
+        datetime: datetime,
         location: service.location || '',
         isPublic: service.isPublic !== undefined ? service.isPublic : true
       });
@@ -40,21 +48,22 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
         fetchAvailableSongs();
       }
     } else {
-      // Create mode - default date to today and time to next round hour
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-
-      // Get next round hour
+      // Create mode - default to today with next round hour (local time)
       const nextHour = new Date();
       nextHour.setHours(nextHour.getHours() + 1);
       nextHour.setMinutes(0);
       nextHour.setSeconds(0);
-      const timeStr = nextHour.toTimeString().slice(0, 5); // Format: HH:MM
+      // Format for datetime-local: YYYY-MM-DDTHH:MM (local time)
+      const year = nextHour.getFullYear();
+      const month = String(nextHour.getMonth() + 1).padStart(2, '0');
+      const day = String(nextHour.getDate()).padStart(2, '0');
+      const hours = String(nextHour.getHours()).padStart(2, '0');
+      const minutes = String(nextHour.getMinutes()).padStart(2, '0');
+      const datetimeStr = `${year}-${month}-${day}T${hours}:${minutes}`;
 
       setFormData({
         title: '',
-        date: todayStr,
-        time: timeStr,
+        datetime: datetimeStr,
         location: '',
         isPublic: true
       });
@@ -185,8 +194,8 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     setError('');
 
     // Validation
-    if (!formData.date) {
-      setError('Date is required');
+    if (!formData.datetime) {
+      setError('Date and time is required');
       return;
     }
     if (!formData.location.trim()) {
@@ -194,8 +203,11 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
       return;
     }
 
+    // Parse datetime into separate date and time
+    const [date, time] = formData.datetime.split('T');
+
     // Auto-generate title from date and location
-    const dateObj = new Date(formData.date);
+    const dateObj = new Date(formData.datetime);
     const day = String(dateObj.getDate()).padStart(2, '0');
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const generatedTitle = `${day}/${month} ${formData.location}`;
@@ -205,7 +217,10 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
 
       // Save service metadata
       await onSave({
-        ...formData,
+        date,
+        time,
+        location: formData.location,
+        isPublic: formData.isPublic,
         title: generatedTitle
       }, service ? null : setlist); // Pass setlist only for new services
 
@@ -236,29 +251,16 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
           <div className="modal-body">
             {error && <div className="modal-error">{error}</div>}
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="date">Date *</label>
-                <input
-                  type="date"
-                  id="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="time">Time</label>
-                <input
-                  type="time"
-                  id="time"
-                  name="time"
-                  value={formData.time}
-                  onChange={handleChange}
-                />
-              </div>
+            <div className="form-group">
+              <label htmlFor="datetime">Date & Time *</label>
+              <input
+                type="datetime-local"
+                id="datetime"
+                name="datetime"
+                value={formData.datetime}
+                onChange={handleChange}
+                required
+              />
             </div>
 
             <div className="form-group">
@@ -274,10 +276,10 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
               />
             </div>
 
-            {formData.date && formData.location && (
+            {formData.datetime && formData.location && (
               <div className="title-preview">
                 <strong>Service Title:</strong> {(() => {
-                  const dateObj = new Date(formData.date);
+                  const dateObj = new Date(formData.datetime);
                   const day = String(dateObj.getDate()).padStart(2, '0');
                   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
                   return `${day}/${month} ${formData.location}`;
@@ -285,28 +287,15 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
               </div>
             )}
 
-            <div className="form-group-checkbox">
-              <label>
-                <input
-                  type="checkbox"
-                  name="isPublic"
-                  checked={formData.isPublic}
-                  onChange={handleChange}
-                />
-                Make service public (accessible via share code)
-              </label>
-            </div>
-
             {/* Setlist Section - Show for both create and edit modes */}
             <div className="setlist-section">
               <h3 className="setlist-section-title">
-                {service ? 'Edit Setlist' : 'Add Songs to Setlist (Optional)'}
+                {service ? 'Edit Setlist' : 'Add Songs to Setlist'}
               </h3>
 
               <div className="setlist-mini-builder">
                 {/* Current Setlist */}
                 <div className="setlist-current-mini">
-                  <h4>Selected Songs ({setlist.length})</h4>
                   <div className="setlist-with-controls-mini">
                     <div className="reorder-controls-side-mini">
                       <button
