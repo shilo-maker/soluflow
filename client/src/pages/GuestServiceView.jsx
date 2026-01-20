@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import useWakeLock from '../hooks/useWakeLock';
 import serviceService from '../services/serviceService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import Toast from '../components/Toast';
@@ -13,6 +14,10 @@ const GuestServiceView = () => {
   const { code } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+
+  // Keep screen awake while viewing service
+  useWakeLock(true);
+
   const socketRef = useRef(null);
   const isFollowModeRef = useRef(false); // Ref to access current follow mode in socket handlers
   const currentSongIdRef = useRef(null); // Track current song ID for socket handler validation

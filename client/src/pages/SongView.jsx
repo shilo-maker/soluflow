@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import useWakeLock from '../hooks/useWakeLock';
 import songService from '../services/songService';
 import serviceService from '../services/serviceService';
 import noteService from '../services/noteService';
@@ -22,6 +23,10 @@ const SongView = () => {
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { isRTL } = useLanguage();
+
+  // Keep screen awake while viewing songs
+  useWakeLock(true);
+
   const touchStartRef = useRef(null);
   const touchEndRef = useRef(null);
   const socketRef = useRef(null);

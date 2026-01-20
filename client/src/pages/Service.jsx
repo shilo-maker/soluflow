@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
+import useWakeLock from '../hooks/useWakeLock';
 import serviceService from '../services/serviceService';
 import workspaceService from '../services/workspaceService';
 import ChordProDisplay from '../components/ChordProDisplay';
@@ -26,6 +27,10 @@ const Service = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { workspaces, activeWorkspace } = useWorkspace();
+
+  // Keep screen awake while in service view
+  useWakeLock(true);
+
   const songPillsRef = useRef(null);
   const socketRef = useRef(null);
   const previousServiceIdRef = useRef(null);
