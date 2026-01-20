@@ -306,9 +306,9 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
               <div className="setlist-mini-builder">
                 {/* Current Setlist */}
                 <div className="setlist-current-mini">
-                  <div className="setlist-current-header-mini">
-                    <h4>Selected Songs ({setlist.length})</h4>
-                    <div className="reorder-controls-mini">
+                  <h4>Selected Songs ({setlist.length})</h4>
+                  <div className="setlist-with-controls-mini">
+                    <div className="reorder-controls-side-mini">
                       <button
                         type="button"
                         className="btn-reorder-main-mini"
@@ -330,8 +330,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                         ▼
                       </button>
                     </div>
-                  </div>
-                  <div className="selected-songs-list">
+                    <div className="selected-songs-list">
                     {setlist.length === 0 ? (
                       <div className="no-songs-selected">No songs selected yet</div>
                     ) : (
@@ -360,6 +359,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                         </div>
                       ))
                     )}
+                    </div>
                   </div>
                   {setlist.length > 0 && (
                     <div className="setlist-hint-mini">

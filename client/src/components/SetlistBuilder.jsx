@@ -150,9 +150,9 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
         <div className="setlist-content">
           {/* Current Setlist */}
           <div className="setlist-current">
-            <div className="setlist-current-header">
-              <h3>Current Setlist ({setlist.length} songs)</h3>
-              <div className="reorder-controls">
+            <h3>Current Setlist ({setlist.length} songs)</h3>
+            <div className="setlist-with-controls">
+              <div className="reorder-controls-side">
                 <button
                   className="btn-reorder-main"
                   onClick={handleMoveUp}
@@ -172,8 +172,7 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                   ▼
                 </button>
               </div>
-            </div>
-            <div className="setlist-songs">
+              <div className="setlist-songs">
               {setlist.length === 0 ? (
                 <div className="setlist-empty">
                   No songs in setlist yet. Add songs from the library below.
@@ -205,6 +204,7 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                   </div>
                 ))
               )}
+              </div>
             </div>
             {setlist.length > 0 && (
               <div className="setlist-hint">
