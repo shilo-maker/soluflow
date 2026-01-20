@@ -19,6 +19,9 @@ import { generateSetlistPDF, generateSongPDF, generateMultiSongPDF, generateMult
 import io from 'socket.io-client';
 import './Service.css';
 
+// Stable empty array reference to prevent re-render loops in child components
+const EMPTY_ARRAY = [];
+
 const Service = () => {
   console.log('[Service] Component render - VERSION 2.0');
   const navigate = useNavigate();
@@ -467,7 +470,7 @@ const Service = () => {
   }, [selectedService]);
 
   // Get the set list for the selected service
-  const currentSetList = serviceDetails?.songs || [];
+  const currentSetList = serviceDetails?.songs || EMPTY_ARRAY;
   const currentItem = currentSetList[selectedSongIndex];
   const currentSong = currentItem;
 
@@ -1321,7 +1324,7 @@ const Service = () => {
       {/* Service Modal (Create/Edit) */}
       <ServiceEditModal
         service={modalService}
-        currentSetlist={modalService ? serviceDetails?.songs || [] : []}
+        currentSetlist={modalService ? (serviceDetails?.songs || EMPTY_ARRAY) : EMPTY_ARRAY}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSaveService}
