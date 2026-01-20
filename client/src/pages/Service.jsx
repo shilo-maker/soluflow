@@ -23,7 +23,6 @@ import './Service.css';
 const EMPTY_ARRAY = [];
 
 const Service = () => {
-  console.log('[Service] Component render - VERSION 2.0');
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
