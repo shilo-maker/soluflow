@@ -1184,20 +1184,83 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
 };
 
 /**
- * Generate a single-song PDF using A4PDFView component
+ * Generate a single-song PDF using A4PDFView component with multi-page support
  * @param {Object} song - The song object
  * @param {number} transposition - Current transposition value
  * @param {number} fontSize - Font size for the content
  */
 export const generateSongPDF = async (song, transposition = 0, fontSize = 14) => {
-  // Create a temporary container for rendering (completely hidden)
+  const filename = `SoluFlow - ${song.title}.pdf`;
+
+  // A4 page dimensions
+  const pageWidthPx = 595;
+  const pageHeightPx = 842;
+  const pdfWidthMm = 210;
+  const pdfHeightMm = 297;
+
+  // Margins for proper page layout (in pixels)
+  const topMarginPx = 50;
+  const bottomMarginPx = 80;
+
+  // Usable content height per page
+  const firstPageContentHeight = pageHeightPx - bottomMarginPx;
+  const continuationContentHeight = pageHeightPx - topMarginPx - bottomMarginPx;
+
+  // Helper function to find a clean break point
+  const findCleanBreakPoint = (canvas, targetY, searchRange = 60) => {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+
+    for (let y = targetY; y > targetY - searchRange * 2 && y > 0; y--) {
+      const imageData = ctx.getImageData(0, y, width, 1);
+      const data = imageData.data;
+
+      let isWhiteRow = true;
+      for (let x = 40; x < width - 40; x++) {
+        const idx = x * 4;
+        if (data[idx] < 250 || data[idx + 1] < 250 || data[idx + 2] < 250) {
+          isWhiteRow = false;
+          break;
+        }
+      }
+
+      if (isWhiteRow) return y;
+    }
+
+    return targetY;
+  };
+
+  // Helper function to check if remaining canvas has content
+  const hasContentBelow = (canvas, startY) => {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const samplesToCheck = 10;
+    const step = Math.floor((height - startY) / samplesToCheck);
+
+    for (let i = 0; i < samplesToCheck && startY + i * step < height; i++) {
+      const y = startY + i * step;
+      const imageData = ctx.getImageData(40, y, width - 80, 1);
+      const data = imageData.data;
+
+      for (let x = 0; x < imageData.width; x++) {
+        const idx = x * 4;
+        if (data[idx] < 250 || data[idx + 1] < 250 || data[idx + 2] < 250) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  // Create a temporary container for rendering
   const container = document.createElement('div');
   container.style.position = 'fixed';
-  container.style.left = '-9999px';
+  container.style.left = '-10000px';
   container.style.top = '0';
-  container.style.visibility = 'hidden';
-  container.style.opacity = '0';
-  container.style.pointerEvents = 'none';
+  container.style.width = `${pageWidthPx}px`;
   container.style.zIndex = '-9999';
   document.body.appendChild(container);
 
@@ -1205,7 +1268,6 @@ export const generateSongPDF = async (song, transposition = 0, fontSize = 14) =>
     // Render the A4PDFView component
     const root = createRoot(container);
 
-    // Create a promise that resolves when the component is rendered
     await new Promise((resolve) => {
       root.render(
         <A4PDFView
@@ -1214,36 +1276,126 @@ export const generateSongPDF = async (song, transposition = 0, fontSize = 14) =>
           fontSize={fontSize}
         />
       );
-      // Give React time to render
-      setTimeout(resolve, 500);
+      setTimeout(resolve, 1000);
     });
 
-    // Configure PDF options for A4 size
-    // A4 in pixels at 72 DPI: 595x842
-    // A4 in mm: 210x297
-    const opt = {
-      margin: 0, // No margin since we control layout precisely
-      filename: `SoluFlow - ${song.title}.pdf`,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        letterRendering: true,
-        width: 595,
-        height: 842,
-        windowWidth: 595,
-        windowHeight: 842
-      },
-      jsPDF: {
-        unit: 'px',
-        format: [595, 842],
-        orientation: 'portrait',
-        hotfixes: ['px_scaling']
-      }
-    };
+    const a4Page = container.querySelector('.a4-page');
+    if (!a4Page) {
+      throw new Error('A4 page element not found');
+    }
 
-    // Generate PDF
-    await html2pdf().set(opt).from(container.querySelector('.a4-page')).save();
+    const contentHeight = a4Page.scrollHeight;
+
+    // Capture the full content
+    const fullCanvas = await html2canvas(a4Page, {
+      scale: 2,
+      useCORS: true,
+      letterRendering: true,
+      logging: false,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      height: contentHeight,
+      windowHeight: contentHeight
+    });
+
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    // Track position in source canvas
+    let currentSourceY = 0;
+    let pageNum = 0;
+    let isFirstPdfPage = true;
+
+    // Split the canvas into pages
+    while (currentSourceY < fullCanvas.height) {
+      // Check if there's actual content remaining
+      if (pageNum > 0 && !hasContentBelow(fullCanvas, currentSourceY)) {
+        break;
+      }
+
+      // Add new page (except for first page which is auto-created)
+      if (!isFirstPdfPage) {
+        pdf.addPage('a4', 'portrait');
+      }
+      isFirstPdfPage = false;
+
+      // Calculate content height for this page
+      let targetContentHeight;
+      let destY;
+
+      if (pageNum === 0) {
+        targetContentHeight = firstPageContentHeight * 2;
+        destY = 0;
+      } else {
+        targetContentHeight = continuationContentHeight * 2;
+        destY = topMarginPx * 2;
+      }
+
+      // Find where this page should end
+      let targetEndY = currentSourceY + targetContentHeight;
+      let actualEndY = targetEndY;
+
+      if (targetEndY < fullCanvas.height) {
+        actualEndY = findCleanBreakPoint(fullCanvas, targetEndY);
+      } else {
+        actualEndY = fullCanvas.height;
+      }
+
+      const sourceHeight = actualEndY - currentSourceY;
+
+      // Create page canvas
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = pageWidthPx * 2;
+      pageCanvas.height = pageHeightPx * 2;
+      const ctx = pageCanvas.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+      if (sourceHeight > 0) {
+        ctx.drawImage(
+          fullCanvas,
+          0, currentSourceY,
+          fullCanvas.width, sourceHeight,
+          0, destY,
+          pageCanvas.width, sourceHeight
+        );
+      }
+
+      currentSourceY = actualEndY;
+
+      // Add stamp to each page
+      try {
+        const stampImg = new Image();
+        stampImg.crossOrigin = 'anonymous';
+        await new Promise((resolve, reject) => {
+          stampImg.onload = resolve;
+          stampImg.onerror = reject;
+          stampImg.src = '/pdf_stamp.png';
+        });
+        const stampWidth = 55 * 2;
+        const stampHeight = 25 * 2;
+        const stampX = (pageCanvas.width - stampWidth) / 2;
+        const stampY = pageCanvas.height - 43 * 2 - stampHeight;
+        ctx.globalAlpha = 0.8;
+        ctx.drawImage(stampImg, stampX, stampY, stampWidth, stampHeight);
+        ctx.globalAlpha = 1.0;
+      } catch (stampError) {
+        // Stamp loading failed, continue without it
+      }
+
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidthMm, pdfHeightMm, undefined, 'FAST');
+
+      pageNum++;
+    }
+
+    // Save the PDF
+    pdf.save(filename);
 
     // Cleanup
     root.unmount();
@@ -1252,12 +1404,10 @@ export const generateSongPDF = async (song, transposition = 0, fontSize = 14) =>
   } catch (error) {
     console.error('Error generating PDF for song:', song.title, error);
 
-    // Cleanup on error
     if (container.parentNode) {
       document.body.removeChild(container);
     }
 
-    // Throw a more descriptive error
     const errorMessage = error.message || 'Unknown error occurred';
     throw new Error(`Failed to generate PDF for "${song.title}": ${errorMessage}`);
   }

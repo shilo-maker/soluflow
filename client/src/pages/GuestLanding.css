@@ -571,6 +571,31 @@
   box-shadow: 0 4px 16px rgba(108, 117, 125, 0.5);
 }
 
+.btn-pdf-inline {
+  display: inline-block;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 10px;
+  vertical-align: middle;
+  transition: all 0.2s ease;
+}
+
+.btn-pdf-inline:hover:not(:disabled) {
+  background: #b8844e;
+  transform: scale(1.05);
+}
+
+.btn-pdf-inline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Join Service Modal */
 .modal-overlay {
   position: fixed;

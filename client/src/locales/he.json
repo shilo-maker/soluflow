@@ -19,7 +19,8 @@
     "next": "הבא",
     "submit": "שלח",
     "browse": "עיין",
-    "settings": "הגדרות"
+    "settings": "הגדרות",
+    "exportPdf": "ייצוא PDF"
   },
   "header": {
     "appName": "SoluFlow"

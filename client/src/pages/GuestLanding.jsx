@@ -7,6 +7,7 @@ import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import KeySelectorModal from '../components/KeySelectorModal';
 import { transposeChord, stripChords, convertKeyToFlat } from '../utils/transpose';
+import { generateSongPDF } from '../utils/pdfGenerator';
 import './GuestLanding.css';
 
 // Strip Hebrew niqqud (vowel points) from text for search matching
@@ -125,6 +126,7 @@ const GuestLanding = () => {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [serviceCode, setServiceCode] = useState(['', '', '', '']);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const codeInputsRef = useRef([]);
   const songDisplayRef = useRef(null);
 
@@ -283,6 +285,20 @@ const GuestLanding = () => {
     navigate(`/song/${selectedSong.id}`);
   };
 
+  const handleExportPdf = async () => {
+    if (!selectedSong || generatingPdf) return;
+
+    try {
+      setGeneratingPdf(true);
+      await generateSongPDF(selectedSong, transposition, fontSize);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert(t('common.error') + ': ' + error.message);
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   const handleCodeChange = (index, value) => {
     // Only allow alphanumeric characters
     const sanitized = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -421,7 +437,16 @@ const GuestLanding = () => {
                 <div className="song-display-inline" ref={songDisplayRef} onClick={(e) => e.stopPropagation()}>
           <div className="song-header-inline">
             <div className="song-info-inline">
-              <h2 className="song-title-inline">{selectedSong.title}</h2>
+              <h2 className="song-title-inline">
+                {selectedSong.title}
+                <button
+                  className="btn-pdf-inline"
+                  onClick={(e) => { e.stopPropagation(); handleExportPdf(); }}
+                  disabled={generatingPdf}
+                >
+                  {generatingPdf ? '...' : 'PDF'}
+                </button>
+              </h2>
               <p className="song-authors-inline">{selectedSong.authors}</p>
             </div>
             <div className="song-meta-inline">
