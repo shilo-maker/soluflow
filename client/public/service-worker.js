@@ -2,7 +2,7 @@
 
 // Service Worker for SoluFlow - Offline Support
 // Increment version manually when deploying significant updates
-const CACHE_VERSION = '1.0.1';
+const CACHE_VERSION = '1.0.2';
 const CACHE_NAME = `soluflow-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `soluflow-api-v${CACHE_VERSION}`;
 

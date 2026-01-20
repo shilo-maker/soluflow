@@ -34,6 +34,15 @@ export function register(config) {
         registerValidSW(swUrl, config);
       }
     });
+
+    // Listen for controller change and reload page to get new version
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      console.log('New service worker activated, reloading page...');
+      window.location.reload();
+    });
   }
 }
 
@@ -41,6 +50,16 @@ function registerValidSW(swUrl, config) {
   navigator.serviceWorker
     .register(swUrl)
     .then((registration) => {
+      // Check for updates immediately on page load
+      registration.update().catch(() => {
+        // Ignore update errors (e.g., offline)
+      });
+
+      // Also check for updates periodically (every 5 minutes)
+      setInterval(() => {
+        registration.update().catch(() => {});
+      }, 5 * 60 * 1000);
+
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) {
@@ -49,10 +68,11 @@ function registerValidSW(swUrl, config) {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              // New content is available; please refresh.
-              console.log(
-                'New content is available; please refresh the page to update.'
-              );
+              // New content is available - force the new service worker to activate
+              console.log('New content available, activating new service worker...');
+
+              // Tell the new service worker to skip waiting and take over
+              installingWorker.postMessage({ type: 'SKIP_WAITING' });
 
               // Execute callback
               if (config && config.onUpdate) {
