@@ -233,12 +233,61 @@
   width: 100%;
 }
 
+.setlist-current-header-mini {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
 .setlist-current-mini h4,
 .available-songs-mini h4 {
-  margin: 0 0 10px 0;
+  margin: 0;
   font-size: 14px;
   font-weight: 600;
   color: #495057;
+}
+
+.available-songs-mini h4 {
+  margin-bottom: 10px;
+}
+
+/* Reorder controls - single set of arrows */
+.reorder-controls-mini {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-reorder-main-mini {
+  width: 32px;
+  height: 28px;
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  color: #495057;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border-radius: 4px;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-reorder-main-mini:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.btn-reorder-main-mini:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.btn-reorder-main-mini:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .selected-songs-list,
@@ -281,49 +330,27 @@
   background-color: #f1f3f5;
 }
 
-/* Reorder buttons for mobile-friendly reordering */
-.reorder-buttons-mini {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex-shrink: 0;
-}
-
-.btn-reorder-mini {
-  width: 24px;
-  height: 16px;
-  border: 1px solid #dee2e6;
-  background-color: #f8f9fa;
-  color: #495057;
-  font-size: 8px;
+.selected-song-item {
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  border-radius: 3px;
-  padding: 0;
-  line-height: 1;
 }
 
-.btn-reorder-mini:hover:not(:disabled) {
-  background-color: var(--color-primary);
+.selected-song-item.selected {
+  background-color: #d4a56020;
   border-color: var(--color-primary);
-  color: white;
-}
-
-.btn-reorder-mini:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.btn-reorder-mini:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .selected-song-item.dragging {
   opacity: 0.5;
   background-color: #e9ecef;
+}
+
+.setlist-hint-mini {
+  text-align: center;
+  padding: 6px;
+  font-size: 11px;
+  color: #6c757d;
+  font-style: italic;
 }
 
 .song-number-mini {
@@ -457,14 +484,19 @@
 
   /* Enhanced touch support for mobile */
   .selected-song-item {
-    padding: 10px 8px;
+    padding: 12px 10px;
+  }
+
+  .setlist-current-header-mini {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   /* Larger touch targets for reorder buttons on mobile */
-  .btn-reorder-mini {
-    width: 32px;
-    height: 22px;
-    font-size: 10px;
+  .btn-reorder-main-mini {
+    width: 40px;
+    height: 36px;
+    font-size: 14px;
   }
 
   .btn-remove-mini,

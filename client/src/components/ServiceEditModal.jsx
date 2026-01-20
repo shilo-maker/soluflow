@@ -20,6 +20,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingSongs, setLoadingSongs] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   useEffect(() => {
     if (service) {
@@ -66,6 +67,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     }
     setError('');
     setSearchQuery('');
+    setSelectedIndex(null);
   }, [service, isOpen, currentSetlist]);
 
   const fetchAvailableSongs = async () => {
@@ -94,22 +96,33 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     setSetlist(prev => [...prev, song]);
   };
 
-  const handleRemoveSong = (songId) => {
+  const handleRemoveSong = (songId, index) => {
     setSetlist(prev => prev.filter(s => s.id !== songId));
+    if (selectedIndex === index) {
+      setSelectedIndex(null);
+    } else if (selectedIndex !== null && selectedIndex > index) {
+      setSelectedIndex(selectedIndex - 1);
+    }
   };
 
-  const handleMoveUp = (index) => {
-    if (index === 0) return;
-    const newSetlist = [...setlist];
-    [newSetlist[index - 1], newSetlist[index]] = [newSetlist[index], newSetlist[index - 1]];
-    setSetlist(newSetlist);
+  const handleSelectSong = (index) => {
+    setSelectedIndex(selectedIndex === index ? null : index);
   };
 
-  const handleMoveDown = (index) => {
-    if (index === setlist.length - 1) return;
+  const handleMoveUp = () => {
+    if (selectedIndex === null || selectedIndex === 0) return;
     const newSetlist = [...setlist];
-    [newSetlist[index], newSetlist[index + 1]] = [newSetlist[index + 1], newSetlist[index]];
+    [newSetlist[selectedIndex - 1], newSetlist[selectedIndex]] = [newSetlist[selectedIndex], newSetlist[selectedIndex - 1]];
     setSetlist(newSetlist);
+    setSelectedIndex(selectedIndex - 1);
+  };
+
+  const handleMoveDown = () => {
+    if (selectedIndex === null || selectedIndex === setlist.length - 1) return;
+    const newSetlist = [...setlist];
+    [newSetlist[selectedIndex], newSetlist[selectedIndex + 1]] = [newSetlist[selectedIndex + 1], newSetlist[selectedIndex]];
+    setSetlist(newSetlist);
+    setSelectedIndex(selectedIndex + 1);
   };
 
   const handleDragStart = (e, index) => {
@@ -293,7 +306,31 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
               <div className="setlist-mini-builder">
                 {/* Current Setlist */}
                 <div className="setlist-current-mini">
-                  <h4>Selected Songs ({setlist.length})</h4>
+                  <div className="setlist-current-header-mini">
+                    <h4>Selected Songs ({setlist.length})</h4>
+                    <div className="reorder-controls-mini">
+                      <button
+                        type="button"
+                        className="btn-reorder-main-mini"
+                        onClick={handleMoveUp}
+                        disabled={selectedIndex === null || selectedIndex === 0}
+                        aria-label="Move up"
+                        title="Move selected song up"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-reorder-main-mini"
+                        onClick={handleMoveDown}
+                        disabled={selectedIndex === null || selectedIndex === setlist.length - 1}
+                        aria-label="Move down"
+                        title="Move selected song down"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  </div>
                   <div className="selected-songs-list">
                     {setlist.length === 0 ? (
                       <div className="no-songs-selected">No songs selected yet</div>
@@ -301,32 +338,13 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                       setlist.map((song, index) => (
                         <div
                           key={song.id}
-                          className={`selected-song-item ${draggedIndex === index ? 'dragging' : ''}`}
+                          className={`selected-song-item ${draggedIndex === index ? 'dragging' : ''} ${selectedIndex === index ? 'selected' : ''}`}
                           draggable
                           onDragStart={(e) => handleDragStart(e, index)}
                           onDragOver={(e) => handleDragOver(e, index)}
                           onDragEnd={handleDragEnd}
+                          onClick={() => handleSelectSong(index)}
                         >
-                          <div className="reorder-buttons-mini">
-                            <button
-                              type="button"
-                              className="btn-reorder-mini btn-move-up"
-                              onClick={() => handleMoveUp(index)}
-                              disabled={index === 0}
-                              aria-label="Move up"
-                            >
-                              ▲
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-reorder-mini btn-move-down"
-                              onClick={() => handleMoveDown(index)}
-                              disabled={index === setlist.length - 1}
-                              aria-label="Move down"
-                            >
-                              ▼
-                            </button>
-                          </div>
                           <span className="song-number-mini">{index + 1}</span>
                           <div className="song-info-mini">
                             <div className="song-title-mini">{song.title}</div>
@@ -335,7 +353,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                           <button
                             type="button"
                             className="btn-remove-mini"
-                            onClick={() => handleRemoveSong(song.id)}
+                            onClick={(e) => { e.stopPropagation(); handleRemoveSong(song.id, index); }}
                           >
                             ×
                           </button>
@@ -343,6 +361,11 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                       ))
                     )}
                   </div>
+                  {setlist.length > 0 && (
+                    <div className="setlist-hint-mini">
+                      Tap a song to select, then use arrows to reorder
+                    </div>
+                  )}
                 </div>
 
                   {/* Available Songs */}

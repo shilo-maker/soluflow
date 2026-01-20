@@ -20,10 +20,12 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       setSetlist(currentSetlist || []);
+      setSelectedIndex(null);
       fetchAvailableSongs();
     }
   }, [isOpen, currentSetlist]);
@@ -78,22 +80,34 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     setSetlist(prev => [...prev, song]);
   };
 
-  const handleRemoveSong = (songId) => {
+  const handleRemoveSong = (songId, index) => {
     setSetlist(prev => prev.filter(s => s.id !== songId));
+    // Clear selection or adjust if needed
+    if (selectedIndex === index) {
+      setSelectedIndex(null);
+    } else if (selectedIndex !== null && selectedIndex > index) {
+      setSelectedIndex(selectedIndex - 1);
+    }
   };
 
-  const handleMoveUp = (index) => {
-    if (index === 0) return;
-    const newSetlist = [...setlist];
-    [newSetlist[index - 1], newSetlist[index]] = [newSetlist[index], newSetlist[index - 1]];
-    setSetlist(newSetlist);
+  const handleSelectSong = (index) => {
+    setSelectedIndex(selectedIndex === index ? null : index);
   };
 
-  const handleMoveDown = (index) => {
-    if (index === setlist.length - 1) return;
+  const handleMoveUp = () => {
+    if (selectedIndex === null || selectedIndex === 0) return;
     const newSetlist = [...setlist];
-    [newSetlist[index], newSetlist[index + 1]] = [newSetlist[index + 1], newSetlist[index]];
+    [newSetlist[selectedIndex - 1], newSetlist[selectedIndex]] = [newSetlist[selectedIndex], newSetlist[selectedIndex - 1]];
     setSetlist(newSetlist);
+    setSelectedIndex(selectedIndex - 1);
+  };
+
+  const handleMoveDown = () => {
+    if (selectedIndex === null || selectedIndex === setlist.length - 1) return;
+    const newSetlist = [...setlist];
+    [newSetlist[selectedIndex], newSetlist[selectedIndex + 1]] = [newSetlist[selectedIndex + 1], newSetlist[selectedIndex]];
+    setSetlist(newSetlist);
+    setSelectedIndex(selectedIndex + 1);
   };
 
   const handleDragStart = (e, index) => {
@@ -136,7 +150,29 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
         <div className="setlist-content">
           {/* Current Setlist */}
           <div className="setlist-current">
-            <h3>Current Setlist ({setlist.length} songs)</h3>
+            <div className="setlist-current-header">
+              <h3>Current Setlist ({setlist.length} songs)</h3>
+              <div className="reorder-controls">
+                <button
+                  className="btn-reorder-main"
+                  onClick={handleMoveUp}
+                  disabled={selectedIndex === null || selectedIndex === 0}
+                  aria-label="Move up"
+                  title="Move selected song up"
+                >
+                  ▲
+                </button>
+                <button
+                  className="btn-reorder-main"
+                  onClick={handleMoveDown}
+                  disabled={selectedIndex === null || selectedIndex === setlist.length - 1}
+                  aria-label="Move down"
+                  title="Move selected song down"
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
             <div className="setlist-songs">
               {setlist.length === 0 ? (
                 <div className="setlist-empty">
@@ -146,30 +182,13 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                 setlist.map((song, index) => (
                   <div
                     key={song.id}
-                    className={`setlist-song-item ${draggedIndex === index ? 'dragging' : ''}`}
+                    className={`setlist-song-item ${draggedIndex === index ? 'dragging' : ''} ${selectedIndex === index ? 'selected' : ''}`}
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
+                    onClick={() => handleSelectSong(index)}
                   >
-                    <div className="reorder-buttons">
-                      <button
-                        className="btn-reorder btn-move-up"
-                        onClick={() => handleMoveUp(index)}
-                        disabled={index === 0}
-                        aria-label="Move up"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        className="btn-reorder btn-move-down"
-                        onClick={() => handleMoveDown(index)}
-                        disabled={index === setlist.length - 1}
-                        aria-label="Move down"
-                      >
-                        ▼
-                      </button>
-                    </div>
                     <div className="song-number">{index + 1}</div>
                     <div className="song-details">
                       <div className="song-title">{song.title}</div>
@@ -179,7 +198,7 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                     </div>
                     <button
                       className="btn-remove-song"
-                      onClick={() => handleRemoveSong(song.id)}
+                      onClick={(e) => { e.stopPropagation(); handleRemoveSong(song.id, index); }}
                     >
                       ×
                     </button>
@@ -187,6 +206,11 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                 ))
               )}
             </div>
+            {setlist.length > 0 && (
+              <div className="setlist-hint">
+                Tap a song to select, then use arrows to reorder
+              </div>
+            )}
           </div>
 
           {/* Available Songs */}
