@@ -20,10 +20,6 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingSongs, setLoadingSongs] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
-  const [touchStartY, setTouchStartY] = useState(null);
-  const [touchCurrentY, setTouchCurrentY] = useState(null);
-  const [longPressTimer, setLongPressTimer] = useState(null);
-  const [isDraggingEnabled, setIsDraggingEnabled] = useState(false);
 
   useEffect(() => {
     if (service) {
@@ -70,13 +66,6 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     }
     setError('');
     setSearchQuery('');
-
-    // Cleanup timer on unmount
-    return () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-      }
-    };
   }, [service, isOpen, currentSetlist]);
 
   const fetchAvailableSongs = async () => {
@@ -109,6 +98,20 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     setSetlist(prev => prev.filter(s => s.id !== songId));
   };
 
+  const handleMoveUp = (index) => {
+    if (index === 0) return;
+    const newSetlist = [...setlist];
+    [newSetlist[index - 1], newSetlist[index]] = [newSetlist[index], newSetlist[index - 1]];
+    setSetlist(newSetlist);
+  };
+
+  const handleMoveDown = (index) => {
+    if (index === setlist.length - 1) return;
+    const newSetlist = [...setlist];
+    [newSetlist[index], newSetlist[index + 1]] = [newSetlist[index + 1], newSetlist[index]];
+    setSetlist(newSetlist);
+  };
+
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -129,78 +132,6 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
-  };
-
-  // Touch handlers for mobile support with long press
-  const handleTouchStart = (e, index) => {
-    const touch = e.touches[0];
-    setTouchStartY(touch.clientY);
-
-    // Start long press timer (500ms)
-    const timer = setTimeout(() => {
-      setIsDraggingEnabled(true);
-      setDraggedIndex(index);
-      // Optional: Add haptic feedback if available
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }, 500);
-
-    setLongPressTimer(timer);
-  };
-
-  const handleTouchMove = (e, index) => {
-    const touch = e.touches[0];
-
-    // If dragging hasn't been enabled yet, check if user is scrolling
-    if (!isDraggingEnabled) {
-      // If user moved more than 10px, cancel the long press timer (they're scrolling)
-      if (touchStartY && Math.abs(touch.clientY - touchStartY) > 10) {
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          setLongPressTimer(null);
-        }
-      }
-      return; // Allow normal scrolling
-    }
-
-    // Only if dragging is enabled (after long press)
-    if (draggedIndex === null) return;
-
-    e.preventDefault(); // Prevent scrolling while dragging
-    setTouchCurrentY(touch.clientY);
-
-    // Find which item the touch is currently over
-    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
-    const songItem = elements.find(el => el.classList.contains('selected-song-item'));
-
-    if (songItem) {
-      const allItems = Array.from(document.querySelectorAll('.selected-song-item'));
-      const hoverIndex = allItems.indexOf(songItem);
-
-      if (hoverIndex !== -1 && hoverIndex !== draggedIndex) {
-        const newSetlist = [...setlist];
-        const draggedItem = newSetlist[draggedIndex];
-        newSetlist.splice(draggedIndex, 1);
-        newSetlist.splice(hoverIndex, 0, draggedItem);
-
-        setSetlist(newSetlist);
-        setDraggedIndex(hoverIndex);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    // Clear long press timer if it's still running
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-
-    setDraggedIndex(null);
-    setTouchStartY(null);
-    setTouchCurrentY(null);
-    setIsDraggingEnabled(false);
   };
 
   const filteredSongs = React.useMemo(() => {
@@ -376,14 +307,26 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                           onDragOver={(e) => handleDragOver(e, index)}
                           onDragEnd={handleDragEnd}
                         >
-                          <span
-                            className="drag-handle-mini"
-                            onTouchStart={(e) => handleTouchStart(e, index)}
-                            onTouchMove={(e) => handleTouchMove(e, index)}
-                            onTouchEnd={handleTouchEnd}
-                          >
-                            ⋮⋮
-                          </span>
+                          <div className="reorder-buttons-mini">
+                            <button
+                              type="button"
+                              className="btn-reorder-mini btn-move-up"
+                              onClick={() => handleMoveUp(index)}
+                              disabled={index === 0}
+                              aria-label="Move up"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-reorder-mini btn-move-down"
+                              onClick={() => handleMoveDown(index)}
+                              disabled={index === setlist.length - 1}
+                              aria-label="Move down"
+                            >
+                              ▼
+                            </button>
+                          </div>
                           <span className="song-number-mini">{index + 1}</span>
                           <div className="song-info-mini">
                             <div className="song-title-mini">{song.title}</div>

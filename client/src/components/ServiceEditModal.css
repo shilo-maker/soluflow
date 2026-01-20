@@ -281,21 +281,44 @@
   background-color: #f1f3f5;
 }
 
-.drag-handle-mini {
-  color: #adb5bd;
-  cursor: grab;
-  user-select: none;
-  font-size: 14px;
+/* Reorder buttons for mobile-friendly reordering */
+.reorder-buttons-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   flex-shrink: 0;
-  margin-right: -4px;
-  padding: 8px;
-  margin-left: -8px;
-  touch-action: none; /* Prevent default touch behaviors */
 }
 
-.drag-handle-mini:active {
-  cursor: grabbing;
-  color: var(--color-primary);
+.btn-reorder-mini {
+  width: 24px;
+  height: 16px;
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  color: #495057;
+  font-size: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border-radius: 3px;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-reorder-mini:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.btn-reorder-mini:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.btn-reorder-mini:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .selected-song-item.dragging {
@@ -433,22 +456,15 @@
   }
 
   /* Enhanced touch support for mobile */
-  .drag-handle-mini {
-    font-size: 18px;
-    padding: 12px;
-    margin-left: -12px;
-    margin-right: -8px;
-  }
-
   .selected-song-item {
-    padding: 12px 10px;
+    padding: 10px 8px;
   }
 
-  .selected-song-item.dragging {
-    opacity: 0.7;
-    transform: scale(1.03);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 100;
+  /* Larger touch targets for reorder buttons on mobile */
+  .btn-reorder-mini {
+    width: 32px;
+    height: 22px;
+    font-size: 10px;
   }
 
   .btn-remove-mini,
