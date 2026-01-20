@@ -2,7 +2,7 @@
 
 // Service Worker for SoluFlow - Offline Support
 // Increment version manually when deploying significant updates
-const CACHE_VERSION = '1.0.2';
+const CACHE_VERSION = '2.0.0';
 const CACHE_NAME = `soluflow-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `soluflow-api-v${CACHE_VERSION}`;
 
@@ -44,19 +44,27 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up ALL caches to fix broken state
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating...');
+  console.log('[Service Worker] Activating v' + CACHE_VERSION + '...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
+      console.log('[Service Worker] Clearing ALL caches:', cacheNames);
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== API_CACHE_NAME) {
-            console.log('[Service Worker] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
+          // Delete ALL caches to ensure clean state
+          console.log('[Service Worker] Deleting cache:', cacheName);
+          return caches.delete(cacheName);
         })
       );
+    }).then(() => {
+      // Force refresh all open tabs
+      return self.clients.matchAll({ type: 'window' });
+    }).then((clients) => {
+      clients.forEach((client) => {
+        console.log('[Service Worker] Refreshing client:', client.url);
+        client.navigate(client.url);
+      });
     })
   );
   // Take control of all pages immediately
