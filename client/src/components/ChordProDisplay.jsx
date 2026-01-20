@@ -201,6 +201,23 @@ const ChordProDisplay = React.memo(({
         return;
       }
 
+      // Bracket-style section labels like [Verse 1], [Chorus], etc.
+      // Must be BEFORE chord detection since they also use brackets
+      const bracketLabelMatch = line.trim().match(/^\[([^\]]+)\]$/);
+      if (bracketLabelMatch) {
+        const labelContent = bracketLabelMatch[1].trim();
+        // Check if it's a known section name (in either language) or looks like a section label
+        const isKnownSection = SECTION_TRANSLATIONS.hasOwnProperty(labelContent);
+        // Also check for common section patterns even if not in translations
+        const sectionPatterns = /^(verse|chorus|bridge|intro|outro|pre-chorus|pre chorus|tag|hook|interlude|transition|modulation|פזמון|בית|גשר|פתיחה|סיום|מעבר|פרי)/i;
+        const looksLikeSection = sectionPatterns.test(labelContent);
+
+        if (isKnownSection || looksLikeSection) {
+          parsed.push({ type: 'section-label', content: labelContent });
+          return;
+        }
+      }
+
       // Line with chords
       if (line.includes('[')) {
         const { chords, lyrics } = parseChordLine(line);
