@@ -516,19 +516,95 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
   const errors = [];
   let successCount = 0;
 
+  // A4 page dimensions
+  const pageWidthPx = 595;
+  const pageHeightPx = 842;
+  const pdfWidthMm = 210;
+  const pdfHeightMm = 297;
+
+  // Margins for proper page layout (in pixels)
+  const topMarginPx = 50;      // Top margin for continuation pages
+  const bottomMarginPx = 80;   // Bottom margin for stamp area
+
+  // Usable content height per page
+  const firstPageContentHeight = pageHeightPx - bottomMarginPx;  // First page starts at top
+  const continuationContentHeight = pageHeightPx - topMarginPx - bottomMarginPx;  // Other pages have top margin
+
+  // Helper function to find a clean break point (white row) in the canvas
+  const findCleanBreakPoint = (canvas, targetY, searchRange = 60) => {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+
+    // Search backwards from targetY to find a white row
+    for (let y = targetY; y > targetY - searchRange * 2 && y > 0; y--) {
+      const imageData = ctx.getImageData(0, y, width, 1);
+      const data = imageData.data;
+
+      // Check if this row is mostly white (allowing for some anti-aliasing)
+      let isWhiteRow = true;
+      for (let x = 40; x < width - 40; x++) { // Skip edges (padding area)
+        const idx = x * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        // If pixel is not close to white, this is not a clean break
+        if (r < 250 || g < 250 || b < 250) {
+          isWhiteRow = false;
+          break;
+        }
+      }
+
+      if (isWhiteRow) {
+        return y;
+      }
+    }
+
+    // If no clean break found, return original target
+    return targetY;
+  };
+
+  // Helper function to check if remaining canvas area has any content
+  const hasContentBelow = (canvas, startY) => {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Sample a few rows to check if there's any content
+    const samplesToCheck = 10;
+    const step = Math.floor((height - startY) / samplesToCheck);
+
+    for (let i = 0; i < samplesToCheck && startY + i * step < height; i++) {
+      const y = startY + i * step;
+      const imageData = ctx.getImageData(40, y, width - 80, 1);
+      const data = imageData.data;
+
+      for (let x = 0; x < imageData.width; x++) {
+        const idx = x * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        // If any pixel is not white, there's content
+        if (r < 250 || g < 250 || b < 250) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
   // Generate PDF for each song individually
   for (let i = 0; i < songs.length; i++) {
     const song = songs[i];
     const songTransposition = song.transposition || song.serviceSongTransposition || 0;
     console.log(`Processing song ${i + 1}/${songs.length}:`, song.title, 'with transposition:', songTransposition);
 
-    // Create a temporary container for rendering (off-screen but visible for rendering)
+    // Create a temporary container for rendering - NO height restriction
     const container = document.createElement('div');
     container.style.position = 'fixed';
     container.style.left = '-10000px';
     container.style.top = '0';
-    container.style.width = '595px';
-    container.style.height = '842px';
+    container.style.width = `${pageWidthPx}px`;
     container.style.zIndex = '-9999';
     document.body.appendChild(container);
 
@@ -541,7 +617,7 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
         root.render(
           <A4PDFView
             song={song}
-            transposition={song.transposition || song.serviceSongTransposition || 0}
+            transposition={songTransposition}
             fontSize={fontSize}
           />
         );
@@ -558,60 +634,126 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
         continue;
       }
 
-      console.log('A4 page found, dimensions:', a4Page.offsetWidth, 'x', a4Page.offsetHeight);
+      const contentHeight = a4Page.scrollHeight;
+      console.log('A4 page found, dimensions:', a4Page.offsetWidth, 'x', contentHeight);
 
-      // Configure PDF options for A4 size
-      const serviceName = service.venue || service.title?.split(' ').slice(1).join(' ') || service.title || 'Setlist';
-      const opt = {
-        margin: 0,
-        filename: `SoluFlow - ${serviceName}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          width: 595,
-          height: 842,
-          windowWidth: 595,
-          windowHeight: 842
-        },
-        jsPDF: {
-          unit: 'px',
-          format: [595, 842],
-          orientation: 'portrait',
-          hotfixes: ['px_scaling']
-        }
-      };
+      // Calculate how many pages we need (accounting for margins)
+      let numPages = 1;
+      if (contentHeight > firstPageContentHeight) {
+        const remainingContent = contentHeight - firstPageContentHeight;
+        numPages = 1 + Math.ceil(remainingContent / continuationContentHeight);
+      }
+      console.log(`Song "${song.title}" needs ${numPages} page(s)`);
 
-      // Convert to canvas
-      const canvas = await html2canvas(a4Page, {
+      // Capture the full content
+      const fullCanvas = await html2canvas(a4Page, {
         scale: 2,
         useCORS: true,
         letterRendering: true,
-        logging: true,
+        logging: false,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        height: contentHeight,
+        windowHeight: contentHeight
       });
 
-      console.log('Canvas created, dimensions:', canvas.width, 'x', canvas.height);
+      console.log('Full canvas created, dimensions:', fullCanvas.width, 'x', fullCanvas.height);
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      console.log('Image data length:', imgData.length);
-
-      // Calculate dimensions for PDF (A4 in mm: 210 x 297)
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      console.log('PDF dimensions:', pdfWidth, 'x', pdfHeight, 'mm');
-      console.log('Image will be scaled to:', imgWidth, 'x', imgHeight, 'mm');
-
-      // Add song to existing PDF (title page is already the first page)
       const pdf = window.multiSongPdf;
       if (pdf) {
-        pdf.addPage('a4', 'portrait');
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pdfHeight), undefined, 'FAST');
+        // Track where we are in the source canvas
+        let currentSourceY = 0;
+        let pageNum = 0;
+
+        // Split the canvas into pages with proper margins and smart breaks
+        while (currentSourceY < fullCanvas.height) {
+          // Check if there's actual content remaining (not just empty space from min-height)
+          if (pageNum > 0 && !hasContentBelow(fullCanvas, currentSourceY)) {
+            console.log(`No more content after page ${pageNum}, stopping`);
+            break;
+          }
+
+          // Create a new page in PDF
+          pdf.addPage('a4', 'portrait');
+
+          // Calculate how much content we want on this page
+          let targetContentHeight;
+          let destY;
+
+          if (pageNum === 0) {
+            // First page: start from top
+            targetContentHeight = firstPageContentHeight * 2; // *2 for scale
+            destY = 0;
+          } else {
+            // Continuation pages: add top margin
+            targetContentHeight = continuationContentHeight * 2;
+            destY = topMarginPx * 2;
+          }
+
+          // Find where this page should end
+          let targetEndY = currentSourceY + targetContentHeight;
+
+          // If this isn't the last content, find a clean break point
+          let actualEndY = targetEndY;
+          if (targetEndY < fullCanvas.height) {
+            actualEndY = findCleanBreakPoint(fullCanvas, targetEndY);
+            console.log(`Page ${pageNum + 1}: Target break at ${targetEndY}, clean break at ${actualEndY}`);
+          } else {
+            actualEndY = fullCanvas.height;
+          }
+
+          const sourceHeight = actualEndY - currentSourceY;
+
+          // Create a page-sized canvas
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = pageWidthPx * 2;
+          pageCanvas.height = pageHeightPx * 2;
+          const ctx = pageCanvas.getContext('2d');
+
+          // Fill with white background
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+          // Draw the slice of the full canvas onto this page
+          if (sourceHeight > 0) {
+            ctx.drawImage(
+              fullCanvas,
+              0, currentSourceY, // source x, y
+              fullCanvas.width, sourceHeight, // source width, height
+              0, destY, // dest x, y (with top margin for continuation pages)
+              pageCanvas.width, sourceHeight // dest width, height
+            );
+          }
+
+          // Move to next position for next page
+          currentSourceY = actualEndY;
+
+          // Add PDF stamp to each page
+          try {
+            const stampImg = new Image();
+            stampImg.crossOrigin = 'anonymous';
+            await new Promise((resolve, reject) => {
+              stampImg.onload = resolve;
+              stampImg.onerror = reject;
+              stampImg.src = '/pdf_stamp.png';
+            });
+            // Stamp position: bottom center
+            const stampWidth = 55 * 2; // Scale for high DPI
+            const stampHeight = 25 * 2;
+            const stampX = (pageCanvas.width - stampWidth) / 2;
+            const stampY = pageCanvas.height - 43 * 2 - stampHeight;
+            ctx.globalAlpha = 0.8;
+            ctx.drawImage(stampImg, stampX, stampY, stampWidth, stampHeight);
+            ctx.globalAlpha = 1.0;
+          } catch (stampError) {
+            console.log('Could not add stamp to page:', stampError.message);
+          }
+
+          const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+          pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidthMm, pdfHeightMm, undefined, 'FAST');
+
+          pageNum++;
+        }
 
         // If this is the last song, save the PDF
         if (i === songs.length - 1) {
@@ -821,7 +963,80 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
 
   document.body.removeChild(titlePageContainer);
 
-  // Generate PDF for each song
+  // A4 page dimensions
+  const pageWidthPx = 595;
+  const pageHeightPx = 842;
+  const pdfWidthMm = 210;
+  const pdfHeightMm = 297;
+
+  // Margins for proper page layout (in pixels)
+  const topMarginPx = 50;      // Top margin for continuation pages
+  const bottomMarginPx = 80;   // Bottom margin for stamp area
+
+  // Usable content height per page
+  const firstPageContentHeight = pageHeightPx - bottomMarginPx;  // First page starts at top
+  const continuationContentHeight = pageHeightPx - topMarginPx - bottomMarginPx;  // Other pages have top margin
+
+  // Helper function to find a clean break point (white row) in the canvas
+  const findCleanBreakPoint = (canvas, targetY, searchRange = 60) => {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+
+    // Search backwards from targetY to find a white row
+    for (let y = targetY; y > targetY - searchRange * 2 && y > 0; y--) {
+      const imageData = ctx.getImageData(0, y, width, 1);
+      const data = imageData.data;
+
+      // Check if this row is mostly white
+      let isWhiteRow = true;
+      for (let x = 40; x < width - 40; x++) {
+        const idx = x * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        if (r < 250 || g < 250 || b < 250) {
+          isWhiteRow = false;
+          break;
+        }
+      }
+
+      if (isWhiteRow) {
+        return y;
+      }
+    }
+
+    return targetY;
+  };
+
+  // Helper function to check if remaining canvas area has any content
+  const hasContentBelow = (canvas, startY) => {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const samplesToCheck = 10;
+    const step = Math.floor((height - startY) / samplesToCheck);
+
+    for (let i = 0; i < samplesToCheck && startY + i * step < height; i++) {
+      const y = startY + i * step;
+      const imageData = ctx.getImageData(40, y, width - 80, 1);
+      const data = imageData.data;
+
+      for (let x = 0; x < imageData.width; x++) {
+        const idx = x * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        if (r < 250 || g < 250 || b < 250) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  // Generate PDF for each song with multi-page support
   for (let i = 0; i < songs.length; i++) {
     const song = songs[i];
     const songTransposition = song.transposition || song.serviceSongTransposition || 0;
@@ -830,8 +1045,7 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
     container.style.position = 'fixed';
     container.style.left = '-10000px';
     container.style.top = '0';
-    container.style.width = '595px';
-    container.style.height = '842px';
+    container.style.width = `${pageWidthPx}px`;
     container.style.zIndex = '-9999';
     document.body.appendChild(container);
 
@@ -856,21 +1070,102 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
         continue;
       }
 
-      const canvas = await html2canvas(a4Page, {
+      const contentHeight = a4Page.scrollHeight;
+
+      const fullCanvas = await html2canvas(a4Page, {
         scale: 2,
         useCORS: true,
         letterRendering: true,
         logging: false,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        height: contentHeight,
+        windowHeight: contentHeight
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      // Track where we are in the source canvas
+      let currentSourceY = 0;
+      let pageNum = 0;
 
-      pdf.addPage('a4', 'portrait');
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pdfHeight), undefined, 'FAST');
+      // Split into pages with proper margins and smart breaks
+      while (currentSourceY < fullCanvas.height) {
+        // Check if there's actual content remaining (not just empty space from min-height)
+        if (pageNum > 0 && !hasContentBelow(fullCanvas, currentSourceY)) {
+          break;
+        }
+
+        pdf.addPage('a4', 'portrait');
+
+        // Calculate how much content we want on this page
+        let targetContentHeight;
+        let destY;
+
+        if (pageNum === 0) {
+          targetContentHeight = firstPageContentHeight * 2;
+          destY = 0;
+        } else {
+          targetContentHeight = continuationContentHeight * 2;
+          destY = topMarginPx * 2;
+        }
+
+        // Find where this page should end
+        let targetEndY = currentSourceY + targetContentHeight;
+
+        // If this isn't the last content, find a clean break point
+        let actualEndY = targetEndY;
+        if (targetEndY < fullCanvas.height) {
+          actualEndY = findCleanBreakPoint(fullCanvas, targetEndY);
+        } else {
+          actualEndY = fullCanvas.height;
+        }
+
+        const sourceHeight = actualEndY - currentSourceY;
+
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = pageWidthPx * 2;
+        pageCanvas.height = pageHeightPx * 2;
+        const ctx = pageCanvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+        if (sourceHeight > 0) {
+          ctx.drawImage(
+            fullCanvas,
+            0, currentSourceY,
+            fullCanvas.width, sourceHeight,
+            0, destY,
+            pageCanvas.width, sourceHeight
+          );
+        }
+
+        currentSourceY = actualEndY;
+
+        // Add stamp
+        try {
+          const stampImg = new Image();
+          stampImg.crossOrigin = 'anonymous';
+          await new Promise((resolve, reject) => {
+            stampImg.onload = resolve;
+            stampImg.onerror = reject;
+            stampImg.src = '/pdf_stamp.png';
+          });
+          const stampWidth = 55 * 2;
+          const stampHeight = 25 * 2;
+          const stampX = (pageCanvas.width - stampWidth) / 2;
+          const stampY = pageCanvas.height - 43 * 2 - stampHeight;
+          ctx.globalAlpha = 0.8;
+          ctx.drawImage(stampImg, stampX, stampY, stampWidth, stampHeight);
+          ctx.globalAlpha = 1.0;
+        } catch (stampError) {
+          // Stamp loading failed, continue without it
+        }
+
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+
+        pageNum++;
+      }
 
       root.unmount();
       document.body.removeChild(container);

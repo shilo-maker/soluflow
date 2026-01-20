@@ -8,16 +8,16 @@
   min-height: 100vh;
 }
 
-/* A4 Page - Exact dimensions 595x842px */
+/* A4 Page - Width fixed, height auto for content */
 .a4-page {
   position: relative;
   width: 595px;
-  height: 842px;
+  min-height: 842px;
   background-color: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   padding: 40px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Song Header */
@@ -51,7 +51,6 @@
 .a4-song-content {
   position: relative;
   width: 100%;
-  max-height: 680px;
   overflow: visible;
 }
 
@@ -66,7 +65,6 @@
   display: flex;
   gap: 20px;
   width: 100%;
-  max-height: 680px;
 }
 
 .a4-column-left,
