@@ -4,7 +4,7 @@ const workspaceService = {
   // Get all user's workspaces
   getAllWorkspaces: async () => {
     const response = await api.get('/workspaces');
-    return response.data;
+    return response.data.workspaces || response.data;
   },
 
   // Get specific workspace details

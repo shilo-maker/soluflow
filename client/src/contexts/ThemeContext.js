@@ -58,6 +58,17 @@ const guestTheme = {
   chordSize: 1.0
 };
 
+// Normalize theme data — handles both snake_case (from API) and camelCase (from localStorage)
+const normalizeTheme = (data) => {
+  if (!data || typeof data !== 'object') return defaultTheme;
+  return {
+    gradientPreset: data.gradient_preset || data.gradientPreset || defaultTheme.gradientPreset,
+    textColor: data.text_color || data.textColor || defaultTheme.textColor,
+    chordColor: data.chord_color || data.chordColor || defaultTheme.chordColor,
+    chordSize: data.chord_size ?? data.chordSize ?? defaultTheme.chordSize,
+  };
+};
+
 export const ThemeProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
 
@@ -66,12 +77,12 @@ export const ThemeProvider = ({ children }) => {
     const cachedTheme = localStorage.getItem('userTheme');
     if (cachedTheme) {
       try {
-        return JSON.parse(cachedTheme);
+        return normalizeTheme(JSON.parse(cachedTheme));
       } catch (e) {
         return defaultTheme;
       }
     }
-    return defaultTheme; // Start with professional theme instead of guest theme
+    return defaultTheme;
   };
 
   const [theme, setTheme] = useState(getInitialTheme);
@@ -83,7 +94,7 @@ export const ThemeProvider = ({ children }) => {
       if (isAuthenticated && user && !user.isGuest) {
         try {
           const response = await api.get('/users/theme/preferences');
-          const userTheme = response.data;
+          const userTheme = normalizeTheme(response.data);
           setTheme(userTheme);
           // Cache in localStorage for instant loading next time
           localStorage.setItem('userTheme', JSON.stringify(userTheme));
@@ -109,9 +120,9 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     if (!loading) {
       // Apply text and chord styling
-      document.documentElement.style.setProperty('--theme-text-color', theme.textColor);
-      document.documentElement.style.setProperty('--theme-chord-color', theme.chordColor);
-      document.documentElement.style.setProperty('--theme-chord-size', theme.chordSize.toString());
+      document.documentElement.style.setProperty('--theme-text-color', theme.textColor || defaultTheme.textColor);
+      document.documentElement.style.setProperty('--theme-chord-color', theme.chordColor || defaultTheme.chordColor);
+      document.documentElement.style.setProperty('--theme-chord-size', String(theme.chordSize ?? defaultTheme.chordSize));
 
       // Apply gradient preset to body
       const preset = GRADIENT_PRESETS[theme.gradientPreset] || GRADIENT_PRESETS.professional;
@@ -147,9 +158,8 @@ export const ThemeProvider = ({ children }) => {
   const updateTheme = useCallback(async (newTheme) => {
     try {
       const response = await api.put('/users/theme/preferences', newTheme);
-      const updatedTheme = response.data.themePreferences;
+      const updatedTheme = normalizeTheme(response.data.themePreferences || response.data.theme_preferences || response.data);
       setTheme(updatedTheme);
-      // Cache the updated theme in localStorage
       localStorage.setItem('userTheme', JSON.stringify(updatedTheme));
       return response.data;
     } catch (error) {
@@ -160,11 +170,9 @@ export const ThemeProvider = ({ children }) => {
 
   const resetTheme = useCallback(async () => {
     try {
-      const response = await api.put('/users/theme/preferences', defaultTheme);
-      const updatedTheme = response.data.themePreferences;
-      setTheme(updatedTheme);
-      localStorage.setItem('userTheme', JSON.stringify(updatedTheme));
-      return response.data;
+      await api.put('/users/theme/preferences', defaultTheme);
+      setTheme(defaultTheme);
+      localStorage.setItem('userTheme', JSON.stringify(defaultTheme));
     } catch (error) {
       console.error('Error resetting theme:', error);
       throw error;

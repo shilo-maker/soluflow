@@ -77,7 +77,7 @@ api.interceptors.response.use(
 
               if (personalWorkspace && !personalWorkspace.is_active) {
                 // Switch to personal workspace
-                await api.post(`/workspaces/${personalWorkspace.id}/switch`);
+                await api.put(`/workspaces/${personalWorkspace.id}/switch`);
                 console.log('[API] Switched to personal workspace');
 
                 // Reload the page to reflect new workspace

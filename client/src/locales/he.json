@@ -199,7 +199,9 @@
     "saveTheme": "שמור ערכת נושא",
     "themeSuccessMessage": "ערכת הנושא נשמרה בהצלחה",
     "themeErrorMessage": "שמירת ערכת הנושא נכשלה",
-    "themeResetMessage": "ערכת הנושא אופסה לברירת מחדל"
+    "themeResetMessage": "ערכת הנושא אופסה לברירת מחדל",
+    "enterUsername": "הזן שם משתמש",
+    "usernameUpdated": "שם המשתמש נשמר בהצלחה"
   },
   "workspace": {
     "switchWorkspace": "החלף סביבת עבודה",

@@ -199,7 +199,9 @@
     "saveTheme": "Save Theme",
     "themeSuccessMessage": "Theme saved successfully",
     "themeErrorMessage": "Failed to save theme",
-    "themeResetMessage": "Theme reset to default"
+    "themeResetMessage": "Theme reset to default",
+    "enterUsername": "Enter a username",
+    "usernameUpdated": "Username saved successfully"
   },
   "workspace": {
     "switchWorkspace": "Switch Workspace",

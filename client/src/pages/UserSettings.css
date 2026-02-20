@@ -121,6 +121,39 @@
   color: var(--color-text-medium);
 }
 
+.username-edit-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.username-edit-row input {
+  flex: 1;
+}
+
+.btn-save-username {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-sm);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+}
+
+.btn-save-username:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-save-username:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .input-hint {
   display: block;
   margin-top: var(--spacing-xs);

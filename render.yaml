@@ -8,11 +8,11 @@ services:
     buildCommand: cd client && npm install && npm run build
     startCommand: bash start.sh
     envVars:
-      # React build-time environment variables
+      # React build-time environment variables (pointing to merged SoluPresenter backend)
       - key: REACT_APP_API_URL
-        value: https://soluflow.app/api
+        value: https://solupresenter-backend-4rn5.onrender.com/api/flow
       - key: REACT_APP_SERVER_URL
-        value: https://soluflow.app
+        value: https://solupresenter-backend-4rn5.onrender.com
       # Node Configuration
       - key: NODE_ENV
         value: production
