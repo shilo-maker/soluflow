@@ -11,6 +11,7 @@
   border-bottom: none;
   z-index: var(--z-navigation);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  overflow: visible;
 }
 
 .header-content {
@@ -178,23 +179,12 @@
 }
 
 .user-dropdown-menu {
-  position: absolute;
-  right: 0;
-  top: 100%;
   background: white;
   border: 1px solid #eee;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 200px;
-  max-width: 280px;
-  z-index: var(--z-dropdown);
-  margin-top: 4px;
-}
-
-/* RTL support - align dropdown to left when in RTL mode */
-[dir="rtl"] .user-dropdown-menu {
-  right: auto;
-  left: 0;
+  max-width: min(280px, calc(100vw - 20px));
 }
 
 .user-dropdown-menu .menu-item {
@@ -350,20 +340,117 @@
     gap: 8px;
   }
 
-  /* Fix dropdown overflow on mobile */
   .user-dropdown-menu {
-    right: 0;
-    left: auto;
     min-width: 140px;
     max-width: calc(100vw - 30px);
-    transform: translateX(0);
   }
+}
 
-  /* RTL - fix dropdown overflow on mobile */
-  [dir="rtl"] .user-dropdown-menu {
-    left: auto;
-    transform: translateX(0);
-  }
+/* App Switcher (waffle menu) */
+.app-switcher-container {
+  position: relative;
+}
+
+.app-switcher-button {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.app-switcher-button:hover {
+  opacity: 0.8;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.app-switcher-dropdown {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  min-width: 210px;
+  max-width: calc(100vw - 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  cursor: default;
+}
+
+[dir="rtl"] .app-card {
+  text-align: right;
+}
+
+.app-card-active {
+  background: rgba(78, 205, 196, 0.08);
+  border-color: rgba(78, 205, 196, 0.2);
+}
+
+.app-card-link {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font: inherit;
+}
+
+.app-card-link:hover {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.app-card-link:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.app-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.app-card-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.app-card-desc {
+  font-size: 11px;
+  color: #888;
+}
+
+.app-card-error {
+  color: #dc3545 !important;
 }
 
 /* Extra small screens */

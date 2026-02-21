@@ -30,6 +30,7 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const SongReports = lazy(() => import('./pages/SongReports'));
+const SSOCallback = lazy(() => import('./pages/SSOCallback'));
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => (
@@ -59,7 +60,8 @@ function AppContent() {
                     location.pathname === '/register' ||
                     location.pathname === '/verify-email' ||
                     location.pathname === '/forgot-password' ||
-                    location.pathname === '/reset-password';
+                    location.pathname === '/reset-password' ||
+                    location.pathname === '/sso';
   const isGuestPage = location.pathname.startsWith('/service/code/') ||
                       location.pathname.startsWith('/song/code/') ||
                       location.pathname.startsWith('/song/') ||
@@ -106,6 +108,7 @@ function AppContent() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/service/code/:code" element={<GuestServiceView />} />
             <Route path="/song/code/:code" element={<SharedSongView />} />
+            <Route path="/sso" element={<SSOCallback />} />
 
             {/* Root route - conditional based on auth */}
             <Route path="/" element={

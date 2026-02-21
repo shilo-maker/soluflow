@@ -67,6 +67,22 @@ const authService = {
   // Check if user is authenticated
   isAuthenticated: () => {
     return !!localStorage.getItem('token');
+  },
+
+  // SSO: generate one-time code for cross-app login
+  generateSSOCode: async () => {
+    const response = await api.post('/auth/sso/code');
+    return response.data;
+  },
+
+  // SSO: exchange one-time code for JWT
+  exchangeSSOCode: async (code) => {
+    const response = await api.post('/auth/sso/exchange', { code });
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
   }
 };
 
