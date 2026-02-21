@@ -18,7 +18,7 @@ const securityHeaders = (req, res, next) => {
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https: blob:",
     // connect-src includes fonts for service worker fetch caching
-    `connect-src 'self' ws: wss: ${clientUrl} https://soluflow.app http://localhost:* https://i.ytimg.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com`,
+    `connect-src 'self' ws: wss: ${clientUrl} https://soluflow.app https://solupresenter-backend-4rn5.onrender.com http://localhost:* https://i.ytimg.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com`,
     "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
     "object-src 'none'",
     "base-uri 'self'",
