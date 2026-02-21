@@ -85,11 +85,13 @@ const Login = () => {
     } catch (err) {
       console.error('Login error:', err);
 
-      // Extract error message
+      // Extract error message — api interceptor rejects with response.data directly
       let errorMessage = 'Login failed. Please check your credentials.';
-      if (err.response?.data?.error) {
+      if (err?.error) {
+        errorMessage = String(err.error);
+      } else if (err?.response?.data?.error) {
         errorMessage = String(err.response.data.error);
-      } else if (err.message) {
+      } else if (err?.message) {
         errorMessage = String(err.message);
       }
 
