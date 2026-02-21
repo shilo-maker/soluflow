@@ -105,6 +105,7 @@ const ChordProDisplay = React.memo(({
 
   // Transpose the content if needed, using key-based notation (sharps or flats)
   const transposedContent = useMemo(() => {
+    if (!content) return '';
     // The transpose function now handles key-based notation internally
     return transpose(content, transposition, songKey);
   }, [content, transposition, songKey]);
@@ -164,6 +165,7 @@ const ChordProDisplay = React.memo(({
   }, [autoColumnCount, onAutoColumnCountChange]);
 
   const parseChordPro = (text) => {
+    if (!text) return [];
     const lines = text.split('\n');
     const parsed = [];
 
