@@ -39,15 +39,16 @@ const songService = {
   getSongById: async (id) => {
     try {
       const response = await api.get(`/songs/${id}`);
+      const song = response.data.song || response.data;
 
       // Save song to offline storage for future offline use
-      if (response.data) {
-        await offlineStorage.saveSong(response.data).catch(err => {
+      if (song) {
+        await offlineStorage.saveSong(song).catch(err => {
           console.warn('Failed to save song to offline storage:', err);
         });
       }
 
-      return response.data;
+      return song;
     } catch (error) {
       // If network request fails, try to get song from offline storage
       console.warn('Network request failed, attempting to load from offline storage');
@@ -75,29 +76,31 @@ const songService = {
   // Create new song
   createSong: async (songData) => {
     const response = await api.post('/songs', songData);
+    const song = response.data.song || response.data;
 
     // Save new song to offline storage
-    if (response.data) {
-      await offlineStorage.saveSong(response.data).catch(err => {
+    if (song) {
+      await offlineStorage.saveSong(song).catch(err => {
         console.warn('Failed to save new song to offline storage:', err);
       });
     }
 
-    return response.data;
+    return song;
   },
 
   // Update song
   updateSong: async (id, songData) => {
     const response = await api.put(`/songs/${id}`, songData);
+    const song = response.data.song || response.data;
 
     // Update song in offline storage
-    if (response.data) {
-      await offlineStorage.saveSong(response.data).catch(err => {
+    if (song) {
+      await offlineStorage.saveSong(song).catch(err => {
         console.warn('Failed to update song in offline storage:', err);
       });
     }
 
-    return response.data;
+    return song;
   },
 
   // Delete song
@@ -121,7 +124,7 @@ const songService = {
   // Get song by code (for sharing)
   getSongByCode: async (code) => {
     const response = await api.get(`/songs/code/${code}`);
-    return response.data;
+    return response.data.song || response.data;
   },
 
   // Accept shared song and add to library
