@@ -94,7 +94,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
       // TODO: Load existing workspace selections for edit mode if needed
       setSelectedWorkspaces([]);
       // Load tags if available
-      setSelectedTags(song.tags || []);
+      setSelectedTags(song.flow_tags || song.tags || []);
     } else {
       // Reset form for create mode
       setFormData({

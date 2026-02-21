@@ -28,7 +28,7 @@ const TagInput = ({ songId, songTags = [], isPublicSong, songOwnerId, onChange }
     const fetchTags = async () => {
       try {
         const response = await api.get('/tags');
-        setAvailableTags(response.data);
+        setAvailableTags(response.data.tags || response.data);
       } catch (err) {
         console.error('Error fetching tags:', err);
       }
@@ -89,7 +89,7 @@ const TagInput = ({ songId, songTags = [], isPublicSong, songOwnerId, onChange }
         color: newTagColor
       });
 
-      const newTag = response.data;
+      const newTag = response.data.tag || response.data;
       setAvailableTags([...availableTags, newTag]);
       handleAddTag(newTag);
       setNewTagName('');
