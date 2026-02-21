@@ -152,7 +152,7 @@ const WorkspaceManagement = () => {
   const isPersonalWorkspace = activeWorkspace.workspace_type === 'personal';
   const canGenerateInvite = !isPersonalWorkspace;
   const canLeave = !isPersonalWorkspace;
-  const canDelete = workspaceDetails?.role === 'admin' || workspaceDetails?.created_by === user?.id;
+  const canDelete = workspaceDetails?.role === 'admin' || workspaceDetails?.created_by_id === user?.id;
 
   return (
     <div className="workspace-management">

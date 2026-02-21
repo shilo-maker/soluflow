@@ -340,7 +340,7 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
               songId={song.id}
               songTags={selectedTags}
               isPublicSong={song.is_public}
-              songOwnerId={song.created_by}
+              songOwnerId={song.created_by_id}
               onChange={setSelectedTags}
             />
           )}

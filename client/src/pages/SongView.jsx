@@ -1159,7 +1159,7 @@ const SongView = () => {
                 ⚠️ Disconnected
               </div>
             )}
-            {isAuthenticated && (user?.role === 'admin' || song.created_by === user?.id) && (
+            {isAuthenticated && (user?.role === 'admin' || song.created_by_id === user?.id) && (
               <>
                 <button className="btn-edit-header" onClick={handleEditSong}>Edit</button>
                 {user?.role === 'admin' && (

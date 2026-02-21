@@ -58,7 +58,7 @@ const LibrarySongCard = React.memo(({ song, isSelected, onClick, user, activeWor
               <>
                 {song.workspace?.id === activeWorkspace?.id && song.workspace?.workspace_type === 'organization' ? (
                   <span className="badge-workspace">{song.workspace.name}</span>
-                ) : song.created_by === user.id ? (
+                ) : song.created_by_id === user.id ? (
                   <span className="badge-personal">{t('workspace.personal')}</span>
                 ) : user.role === 'admin' ? (
                   <span className="badge-personal-user">{t('workspace.personal')}/{song.creator?.username || 'Unknown'}</span>
@@ -623,7 +623,7 @@ const Library = () => {
                           {t('library.addToService')}
                         </button>
                       )}
-                      {(user?.role === 'admin' || selectedSong.created_by === user?.id) && (
+                      {(user?.role === 'admin' || selectedSong.created_by_id === user?.id) && (
                         <button
                           className="menu-item"
                           onClick={(e) => {
@@ -635,7 +635,7 @@ const Library = () => {
                           {t('library.edit')}
                         </button>
                       )}
-                      {!selectedSong.is_public && (user?.role === 'admin' || selectedSong.created_by === user?.id) && (
+                      {!selectedSong.is_public && (user?.role === 'admin' || selectedSong.created_by_id === user?.id) && (
                         <button
                           className="menu-item"
                           onClick={(e) => {
@@ -659,7 +659,7 @@ const Library = () => {
                           {t('library.makePublic')}
                         </button>
                       )}
-                      {(user?.role === 'admin' || selectedSong.created_by === user?.id) && (
+                      {(user?.role === 'admin' || selectedSong.created_by_id === user?.id) && (
                         <button
                           className="menu-item menu-item-danger"
                           onClick={(e) => {

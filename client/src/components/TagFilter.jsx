@@ -13,7 +13,7 @@ const TagFilter = ({ selectedTags, onChange }) => {
     const fetchTags = async () => {
       try {
         const response = await api.get('/tags');
-        setAvailableTags(response.data);
+        setAvailableTags(response.data.tags || response.data);
       } catch (err) {
         console.error('Error fetching tags:', err);
       } finally {
