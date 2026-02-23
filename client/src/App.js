@@ -31,6 +31,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const SongReports = lazy(() => import('./pages/SongReports'));
 const SSOCallback = lazy(() => import('./pages/SSOCallback'));
+const SolucastRedirect = lazy(() => import('./pages/SolucastRedirect'));
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => (
@@ -62,7 +63,8 @@ function AppContent() {
                     location.pathname === '/forgot-password' ||
                     location.pathname === '/reset-password' ||
                     location.pathname === '/sso';
-  const isGuestPage = location.pathname.startsWith('/service/code/') ||
+  const isGuestPage = location.pathname.startsWith('/open/') ||
+                      location.pathname.startsWith('/service/code/') ||
                       location.pathname.startsWith('/song/code/') ||
                       location.pathname.startsWith('/song/') ||
                       (!isAuthenticated && location.pathname === '/');
@@ -106,6 +108,7 @@ function AppContent() {
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/open/:code" element={<SolucastRedirect />} />
             <Route path="/service/code/:code" element={<GuestServiceView />} />
             <Route path="/song/code/:code" element={<SharedSongView />} />
             <Route path="/sso" element={<SSOCallback />} />

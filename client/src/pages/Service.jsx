@@ -767,7 +767,7 @@ const Service = () => {
   const handleCopySolucastLink = async (service) => {
     try {
       const data = await serviceService.getShareLink(service.id);
-      const link = `solucast://import/${data.code}`;
+      const link = `${window.location.origin}/open/${data.code}`;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(link);
       } else {

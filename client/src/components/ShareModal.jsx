@@ -132,7 +132,7 @@ const ShareModal = ({ service, isOpen, onClose }) => {
     }
   };
 
-  const getSolucastLink = () => `solucast://import/${shareCode}`;
+  const getSolucastLink = () => `${window.location.origin}/open/${shareCode}`;
 
   const handleCopySolucastLink = async () => {
     try {
