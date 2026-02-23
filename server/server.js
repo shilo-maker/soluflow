@@ -147,6 +147,84 @@ if (process.env.NODE_ENV === 'production') {
     }
   }));
 
+  // Dynamic Open Graph meta tags for SoluCast deep link pages (WhatsApp previews)
+  app.get('/open/:code', async (req, res) => {
+    const { code } = req.params;
+    let title = 'Open in SoluCast';
+    let description = 'Click to open this service in the SoluCast desktop app';
+
+    try {
+      const { Service, ServiceSong } = require('./models');
+      const service = await Service.findOne({ where: { code } });
+      if (service) {
+        const songCount = await ServiceSong.count({ where: { service_id: service.id, segment_type: 'song' } });
+        title = service.title || 'Service';
+        const datePart = service.date ? new Date(service.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+        description = `${songCount} song${songCount !== 1 ? 's' : ''}${datePart ? ` · ${datePart}` : ''} — tap to open in SoluCast`;
+      }
+    } catch (err) {
+      console.error('[OG] Failed to fetch service for open page:', err.message);
+    }
+
+    const ogImage = `${req.protocol}://${req.get('host')}/solucast-logo.png`;
+    const safeTitle = title.replace(/[<>"&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;'}[c]));
+    const safeDesc = description.replace(/[<>"&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;'}[c]));
+    const safeCode = code.replace(/[^A-Za-z0-9]/g, '');
+
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.send(`<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${safeTitle} — SoluCast</title>
+<meta property="og:type" content="website" />
+<meta property="og:title" content="${safeTitle}" />
+<meta property="og:description" content="${safeDesc}" />
+<meta property="og:image" content="${ogImage}" />
+<meta property="og:image:width" content="512" />
+<meta property="og:image:height" content="512" />
+<meta property="og:site_name" content="SoluCast" />
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0a0a0f 0%,#12121a 50%,#0d0d14 100%);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;padding:24px;text-align:center}
+.spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,0.1);border-top-color:#06b6d4;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:24px}
+@keyframes spin{to{transform:rotate(360deg)}}
+h2{font-size:20px;margin-bottom:8px}
+.sub{color:rgba(255,255,255,0.5);font-size:14px}
+.sub strong{color:#06b6d4}
+.fallback{display:none}
+.fallback h2{font-size:22px;margin-bottom:16px}
+.fallback p{color:rgba(255,255,255,0.6);font-size:14px;max-width:400px;margin-bottom:24px}
+.btn{background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;border-radius:10px;padding:14px 32px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:16px}
+.code-box{background:rgba(255,255,255,0.08);border-radius:10px;padding:16px 24px;margin-top:8px}
+.code-box .label{color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:8px}
+.code-box .code{font-size:24px;font-weight:700;letter-spacing:3px;color:#06b6d4;font-family:monospace}
+</style>
+</head><body>
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>Opening SoluCast...</h2>
+  <p class="sub">Launching the desktop app with code <strong>${safeCode}</strong></p>
+</div>
+<div id="fallback" class="fallback">
+  <h2>Open in SoluCast Desktop</h2>
+  <p>The desktop app didn't open automatically. You can try again or copy the code to import manually.</p>
+  <button class="btn" onclick="window.location.href='solucast://import/${safeCode}'">Open SoluCast</button>
+  <div class="code-box">
+    <p class="label">Or enter this code manually in SoluCast:</p>
+    <span class="code">${safeCode}</span>
+  </div>
+</div>
+<script>
+window.location.href='solucast://import/${safeCode}';
+setTimeout(function(){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('fallback').style.display='block';
+},1500);
+</script>
+</body></html>`);
+  });
+
   // Handle React routing, return all requests to React app
   // Always set no-cache headers for HTML responses
   app.use((req, res) => {
