@@ -764,6 +764,33 @@ const Service = () => {
     setIsShareModalOpen(true);
   };
 
+  const handleCopySolucastLink = async (service) => {
+    try {
+      const data = await serviceService.getShareLink(service.id);
+      const link = `solucast://import/${data.code}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (!successful) throw new Error('Copy command failed');
+      }
+      setToastMessage('SoluCast link copied!');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Failed to copy SoluCast link:', err);
+      setToastMessage('Failed to copy link');
+      setShowToast(true);
+    }
+  };
+
   const handleDownloadPDF = async () => {
     if (!selectedService || !serviceDetails || !serviceDetails.songs) {
       setToastMessage('No songs to download');
@@ -1146,6 +1173,18 @@ const Service = () => {
                             }}
                           >
                             {t('service.share')}
+                          </button>
+                        )}
+                        {service.isCreator && (
+                          <button
+                            className="menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              handleCopySolucastLink(service);
+                            }}
+                          >
+                            SoluCast Link
                           </button>
                         )}
                         <button

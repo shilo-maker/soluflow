@@ -8,6 +8,7 @@ const ShareModal = ({ service, isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copiedSolucast, setCopiedSolucast] = useState(false);
   const modalRef = useRef(null);
   const closeButtonRef = useRef(null);
 
@@ -131,6 +132,20 @@ const ShareModal = ({ service, isOpen, onClose }) => {
     }
   };
 
+  const getSolucastLink = () => `solucast://import/${shareCode}`;
+
+  const handleCopySolucastLink = async () => {
+    try {
+      await copyToClipboard(getSolucastLink());
+      setCopiedSolucast(true);
+      setTimeout(() => setCopiedSolucast(false), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+      setError('Failed to copy link. Please copy manually.');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -201,6 +216,27 @@ const ShareModal = ({ service, isOpen, onClose }) => {
                     {copied ? 'Copied!' : 'Copy Link'}
                   </button>
                 </div>
+              </div>
+
+              <div className="share-section">
+                <label className="share-label">🖥️ SoluCast Desktop Link</label>
+                <div className="share-link-display">
+                  <input
+                    type="text"
+                    className="share-link-input"
+                    value={getSolucastLink()}
+                    readOnly
+                    onClick={(e) => e.target.select()}
+                  />
+                  <button
+                    type="button"
+                    className="btn-copy-link"
+                    onClick={handleCopySolucastLink}
+                  >
+                    {copiedSolucast ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+                <p className="share-hint">Opens this service directly in the SoluCast desktop app</p>
               </div>
 
               <div className="share-section qr-section">
