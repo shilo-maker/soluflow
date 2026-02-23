@@ -9,10 +9,12 @@ const getAllSongs = async (req, res) => {
     const userRole = req.user?.role;
     const activeWorkspaceId = req.user?.active_workspace_id;
 
-    // Pagination parameters
+    // Pagination parameters (limit=0 means fetch all)
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 50)); // Increased max from 100 to 1000
-    const offset = (page - 1) * limit;
+    const rawLimit = parseInt(req.query.limit);
+    const fetchAll = rawLimit === 0;
+    const limit = fetchAll ? undefined : Math.min(5000, Math.max(1, rawLimit || 50));
+    const offset = fetchAll ? undefined : (page - 1) * limit;
 
     // Build where clause based on role and workspace
     let whereClause = {};
@@ -132,13 +134,14 @@ const getAllSongs = async (req, res) => {
       songs: songsWithShareInfo,
       pagination: {
         page,
-        limit,
+        limit: limit || count,
         total: count,
-        totalPages: Math.ceil(count / limit)
+        totalPages: limit ? Math.ceil(count / limit) : 1
       }
     });
   } catch (error) {
     console.error('Error fetching songs:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({ error: 'Failed to fetch songs' });
   }
 };
