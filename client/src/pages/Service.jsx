@@ -97,17 +97,36 @@ const Service = () => {
 
       try {
         setLoading(true);
-        const data = await serviceService.getAllServices();
+        const data = await serviceService.getAllServices(activeWorkspace?.id);
+
+        // Enrich services with computed flags for UI (canEdit, isCreator, isToday, isPast)
+        const today = new Date().toISOString().split('T')[0];
+        const enriched = data.map(s => {
+          const creatorId = s.created_by_id || s.createdById;
+          const leaderId = s.leader_id || s.leaderId;
+          const isCreator = creatorId === user.id;
+          const isLeaderOfService = leaderId === user.id;
+          const serviceDate = s.date;
+          return {
+            ...s,
+            isCreator,
+            canEdit: isCreator || isLeaderOfService || user.role === 'admin',
+            isToday: serviceDate === today,
+            isPast: serviceDate ? serviceDate < today : false,
+            isShared: s.is_shared || s.isShared || false,
+            isFromSharedLink: s.is_from_shared_link || s.isFromSharedLink || false,
+          };
+        });
 
         if (isMounted) {
-          setServices(data);
+          setServices(enriched);
           setError(null);
 
           // Set initial selected service
-          if (data.length > 0) {
+          if (enriched.length > 0) {
             const initialService = id
-              ? data.find(s => s.id === parseInt(id)) || data[0]
-              : data[0];
+              ? enriched.find(s => s.id === id || s.id === parseInt(id)) || enriched[0]
+              : enriched[0];
             setSelectedService(initialService);
           }
         }
@@ -474,10 +493,11 @@ const Service = () => {
   const currentSong = currentItem;
 
   // Detect Hebrew in song content
-  const hasHebrew = (text) => /[\u0590-\u05FF]/.test(text);
+  const hasHebrew = (text) => /[\u0590-\u05FF]/.test(text || '');
 
   // Get preview of song content (first 20 lines)
   const getPreviewContent = (content) => {
+    if (!content) return '';
     const lines = content.split('\n');
     if (lines.length <= 20) return content;
     return lines.slice(0, 20).join('\n') + '\n...';
@@ -1249,7 +1269,7 @@ const Service = () => {
           {currentSong && (
             <div
               className="song-display"
-              onClick={() => navigate(`/song/${currentSong.id}`, {
+              onClick={() => navigate(`/song/${currentSong.song_id || currentSong.id}`, {
                 state: {
                   setlist: currentSetList,
                   currentIndex: selectedSongIndex,

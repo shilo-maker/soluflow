@@ -1,12 +1,49 @@
 import api from './api';
 import offlineStorage from '../utils/offlineStorage';
 
+// Normalize service_songs (snake_case nested objects from API) into flat song objects
+// that the frontend expects (title, content, key, etc. at top level)
+function normalizeServiceSongs(service) {
+  const rawSongs = service.service_songs || service.serviceSongs || service.songs || [];
+  service.songs = rawSongs.map(item => {
+    const song = item.song || {};
+    return {
+      id: item.id,
+      song_id: song.id || item.song_id || item.songId,
+      position: item.position,
+      transposition: item.transposition || 0,
+      segment_type: item.segment_type || item.segmentType || 'song',
+      segment_title: item.segment_title || item.segmentTitle,
+      segment_content: item.segment_content || item.segmentContent,
+      notes: item.notes,
+      title: song.title || item.segment_title || '',
+      content: song.chord_pro_content || song.chordProContent || song.content || '',
+      key: song.musical_key || song.musicalKey || song.key || '',
+      bpm: song.bpm,
+      time_signature: song.time_signature || song.timeSignature,
+      authors: song.authors || '',
+      listen_url: song.listen_url || song.listenUrl,
+    };
+  });
+  delete service.service_songs;
+  delete service.serviceSongs;
+  return service;
+}
+
 const serviceService = {
-  // Get all services for authenticated user
-  getAllServices: async () => {
+  // Get all services for authenticated user's workspace
+  getAllServices: async (workspaceId) => {
     try {
-      const response = await api.get('/services');
-      const services = response.data;
+      // Use provided workspaceId, or fall back to cached active workspace
+      if (!workspaceId) {
+        try {
+          const cached = localStorage.getItem('soluflow_active_workspace');
+          if (cached) workspaceId = JSON.parse(cached).id;
+        } catch { /* ignore */ }
+      }
+      const params = workspaceId ? { workspaceId } : {};
+      const response = await api.get('/services', { params });
+      const services = Array.isArray(response.data) ? response.data : response.data.services || [];
 
       // Save to IndexedDB for offline use
       if (services && services.length > 0) {
@@ -34,7 +71,7 @@ const serviceService = {
   getServiceById: async (id) => {
     try {
       const response = await api.get(`/services/${id}`);
-      const service = response.data;
+      const service = normalizeServiceSongs(response.data.service || response.data);
 
       // Save to IndexedDB for offline use
       if (service) {
@@ -59,19 +96,19 @@ const serviceService = {
   // Get service by code (for guest access)
   getServiceByCode: async (code) => {
     const response = await api.get(`/services/code/${code}`);
-    return response.data;
+    return normalizeServiceSongs(response.data.service || response.data);
   },
 
   // Create new service
   createService: async (serviceData) => {
     const response = await api.post('/services', serviceData);
-    return response.data;
+    return response.data.service || response.data;
   },
 
   // Update service
   updateService: async (id, serviceData) => {
     const response = await api.put(`/services/${id}`, serviceData);
-    return response.data;
+    return response.data.service || response.data;
   },
 
   // Delete service
@@ -98,9 +135,9 @@ const serviceService = {
     return response.data;
   },
 
-  // Update song transposition in service
+  // Update song transposition in service (uses general update endpoint)
   updateSongTransposition: async (serviceId, songId, transposition) => {
-    const response = await api.put(`/services/${serviceId}/songs/${songId}/transpose`, {
+    const response = await api.put(`/services/${serviceId}/songs/${songId}`, {
       transposition
     });
     return response.data;
