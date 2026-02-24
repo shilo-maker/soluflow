@@ -22,7 +22,8 @@
     "settings": "SETTINGS",
     "exportPdf": "Export PDF",
     "currentApp": "Current app",
-    "presentation": "Presentation"
+    "presentation": "Presentation",
+    "adminPanel": "ADMIN PANEL"
   },
   "header": {
     "appName": "SoluFlow"

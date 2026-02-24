@@ -276,6 +276,18 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
                       {t('common.users')}
                     </button>
                   )}
+                  {user?.role === 'admin' && (
+                    <a
+                      className="menu-item"
+                      href={`${SOLUCAST_URL}/admin`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setUserMenuOpen(false)}
+                      style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
+                      {t('common.adminPanel') || 'Admin Panel'}
+                    </a>
+                  )}
                   {showLogout && (
                     <button
                       className="menu-item logout-item"

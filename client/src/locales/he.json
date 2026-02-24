@@ -22,7 +22,8 @@
     "settings": "הגדרות",
     "exportPdf": "ייצוא PDF",
     "currentApp": "האפליקציה הנוכחית",
-    "presentation": "מצגת"
+    "presentation": "מצגת",
+    "adminPanel": "פאנל ניהול"
   },
   "header": {
     "appName": "SoluFlow"
