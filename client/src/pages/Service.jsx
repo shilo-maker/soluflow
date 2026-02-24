@@ -82,6 +82,25 @@ const Service = () => {
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
+  // Enrich a service object with computed UI flags
+  const enrichService = (s) => {
+    const today = new Date().toISOString().split('T')[0];
+    const creatorId = s.created_by_id || s.createdById;
+    const leaderId = s.leader_id || s.leaderId;
+    const isCreator = creatorId === user?.id;
+    const isLeaderOfService = leaderId === user?.id;
+    const serviceDate = s.date;
+    return {
+      ...s,
+      isCreator,
+      canEdit: isCreator || isLeaderOfService || user?.role === 'admin',
+      isToday: serviceDate === today,
+      isPast: serviceDate ? serviceDate < today : false,
+      isShared: s.is_shared || s.isShared || false,
+      isFromSharedLink: s.is_from_shared_link || s.isFromSharedLink || false,
+    };
+  };
+
   // Fetch all services on component mount with cancellation support
   useEffect(() => {
     let isMounted = true;
@@ -99,24 +118,7 @@ const Service = () => {
         setLoading(true);
         const data = await serviceService.getAllServices(activeWorkspace?.id);
 
-        // Enrich services with computed flags for UI (canEdit, isCreator, isToday, isPast)
-        const today = new Date().toISOString().split('T')[0];
-        const enriched = data.map(s => {
-          const creatorId = s.created_by_id || s.createdById;
-          const leaderId = s.leader_id || s.leaderId;
-          const isCreator = creatorId === user.id;
-          const isLeaderOfService = leaderId === user.id;
-          const serviceDate = s.date;
-          return {
-            ...s,
-            isCreator,
-            canEdit: isCreator || isLeaderOfService || user.role === 'admin',
-            isToday: serviceDate === today,
-            isPast: serviceDate ? serviceDate < today : false,
-            isShared: s.is_shared || s.isShared || false,
-            isFromSharedLink: s.is_from_shared_link || s.isFromSharedLink || false,
-          };
-        });
+        const enriched = data.map(enrichService);
 
         if (isMounted) {
           setServices(enriched);
@@ -601,7 +603,7 @@ const Service = () => {
 
       if (modalService) {
         // Edit mode - update existing service
-        const updatedService = await serviceService.updateService(modalService.id, serviceData);
+        const updatedService = enrichService(await serviceService.updateService(modalService.id, serviceData));
 
         // Update the services list
         setServices(prev => prev.map(s =>
@@ -617,7 +619,7 @@ const Service = () => {
         setShowToast(true);
       } else {
         // Create mode - add new service
-        const newService = await serviceService.createService(serviceData);
+        const newService = enrichService(await serviceService.createService(serviceData));
 
         // Add songs to setlist if provided
         if (setlist && setlist.length > 0) {
