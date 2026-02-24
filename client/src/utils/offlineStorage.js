@@ -9,13 +9,16 @@ const SERVICES_STORE = 'services';
 class OfflineStorage {
   constructor() {
     this.db = null;
-    this.initPromise = this.init();
+    this.initFailed = false;
+    this.initPromise = this.init().catch((err) => {
+      console.warn('IndexedDB initialization failed:', err.message);
+      this.initFailed = true;
+    });
   }
 
   async init() {
     return new Promise((resolve, reject) => {
-      if (!window.indexedDB) {
-        console.warn('IndexedDB not supported');
+      if (typeof indexedDB === 'undefined') {
         reject(new Error('IndexedDB not supported'));
         return;
       }
@@ -23,41 +26,36 @@ class OfflineStorage {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = () => {
-        console.error('Failed to open IndexedDB:', request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('IndexedDB initialized successfully');
         resolve(this.db);
       };
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
 
-        // Create songs store if it doesn't exist
         if (!db.objectStoreNames.contains(SONGS_STORE)) {
           const songsStore = db.createObjectStore(SONGS_STORE, { keyPath: 'id' });
           songsStore.createIndex('title', 'title', { unique: false });
           songsStore.createIndex('workspace_id', 'workspace_id', { unique: false });
-          console.log('Songs object store created');
         }
 
-        // Create services store if it doesn't exist
         if (!db.objectStoreNames.contains(SERVICES_STORE)) {
           const servicesStore = db.createObjectStore(SERVICES_STORE, { keyPath: 'id' });
           servicesStore.createIndex('code', 'code', { unique: false });
           servicesStore.createIndex('date', 'date', { unique: false });
-          console.log('Services object store created');
         }
       };
     });
   }
 
   async ensureDb() {
-    if (!this.db) {
-      await this.initPromise;
+    await this.initPromise;
+    if (this.initFailed || !this.db) {
+      throw new Error('IndexedDB not available');
     }
     return this.db;
   }

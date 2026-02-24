@@ -2,12 +2,10 @@
 
 // Service Worker for SoluFlow - Offline Support
 // Increment version manually when deploying significant updates
-const CACHE_VERSION = '2.1.0';
+const CACHE_VERSION = '3.0.0';
 const CACHE_NAME = `soluflow-v${CACHE_VERSION}`;
-const API_CACHE_NAME = `soluflow-api-v${CACHE_VERSION}`;
 
 // Assets to cache on install for offline support
-// Note: We use network-first for HTML, so cached version is only used offline
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -29,7 +27,7 @@ const FONT_ORIGINS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing...');
+  console.log('[Service Worker] Installing v' + CACHE_VERSION + '...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[Service Worker] Caching static assets');
@@ -44,31 +42,26 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up ALL caches to fix broken state
+// Activate event - clean up old version caches, keep current
 self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activating v' + CACHE_VERSION + '...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
-      console.log('[Service Worker] Clearing ALL caches:', cacheNames);
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          // Delete ALL caches to ensure clean state
-          console.log('[Service Worker] Deleting cache:', cacheName);
-          return caches.delete(cacheName);
+        cacheNames.map((name) => {
+          // Only delete caches that are NOT the current version
+          if (name !== CACHE_NAME) {
+            console.log('[Service Worker] Deleting old cache:', name);
+            return caches.delete(name);
+          }
+          return Promise.resolve();
         })
       );
     }).then(() => {
-      // Force refresh all open tabs
-      return self.clients.matchAll({ type: 'window' });
-    }).then((clients) => {
-      clients.forEach((client) => {
-        console.log('[Service Worker] Refreshing client:', client.url);
-        client.navigate(client.url);
-      });
+      // Take control of all pages immediately
+      return self.clients.claim();
     })
   );
-  // Take control of all pages immediately
-  return self.clients.claim();
 });
 
 // Fetch event - serve from cache, fallback to network
@@ -100,53 +93,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip other cross-origin requests
+  // Skip cross-origin requests (API calls go directly to backend origin)
   if (url.origin !== location.origin) {
-    return;
-  }
-
-  // API requests - Network first, fallback to cache
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Clone the response before caching
-          const responseToCache = response.clone();
-
-          // Only cache successful GET requests
-          if (request.method === 'GET' && response.status === 200) {
-            caches.open(API_CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache);
-            });
-          }
-
-          return response;
-        })
-        .catch(() => {
-          // Network failed, try cache
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log('[Service Worker] Serving from cache:', url.pathname);
-              return cachedResponse;
-            }
-
-            // Return offline response for API calls
-            return new Response(
-              JSON.stringify({
-                error: 'Offline',
-                message: 'You are currently offline. Please check your connection.'
-              }),
-              {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: new Headers({
-                  'Content-Type': 'application/json',
-                }),
-              }
-            );
-          });
-        })
-    );
     return;
   }
 
@@ -189,42 +137,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets (JS, CSS, images) - Cache first, fallback to network
+  // Static assets (JS, CSS, images) - Network first, fallback to cache
+  // Using network-first ensures users always get fresh hashed bundles after deploys
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached version but also fetch in background to update cache
-        fetch(request).then((response) => {
-          if (response && response.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, response);
-            });
-          }
-        });
-        return cachedResponse;
-      }
-
-      return fetch(request)
-        .then((response) => {
-          // Don't cache non-successful responses
-          if (!response || response.status !== 200) {
-            return response;
-          }
-
-          // Clone the response before caching
+    fetch(request)
+      .then((response) => {
+        if (response && response.status === 200) {
           const responseToCache = response.clone();
-
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseToCache);
           });
-
-          return response;
-        })
-        .catch(() => {
+        }
+        return response;
+      })
+      .catch(() => {
+        // Network failed, try cache
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
           // Return nothing for failed static asset requests
           return new Response('', { status: 404 });
         });
-    })
+      })
   );
 });
 

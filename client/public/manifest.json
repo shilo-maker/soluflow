@@ -2,6 +2,7 @@
   "short_name": "SoluFlow",
   "name": "SoluFlow - Worship Song Management",
   "description": "Manage and display worship songs with chord sheets",
+  "id": "/",
   "icons": [
     {
       "src": "favicon.ico",
@@ -12,16 +13,29 @@
       "src": "icon-192x192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512x512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "theme_color": "#d4a560",
