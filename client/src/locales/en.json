@@ -313,6 +313,7 @@
     "updateButton": "Update Service",
     "saving": "Saving...",
     "dateRequired": "Date and time is required",
-    "venueRequired": "Location/Venue is required"
+    "venueRequired": "Location/Venue is required",
+    "confirmClose": "Are you sure? Unsaved changes will be lost."
   }
 }

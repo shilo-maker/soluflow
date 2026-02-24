@@ -313,6 +313,7 @@
     "updateButton": "עדכן אסיפה",
     "saving": "שומר...",
     "dateRequired": "תאריך ושעה נדרשים",
-    "venueRequired": "מיקום נדרש"
+    "venueRequired": "מיקום נדרש",
+    "confirmClose": "האם אתה בטוח? שינויים שלא נשמרו יאבדו."
   }
 }

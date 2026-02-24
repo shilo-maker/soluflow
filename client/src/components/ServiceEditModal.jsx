@@ -22,6 +22,8 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   const [loadingSongs, setLoadingSongs] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [listView, setListView] = useState('database');
+  const [previewSongId, setPreviewSongId] = useState(null);
 
   useEffect(() => {
     if (service) {
@@ -44,6 +46,8 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
       });
       // Load current setlist for edit mode
       setSetlist(currentSetlist || []);
+      // Default to setlist tab if editing with existing songs
+      setListView((currentSetlist && currentSetlist.length > 0) ? 'setlist' : 'database');
 
       // Fetch available songs for edit mode
       if (isOpen) {
@@ -70,6 +74,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
         isPublic: true
       });
       setSetlist([]); // Reset setlist for new service
+      setListView('database');
 
       // Fetch available songs for new service
       if (isOpen) {
@@ -239,14 +244,20 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     }
   };
 
+  const handleConfirmClose = () => {
+    if (window.confirm(t('serviceEdit.confirmClose'))) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleConfirmClose}>
       <div className="modal-content service-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{service ? t('serviceEdit.editTitle') : t('serviceEdit.createTitle')}</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="modal-close" onClick={handleConfirmClose}>×</button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -289,14 +300,27 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
               </div>
             )}
 
-            {/* Setlist Section - Show for both create and edit modes */}
+            {/* Setlist Section */}
             <div className="setlist-section">
-              <h3 className="setlist-section-title">
-                {service ? t('serviceEdit.editSetlist') : t('serviceEdit.addToSetlist')}
-              </h3>
+              <div className="setlist-toggle-bar">
+                <button
+                  type="button"
+                  className={`setlist-toggle-btn ${listView === 'database' ? 'active' : ''}`}
+                  onClick={() => setListView('database')}
+                >
+                  {t('serviceEdit.availableSongs')}
+                </button>
+                <button
+                  type="button"
+                  className={`setlist-toggle-btn ${listView === 'setlist' ? 'active' : ''}`}
+                  onClick={() => setListView('setlist')}
+                >
+                  {t('serviceEdit.currentSetlist')}{setlist.length > 0 ? ` (${setlist.length})` : ''}
+                </button>
+              </div>
 
               <div className="setlist-mini-builder">
-                  {/* Available Songs */}
+                {listView === 'database' ? (
                   <div className="available-songs-mini">
                     <input
                       type="text"
@@ -314,99 +338,109 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                         </div>
                       ) : (
                         filteredSongs.map(song => (
-                          <div key={song.id} className="available-song-item-mini">
-                            <div className="song-info-mini">
-                              <div className="song-title-mini">{song.title}</div>
-                              <div className="song-meta-mini">{song.authors}</div>
+                          <div key={song.id} className={`available-song-item-mini ${previewSongId === song.id ? 'expanded' : ''}`}>
+                            <div className="song-row-mini" onClick={() => setPreviewSongId(previewSongId === song.id ? null : song.id)}>
+                              <div className="song-info-mini">
+                                <div className="song-title-mini">{song.title}</div>
+                                <div className="song-meta-mini">{song.authors}</div>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn-add-mini"
+                                onClick={(e) => { e.stopPropagation(); handleAddSong(song); }}
+                              >
+                                +
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              className="btn-add-mini"
-                              onClick={() => handleAddSong(song)}
-                            >
-                              +
-                            </button>
+                            {previewSongId === song.id && (
+                              <div className="song-preview-content">
+                                {stripChords(song.content || '').replace(/\{[^}]*\}/g, '').replace(/^\s*\n/gm, '\n').trim()}
+                              </div>
+                            )}
                           </div>
                         ))
                       )}
                     </div>
                   </div>
-
-                <div className="setlist-divider"></div>
-
-                {/* Current Setlist */}
-                <div className="setlist-current-mini">
-                  <h4>{t('serviceEdit.currentSetlist')}</h4>
-                  <div className="setlist-with-controls-mini">
-                    <div className="reorder-controls-side-mini">
-                      <button
-                        type="button"
-                        className="btn-reorder-main-mini"
-                        onClick={handleMoveUp}
-                        disabled={selectedIndex === null || selectedIndex === 0}
-                        aria-label="Move up"
-                        title="Move selected song up"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-reorder-main-mini"
-                        onClick={handleMoveDown}
-                        disabled={selectedIndex === null || selectedIndex === setlist.length - 1}
-                        aria-label="Move down"
-                        title="Move selected song down"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                    <div className="selected-songs-list">
-                    {setlist.length === 0 ? (
-                      <div className="no-songs-selected">{t('serviceEdit.noSongsSelected')}</div>
-                    ) : (
-                      setlist.map((song, index) => (
-                        <div
-                          key={song.id}
-                          className={`selected-song-item ${draggedIndex === index ? 'dragging' : ''} ${selectedIndex === index ? 'selected' : ''}`}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, index)}
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDragEnd={handleDragEnd}
-                          onClick={() => handleSelectSong(index)}
+                ) : (
+                  <div className="setlist-current-mini">
+                    <div className="setlist-with-controls-mini">
+                      <div className="reorder-controls-side-mini">
+                        <button
+                          type="button"
+                          className="btn-reorder-main-mini"
+                          onClick={handleMoveUp}
+                          disabled={selectedIndex === null || selectedIndex === 0}
+                          aria-label="Move up"
+                          title="Move selected song up"
                         >
-                          <span className="song-number-mini">{index + 1}</span>
-                          <div className="song-info-mini">
-                            <div className="song-title-mini">{song.title}</div>
-                            <div className="song-meta-mini">{song.authors}</div>
-                          </div>
-                          <button
-                            type="button"
-                            className="btn-remove-mini"
-                            onClick={(e) => { e.stopPropagation(); handleRemoveSong(song.id, index); }}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-reorder-main-mini"
+                          onClick={handleMoveDown}
+                          disabled={selectedIndex === null || selectedIndex === setlist.length - 1}
+                          aria-label="Move down"
+                          title="Move selected song down"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                      <div className="selected-songs-list">
+                        {setlist.length === 0 ? (
+                          <div className="no-songs-selected">{t('serviceEdit.noSongsSelected')}</div>
+                        ) : (
+                          setlist.map((song, index) => (
+                            <div
+                              key={song.id}
+                              className={`selected-song-item ${draggedIndex === index ? 'dragging' : ''} ${selectedIndex === index ? 'selected' : ''}`}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, index)}
+                              onDragOver={(e) => handleDragOver(e, index)}
+                              onDragEnd={handleDragEnd}
+                            >
+                              <div className="song-row-mini" onClick={() => { handleSelectSong(index); setPreviewSongId(previewSongId === song.id ? null : song.id); }}>
+                                <span className="song-number-mini">{index + 1}</span>
+                                <div className="song-info-mini">
+                                  <div className="song-title-mini">{song.title}</div>
+                                  <div className="song-meta-mini">{song.authors}</div>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn-remove-mini"
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveSong(song.id, index); }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                              {previewSongId === song.id && (
+                                <div className="song-preview-content">
+                                  {stripChords(song.content || '').replace(/\{[^}]*\}/g, '').replace(/^\s*\n/gm, '\n').trim()}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    {setlist.length > 0 && (
+                      <div className="setlist-hint-mini">
+                        {t('serviceEdit.reorderHint')}
+                      </div>
                     )}
-                    </div>
                   </div>
-                  {setlist.length > 0 && (
-                    <div className="setlist-hint-mini">
-                      {t('serviceEdit.reorderHint')}
-                    </div>
-                  )}
-                </div>
-                </div>
+                )}
               </div>
             </div>
+          </div>
 
           <div className="modal-footer">
             <div className="modal-footer-right">
               <button
                 type="button"
                 className="btn-cancel"
-                onClick={onClose}
+                onClick={handleConfirmClose}
                 disabled={saving}
               >
                 {t('serviceEdit.cancel')}

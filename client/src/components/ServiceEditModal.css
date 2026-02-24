@@ -214,23 +214,45 @@
   border-top: 2px solid #e0e0e0;
 }
 
-.setlist-section-title {
-  margin: 0 0 15px 0;
-  font-size: 16px;
-  color: #333;
+.setlist-toggle-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.setlist-toggle-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background-color: #f8f9fa;
+  color: #495057;
+  font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setlist-toggle-btn:first-child {
+  border-right: 1px solid #dee2e6;
+}
+
+.setlist-toggle-btn:hover:not(.active) {
+  background-color: #e9ecef;
+}
+
+.setlist-toggle-btn.active {
+  background-color: var(--color-primary);
+  color: white;
 }
 
 .setlist-mini-builder {
   display: flex;
   flex-direction: column;
   gap: 15px;
-}
-
-.setlist-divider {
-  height: 1px;
-  background-color: #dee2e6;
-  margin: 5px 0;
+  min-height: 400px;
 }
 
 .setlist-current-mini,
@@ -295,21 +317,14 @@
   cursor: not-allowed;
 }
 
-.selected-songs-list {
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  max-height: 500px;
-  overflow-y: auto;
-  background-color: #f8f9fa;
-}
-
+.selected-songs-list,
 .available-songs-list {
   border: 1px solid #dee2e6;
   border-radius: 4px;
-  max-height: 250px;
+  height: 350px;
   overflow-y: auto;
   background-color: #f8f9fa;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
   flex: 1;
 }
 
@@ -324,13 +339,17 @@
 
 .selected-song-item,
 .available-song-item-mini {
+  background-color: white;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+.song-row-mini {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background-color: white;
-  border-bottom: 1px solid #e9ecef;
-  transition: background-color 0.2s ease;
+  cursor: pointer;
 }
 
 .selected-song-item:last-child,
@@ -338,9 +357,23 @@
   border-bottom: none;
 }
 
-.selected-song-item:hover,
-.available-song-item-mini:hover {
+.song-row-mini:hover {
   background-color: #f1f3f5;
+}
+
+.available-song-item-mini.expanded {
+  background-color: #f8f9fa;
+}
+
+.song-preview-content {
+  padding: 8px 12px 12px;
+  font-size: 12px;
+  color: #495057;
+  white-space: pre-line;
+  line-height: 1.5;
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px dashed #dee2e6;
 }
 
 .selected-song-item {
@@ -491,8 +524,9 @@
     width: 100%;
   }
 
-  .setlist-mini-builder {
-    grid-template-columns: 1fr;
+  .setlist-toggle-btn {
+    padding: 8px 10px;
+    font-size: 13px;
   }
 
   /* Enhanced touch support for mobile */
