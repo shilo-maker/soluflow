@@ -20,7 +20,9 @@
     "submit": "Submit",
     "browse": "Browse",
     "settings": "SETTINGS",
-    "exportPdf": "Export PDF"
+    "exportPdf": "Export PDF",
+    "currentApp": "Current app",
+    "presentation": "Presentation"
   },
   "header": {
     "appName": "SoluFlow"

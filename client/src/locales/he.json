@@ -20,7 +20,9 @@
     "submit": "שלח",
     "browse": "עיין",
     "settings": "הגדרות",
-    "exportPdf": "ייצוא PDF"
+    "exportPdf": "ייצוא PDF",
+    "currentApp": "האפליקציה הנוכחית",
+    "presentation": "מצגת"
   },
   "header": {
     "appName": "SoluFlow"

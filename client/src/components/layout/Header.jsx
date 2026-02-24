@@ -180,7 +180,7 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
                     <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #4ecdc4, #2ba89e)' }}>SF</div>
                     <div className="app-card-info">
                       <div className="app-card-name">SoluFlow</div>
-                      <div className="app-card-desc">{t('common.currentApp') || 'Current app'}</div>
+                      <div className="app-card-desc">{t('common.currentApp')}</div>
                     </div>
                   </div>
                   {/* SoluCast */}
@@ -192,7 +192,7 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
                     <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}>SC</div>
                     <div className="app-card-info">
                       <div className={`app-card-name${ssoError ? ' app-card-error' : ''}`}>{ssoLoading ? 'Opening...' : ssoError ? ssoError : 'SoluCast'}</div>
-                      <div className="app-card-desc">Presentation</div>
+                      <div className="app-card-desc">{t('common.presentation')}</div>
                     </div>
                   </button>
                 </div>
