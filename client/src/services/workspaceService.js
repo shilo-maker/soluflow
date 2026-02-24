@@ -10,7 +10,22 @@ const workspaceService = {
   // Get specific workspace details
   getWorkspaceById: async (id) => {
     const response = await api.get(`/workspaces/${id}`);
-    return response.data;
+    const workspace = response.data.workspace || response.data;
+
+    // Flatten nested User data in members for the frontend
+    if (workspace.members) {
+      workspace.members = workspace.members.map(m => {
+        const u = m.user || m.User || {};
+        return {
+          id: u.id || m.user_id || m.userId,
+          username: u.username || m.username,
+          email: u.email || m.email,
+          role: m.role,
+        };
+      });
+    }
+
+    return workspace;
   },
 
   // Create new team workspace
