@@ -180,7 +180,7 @@ const SongView = () => {
     }
     // Priority 2: Check if there's transposition in setlist context
     else if (setlistContext?.setlist) {
-      const songInSetlist = setlistContext.setlist.find(s => s.id.toString() === id);
+      const songInSetlist = setlistContext.setlist.find(s => (s.song_id || s.id).toString() === id);
       if (songInSetlist && songInSetlist.transposition !== undefined) {
         initialTranspose = songInSetlist.transposition;
       }
@@ -365,13 +365,14 @@ const SongView = () => {
       if (!userIsLeader && isFollowModeRef.current && currentSetlistContext?.setlist) {
         // Navigate to the new song
         const newSong = currentSetlistContext.setlist[songIndex];
-        if (newSong && newSong.id.toString() !== currentSongId) {
+        const newSongActualId = newSong ? (newSong.song_id || newSong.id).toString() : null;
+        if (newSong && newSongActualId !== currentSongId) {
           // Apply transposition immediately if provided (no need to wait for separate event)
           if (leaderTransposition !== undefined) {
             console.log('[SongView] Applying transposition from leader-navigated:', leaderTransposition);
             setTransposition(leaderTransposition);
-            songTranspositionsRef.current.set(newSong.id.toString(), leaderTransposition);
-            transpositionInitializedRef.current = newSong.id.toString();
+            songTranspositionsRef.current.set(newSongActualId, leaderTransposition);
+            transpositionInitializedRef.current = newSongActualId;
             leaderCommandReceivedRef.current = false;
           } else {
             // Fallback for old clients: wait for leader-transpose event
@@ -382,17 +383,18 @@ const SongView = () => {
                 leaderCommandReceivedRef.current = false;
                 const fallbackSong = currentSetlistContext?.setlist?.[songIndex];
                 if (fallbackSong && fallbackSong.transposition !== undefined) {
+                  const fallbackSongId = (fallbackSong.song_id || fallbackSong.id).toString();
                   console.log('[SongView] Fallback: loading transposition from setlist:', fallbackSong.transposition);
                   setTransposition(fallbackSong.transposition);
-                  songTranspositionsRef.current.set(fallbackSong.id.toString(), fallbackSong.transposition);
-                  transpositionInitializedRef.current = fallbackSong.id.toString();
+                  songTranspositionsRef.current.set(fallbackSongId, fallbackSong.transposition);
+                  transpositionInitializedRef.current = fallbackSongId;
                 }
               }
             }, 2500);
           }
 
           isInternalNavigationRef.current = true;
-          navigate(`/song/${newSong.id}`, {
+          navigate(`/song/${newSongActualId}`, {
             state: {
               ...currentSetlistContext,
               currentIndex: songIndex
@@ -437,9 +439,10 @@ const SongView = () => {
       if (!userIsLeader && isFollowModeRef.current) {
         if (state.currentSongIndex !== undefined && currentSetlistContext?.setlist) {
           const syncSong = currentSetlistContext.setlist[state.currentSongIndex];
-          if (syncSong && syncSong.id.toString() !== currentSongId) {
+          const syncSongActualId = syncSong ? (syncSong.song_id || syncSong.id).toString() : null;
+          if (syncSong && syncSongActualId !== currentSongId) {
             isInternalNavigationRef.current = true;
-            navigate(`/song/${syncSong.id}`, {
+            navigate(`/song/${syncSongActualId}`, {
               state: {
                 ...currentSetlistContext,
                 currentIndex: state.currentSongIndex
@@ -541,7 +544,8 @@ const SongView = () => {
       if (!setlistContext) return;
 
       if (e.key === 'ArrowRight' && hasNext) {
-        const nextSongId = setlistContext.setlist[currentSetlistIndex + 1].id;
+        const nextItem = setlistContext.setlist[currentSetlistIndex + 1];
+        const nextSongId = nextItem.song_id || nextItem.id;
         isInternalNavigationRef.current = true;
         navigate(`/song/${nextSongId}`, {
           state: {
@@ -551,7 +555,8 @@ const SongView = () => {
           replace: true
         });
       } else if (e.key === 'ArrowLeft' && hasPrevious) {
-        const prevSongId = setlistContext.setlist[currentSetlistIndex - 1].id;
+        const prevItem = setlistContext.setlist[currentSetlistIndex - 1];
+        const prevSongId = prevItem.song_id || prevItem.id;
         isInternalNavigationRef.current = true;
         navigate(`/song/${prevSongId}`, {
           state: {
@@ -703,9 +708,11 @@ const SongView = () => {
     }
 
     // Save transposition to database immediately
-    if (setlistContext?.serviceId && id) {
+    // Use the FlowServiceSong ID (item.id) for the service-song update endpoint
+    const serviceSongId = setlistContext?.setlist?.[currentSetlistIndex]?.id;
+    if (setlistContext?.serviceId && serviceSongId) {
       try {
-        await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
+        await serviceService.updateSongTransposition(setlistContext.serviceId, serviceSongId, newTransposition);
       } catch (error) {
         console.error('[SongView] Failed to save transposition:', error);
       }
@@ -736,9 +743,10 @@ const SongView = () => {
     }
 
     // Save transposition to database immediately
-    if (setlistContext?.serviceId && id) {
+    const serviceSongId = setlistContext?.setlist?.[currentSetlistIndex]?.id;
+    if (setlistContext?.serviceId && serviceSongId) {
       try {
-        await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
+        await serviceService.updateSongTransposition(setlistContext.serviceId, serviceSongId, newTransposition);
       } catch (error) {
         console.error('[SongView] Failed to save transposition:', error);
       }
@@ -768,9 +776,10 @@ const SongView = () => {
     }
 
     // Save transposition to database immediately
-    if (setlistContext?.serviceId && id) {
+    const serviceSongId = setlistContext?.setlist?.[currentSetlistIndex]?.id;
+    if (setlistContext?.serviceId && serviceSongId) {
       try {
-        await serviceService.updateSongTransposition(setlistContext.serviceId, id, 0);
+        await serviceService.updateSongTransposition(setlistContext.serviceId, serviceSongId, 0);
       } catch (error) {
         console.error('[SongView] Failed to save transposition reset:', error);
       }
@@ -800,9 +809,10 @@ const SongView = () => {
     }
 
     // Save transposition to database immediately
-    if (setlistContext?.serviceId && id) {
+    const serviceSongId = setlistContext?.setlist?.[currentSetlistIndex]?.id;
+    if (setlistContext?.serviceId && serviceSongId) {
       try {
-        await serviceService.updateSongTransposition(setlistContext.serviceId, id, newTransposition);
+        await serviceService.updateSongTransposition(setlistContext.serviceId, serviceSongId, newTransposition);
       } catch (error) {
         console.error('[SongView] Failed to save key selection:', error);
       }
@@ -872,7 +882,7 @@ const SongView = () => {
   const goToNextSong = () => {
     if (!hasNext) return;
     const nextSong = setlistContext.setlist[currentSetlistIndex + 1];
-    const nextSongId = nextSong.id;
+    const nextSongId = nextSong.song_id || nextSong.id;
     const newIndex = currentSetlistIndex + 1;
     setCurrentSetlistIndex(newIndex);
 
@@ -903,7 +913,7 @@ const SongView = () => {
   const goToPreviousSong = () => {
     if (!hasPrevious) return;
     const prevSong = setlistContext.setlist[currentSetlistIndex - 1];
-    const prevSongId = prevSong.id;
+    const prevSongId = prevSong.song_id || prevSong.id;
     const newIndex = currentSetlistIndex - 1;
     setCurrentSetlistIndex(newIndex);
 

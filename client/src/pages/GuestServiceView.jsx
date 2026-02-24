@@ -435,7 +435,7 @@ const GuestServiceView = () => {
           {currentSong && (
             <div
               className="song-display"
-              onClick={() => navigate(`/song/${currentSong.id}`, {
+              onClick={() => navigate(`/song/${currentSong.song_id || currentSong.id}`, {
                 state: {
                   setlist: currentSetList,
                   currentIndex: selectedSongIndex,
