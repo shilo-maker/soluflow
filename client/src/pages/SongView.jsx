@@ -1187,6 +1187,17 @@ const SongView = () => {
         <div className="song-view-title-section">
           <h1 className="song-view-title" dir={hasHebrew ? 'rtl' : 'ltr'}>
             {song.title}
+            {song.listen_url && (
+              <a
+                href={song.listen_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="listen-link"
+                onClick={(e) => e.stopPropagation()}
+              >
+                🎵 Listen
+              </a>
+            )}
           </h1>
           <div>
             <span className="song-view-subtitle">{song.authors}</span>
