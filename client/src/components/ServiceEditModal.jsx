@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
@@ -24,8 +24,15 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [listView, setListView] = useState('database');
   const [previewSongId, setPreviewSongId] = useState(null);
+  const fetchingRef = useRef(false);
+  const prevIsOpenRef = useRef(false);
 
   useEffect(() => {
+    // Only run when isOpen transitions to true (not on every dep change)
+    const justOpened = isOpen && !prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+    if (!isOpen) return;
+
     if (service) {
       // Edit mode - populate with existing service data
       // Combine date and time into datetime-local format
@@ -48,11 +55,6 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
       setSetlist(currentSetlist || []);
       // Default to setlist tab if editing with existing songs
       setListView((currentSetlist && currentSetlist.length > 0) ? 'setlist' : 'database');
-
-      // Fetch available songs for edit mode
-      if (isOpen) {
-        fetchAvailableSongs();
-      }
     } else {
       // Create mode - use prefill values if available, otherwise default to next round hour
       let datetimeStr;
@@ -83,19 +85,21 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
       });
       setSetlist([]); // Reset setlist for new service
       setListView('database');
-
-      // Fetch available songs for new service
-      if (isOpen) {
-        fetchAvailableSongs();
-      }
     }
     setError('');
     setSearchQuery('');
     setSelectedIndex(null);
-  }, [service, isOpen, currentSetlist, prefill]);
+
+    // Only fetch songs when the modal first opens
+    if (justOpened) {
+      fetchAvailableSongs();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const fetchAvailableSongs = async () => {
-    if (!user) return;
+    if (!user || fetchingRef.current) return;
+    fetchingRef.current = true;
 
     try {
       setLoadingSongs(true);
@@ -105,6 +109,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
       console.error('Error fetching songs:', err);
     } finally {
       setLoadingSongs(false);
+      fetchingRef.current = false;
     }
   };
 
