@@ -3,7 +3,7 @@ import offlineStorage from '../utils/offlineStorage';
 
 const songService = {
   // Get all songs
-  getAllSongs: async (workspaceId = null, page = 1, limit = 0) => {
+  getAllSongs: async (workspaceId = null, page = 1, limit = 500) => {
     try {
       const params = { page, limit };
       if (workspaceId) params.workspace_id = workspaceId;

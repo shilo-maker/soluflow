@@ -28,7 +28,8 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
       setSelectedIndex(null);
       fetchAvailableSongs();
     }
-  }, [isOpen, currentSetlist]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const fetchAvailableSongs = async () => {
     try {
