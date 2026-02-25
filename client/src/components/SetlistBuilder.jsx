@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import songService from '../services/songService';
 import { stripChords } from '../utils/transpose';
 import './SetlistBuilder.css';
@@ -21,6 +21,7 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
   const [loading, setLoading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,6 +33,8 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
   }, [isOpen]);
 
   const fetchAvailableSongs = async () => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     try {
       setLoading(true);
       const songs = await songService.getAllSongs(1); // workspace_id = 1
@@ -40,6 +43,7 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
       console.error('Error fetching songs:', err);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   };
 
