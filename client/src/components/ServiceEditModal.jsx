@@ -5,7 +5,7 @@ import songService from '../services/songService';
 import { stripChords } from '../utils/transpose';
 import './ServiceEditModal.css';
 
-const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSave, onUpdate }) => {
+const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSave, onUpdate, prefill }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -54,23 +54,31 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
         fetchAvailableSongs();
       }
     } else {
-      // Create mode - default to today with next round hour (local time)
-      const nextHour = new Date();
-      nextHour.setHours(nextHour.getHours() + 1);
-      nextHour.setMinutes(0);
-      nextHour.setSeconds(0);
-      // Format for datetime-local: YYYY-MM-DDTHH:MM (local time)
-      const year = nextHour.getFullYear();
-      const month = String(nextHour.getMonth() + 1).padStart(2, '0');
-      const day = String(nextHour.getDate()).padStart(2, '0');
-      const hours = String(nextHour.getHours()).padStart(2, '0');
-      const minutes = String(nextHour.getMinutes()).padStart(2, '0');
-      const datetimeStr = `${year}-${month}-${day}T${hours}:${minutes}`;
+      // Create mode - use prefill values if available, otherwise default to next round hour
+      let datetimeStr;
+      let locationStr = '';
+
+      if (prefill) {
+        datetimeStr = prefill.datetime || '';
+        locationStr = prefill.location || '';
+      } else {
+        const nextHour = new Date();
+        nextHour.setHours(nextHour.getHours() + 1);
+        nextHour.setMinutes(0);
+        nextHour.setSeconds(0);
+        // Format for datetime-local: YYYY-MM-DDTHH:MM (local time)
+        const year = nextHour.getFullYear();
+        const month = String(nextHour.getMonth() + 1).padStart(2, '0');
+        const day = String(nextHour.getDate()).padStart(2, '0');
+        const hours = String(nextHour.getHours()).padStart(2, '0');
+        const minutes = String(nextHour.getMinutes()).padStart(2, '0');
+        datetimeStr = `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
 
       setFormData({
         title: '',
         datetime: datetimeStr,
-        location: '',
+        location: locationStr,
         isPublic: true
       });
       setSetlist([]); // Reset setlist for new service
@@ -84,7 +92,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     setError('');
     setSearchQuery('');
     setSelectedIndex(null);
-  }, [service, isOpen, currentSetlist]);
+  }, [service, isOpen, currentSetlist, prefill]);
 
   const fetchAvailableSongs = async () => {
     if (!user) return;
@@ -223,7 +231,7 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
       setSaving(true);
 
       // Save service metadata
-      await onSave({
+      const result = await onSave({
         date,
         time,
         location: formData.location,
@@ -236,7 +244,10 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
         await onUpdate(setlist);
       }
 
-      onClose();
+      // Allow callers to prevent auto-close (e.g. CreateForSoluPlan shows a success screen)
+      if (!result?.skipClose) {
+        onClose();
+      }
     } catch (err) {
       setError(err.message || 'Failed to save service');
     } finally {

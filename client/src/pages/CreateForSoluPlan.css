@@ -1,0 +1,159 @@
+.create-for-soluplan-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 16px;
+  color: #666;
+  font-size: 16px;
+}
+
+.create-for-soluplan-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #4ECDC4;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.create-for-soluplan-page {
+  min-height: 100vh;
+}
+
+.create-for-soluplan-success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+.success-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  background: #4ECDC4;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 16px;
+}
+
+.success-card h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  color: #333;
+}
+
+.success-title {
+  color: #666;
+  font-size: 16px;
+  margin: 0 0 24px;
+}
+
+.service-code-display {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.service-code-display label {
+  display: block;
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.code-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.code-value {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #333;
+  font-family: monospace;
+}
+
+.btn-copy {
+  padding: 6px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-copy:hover {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-return-soluplan {
+  width: 100%;
+  padding: 14px 24px;
+  background: #4ECDC4;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-return-soluplan:hover {
+  background: #3dbdb5;
+}
+
+.btn-stay-soluflow {
+  width: 100%;
+  padding: 12px 24px;
+  background: transparent;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-stay-soluflow:hover {
+  background: #f8f9fa;
+  border-color: #ccc;
+}

@@ -32,6 +32,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const SongReports = lazy(() => import('./pages/SongReports'));
 const SSOCallback = lazy(() => import('./pages/SSOCallback'));
 const SolucastRedirect = lazy(() => import('./pages/SolucastRedirect'));
+const CreateForSoluPlan = lazy(() => import('./pages/CreateForSoluPlan'));
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => (
@@ -62,7 +63,8 @@ function AppContent() {
                     location.pathname === '/verify-email' ||
                     location.pathname === '/forgot-password' ||
                     location.pathname === '/reset-password' ||
-                    location.pathname === '/sso';
+                    location.pathname === '/sso' ||
+                    location.pathname === '/create-for-soluplan';
   const isGuestPage = location.pathname.startsWith('/open/') ||
                       location.pathname.startsWith('/service/code/') ||
                       location.pathname.startsWith('/song/code/') ||
@@ -131,6 +133,7 @@ function AppContent() {
             <Route path="/workspace/settings" element={<PrivateRoute><WorkspaceManagement /></PrivateRoute>} />
             <Route path="/workspace/invite/:token" element={<PrivateRoute><AcceptInvite /></PrivateRoute>} />
             <Route path="/admin/reports" element={<PrivateRoute><SongReports /></PrivateRoute>} />
+            <Route path="/create-for-soluplan" element={<CreateForSoluPlan />} />
           </Routes>
         </Suspense>
       </main>
