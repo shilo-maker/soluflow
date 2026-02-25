@@ -184,6 +184,28 @@
   margin: 0 0 2px 0;
 }
 
+.song-view-title .listen-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: white;
+  background: linear-gradient(135deg, #28a745 0%, #34ce57 100%);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 16px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+.song-view-title .listen-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
 .song-view-subtitle {
   font-size: 16px;
   color: #6c757d;
@@ -446,6 +468,12 @@
 @media (max-width: 768px) {
   .song-view-title {
     font-size: 24px;
+  }
+
+  .song-view-title .listen-link {
+    font-size: 12px;
+    padding: 4px 12px;
+    margin-left: 8px;
   }
 
   .song-view-subtitle {
