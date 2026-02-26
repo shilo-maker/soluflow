@@ -2,7 +2,7 @@
 
 // Service Worker for SoluFlow - Offline Support
 // Increment version manually when deploying significant updates
-const CACHE_VERSION = '3.0.0';
+const CACHE_VERSION = '3.1.0';
 const CACHE_NAME = `soluflow-v${CACHE_VERSION}`;
 
 // Assets to cache on install for offline support
@@ -93,8 +93,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip cross-origin requests (API calls go directly to backend origin)
+  // Skip cross-origin requests
   if (url.origin !== location.origin) {
+    return;
+  }
+
+  // Never cache API calls — always go to network
+  if (url.pathname.startsWith('/api/')) {
     return;
   }
 
