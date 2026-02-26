@@ -166,6 +166,24 @@
   font-weight: 600;
 }
 
+.btn-edit-service {
+  display: inline-block;
+  margin-top: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-edit-service:hover {
+  background-color: #0056b3;
+}
+
 .btn-add-service {
   background-color: #28a745;
   color: white;

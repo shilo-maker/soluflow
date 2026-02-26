@@ -406,6 +406,14 @@ const GuestServiceView = () => {
               <div className="already-added-notice">
                 ✓ {(serviceDetails.isOwner || serviceDetails.is_owner) ? 'You own this service' : 'Added to your services'}
               </div>
+              {(serviceDetails.isOwner || serviceDetails.is_owner) && (
+                <button
+                  className="btn-edit-service"
+                  onClick={() => navigate(`/service/${serviceDetails.id}`)}
+                >
+                  ✏️ Edit Service
+                </button>
+              )}
             </div>
           ) : (
             <div className="add-service-section">

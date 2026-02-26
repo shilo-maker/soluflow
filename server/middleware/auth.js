@@ -63,7 +63,6 @@ const authenticateOptional = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('[authenticateOptional] Auth failed:', error.message);
     req.user = null;
     next();
   }
