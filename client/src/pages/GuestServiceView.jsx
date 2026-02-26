@@ -401,10 +401,10 @@ const GuestServiceView = () => {
       {currentSetList.length > 0 ? (
         <div className="guest-service-content">
           {/* Add to My Services Button or Already Added Notice */}
-          {serviceDetails.alreadyAdded ? (
+          {(serviceDetails.alreadyAdded || serviceDetails.already_added) ? (
             <div className="already-added-section">
               <div className="already-added-notice">
-                ✓ {serviceDetails.isOwner ? 'You own this service' : 'Added to your services'}
+                ✓ {(serviceDetails.isOwner || serviceDetails.is_owner) ? 'You own this service' : 'Added to your services'}
               </div>
             </div>
           ) : (
