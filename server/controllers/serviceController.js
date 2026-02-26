@@ -385,6 +385,8 @@ const getServiceByCode = async (req, res) => {
     }
 
     // Check if authenticated user already has this service
+    console.log('[getServiceByCode] req.user:', req.user ? { id: req.user.id, email: req.user.email, type: req.user.type } : null);
+    console.log('[getServiceByCode] service.created_by:', service.created_by, 'workspace_id:', service.workspace_id);
     if (req.user && req.user.id) {
       // Use == for created_by comparison to handle potential int/string type mismatch
       const isCreator = service.created_by == req.user.id;
@@ -404,6 +406,7 @@ const getServiceByCode = async (req, res) => {
       });
       serviceData.alreadyAdded = isCreator || isWorkspaceMember || !!sharedService;
       serviceData.isOwner = isCreator || isWorkspaceMember;
+      console.log('[getServiceByCode] Result:', { isCreator, isWorkspaceMember, hasSharedService: !!sharedService, alreadyAdded: serviceData.alreadyAdded });
       res.json(serviceData);
     } else {
       console.log('No authenticated user - guest access, generating guest token');
