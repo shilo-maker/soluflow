@@ -386,17 +386,24 @@ const getServiceByCode = async (req, res) => {
 
     // Check if authenticated user already has this service
     if (req.user && req.user.id) {
-      console.log('User authenticated:', req.user.id, req.user.email);
-      const isOwner = service.created_by === req.user.id;
+      // Use == for created_by comparison to handle potential int/string type mismatch
+      const isCreator = service.created_by == req.user.id;
+      // Check if user is a member of the workspace that owns this service
+      const workspaceMembership = await WorkspaceMember.findOne({
+        where: {
+          user_id: req.user.id,
+          workspace_id: service.workspace_id
+        }
+      });
+      const isWorkspaceMember = !!workspaceMembership;
       const sharedService = await SharedService.findOne({
         where: {
           service_id: service.id,
           user_id: req.user.id
         }
       });
-      serviceData.alreadyAdded = isOwner || !!sharedService;
-      serviceData.isOwner = isOwner;
-      console.log('Already added check:', { isOwner, hasSharedService: !!sharedService, alreadyAdded: serviceData.alreadyAdded });
+      serviceData.alreadyAdded = isCreator || isWorkspaceMember || !!sharedService;
+      serviceData.isOwner = isCreator || isWorkspaceMember;
       res.json(serviceData);
     } else {
       console.log('No authenticated user - guest access, generating guest token');
