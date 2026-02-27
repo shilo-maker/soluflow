@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme, GRADIENT_PRESETS } from '../contexts/ThemeContext';
 import api from '../services/api';
+import { compressAvatar, getInitials, getAvatarColor } from '../utils/imageUtils';
+import AvatarCropModal from '../components/AvatarCropModal';
 import './UserSettings.css';
 
 const UserSettings = () => {
@@ -21,6 +23,10 @@ const UserSettings = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [cropFile, setCropFile] = useState(null);
+  const [cropImageUrl, setCropImageUrl] = useState(null);
+  const avatarInputRef = useRef(null);
 
   // Update theme settings when theme context changes
   useEffect(() => {
@@ -95,6 +101,54 @@ const UserSettings = () => {
     }
   };
 
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    e.target.value = '';
+    setCropFile(file);
+    setCropImageUrl(URL.createObjectURL(file));
+  };
+
+  const handleCropConfirm = async (croppedAreaPixels) => {
+    if (!cropFile) return;
+    if (cropImageUrl) URL.revokeObjectURL(cropImageUrl);
+    setCropImageUrl(null);
+
+    setAvatarLoading(true);
+    setMessage({ type: '', text: '' });
+    try {
+      const base64 = await compressAvatar(cropFile, 128, 0.6, croppedAreaPixels);
+      const response = await api.put('/auth/profile', { avatar_url: base64 });
+      if (updateUser) updateUser(response.data.user);
+      setMessage({ type: 'success', text: t('userSettings.avatarUpdated') || 'Profile photo updated' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to update photo' });
+    } finally {
+      setAvatarLoading(false);
+      setCropFile(null);
+    }
+  };
+
+  const handleCropCancel = () => {
+    if (cropImageUrl) URL.revokeObjectURL(cropImageUrl);
+    setCropImageUrl(null);
+    setCropFile(null);
+  };
+
+  const handleAvatarRemove = async () => {
+    setAvatarLoading(true);
+    setMessage({ type: '', text: '' });
+    try {
+      const response = await api.put('/auth/profile', { avatar_url: null });
+      if (updateUser) updateUser(response.data.user);
+      setMessage({ type: 'success', text: t('userSettings.avatarRemoved') || 'Profile photo removed' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to remove photo' });
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
   const handleResetTheme = async () => {
     setLoading(true);
     setMessage({ type: '', text: '' });
@@ -128,6 +182,54 @@ const UserSettings = () => {
               {message.text}
             </div>
           )}
+
+          {/* Avatar Section */}
+          <div className="settings-section">
+            <h2 className="section-title">{t('userSettings.profilePhoto') || 'Profile Photo'}</h2>
+            <div className="avatar-upload-row">
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.username}
+                  className="avatar-preview"
+                />
+              ) : (
+                <div
+                  className="avatar-preview avatar-initials"
+                  style={{ backgroundColor: getAvatarColor(user?.username || user?.email || '') }}
+                >
+                  {getInitials(user?.username || user?.email || '?')}
+                </div>
+              )}
+              <div className="avatar-actions">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleAvatarChange}
+                />
+                <button
+                  type="button"
+                  className="btn-avatar-change"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarLoading}
+                >
+                  {avatarLoading ? (t('userSettings.saving') || '...') : (t('userSettings.changePhoto') || 'Change Photo')}
+                </button>
+                {user?.avatar_url && (
+                  <button
+                    type="button"
+                    className="btn-avatar-remove"
+                    onClick={handleAvatarRemove}
+                    disabled={avatarLoading}
+                  >
+                    {t('userSettings.removePhoto') || 'Remove'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Profile Settings Section */}
           <form onSubmit={handleSaveProfile}>
@@ -344,6 +446,14 @@ const UserSettings = () => {
           </div>
         </div>
       </div>
+
+      {cropImageUrl && (
+        <AvatarCropModal
+          imageUrl={cropImageUrl}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 };
