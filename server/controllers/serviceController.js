@@ -1,6 +1,5 @@
 const { Service, User, Song, ServiceSong, Workspace, SharedService, WorkspaceMember } = require('../models');
 const { Op } = require('sequelize');
-
 // Helper function to check if user can edit services in workspace
 const canEditServicesInWorkspace = async (userId, workspaceId) => {
   const membership = await WorkspaceMember.findOne({
