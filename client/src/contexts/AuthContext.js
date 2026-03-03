@@ -16,8 +16,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if user is authenticated on mount
+  // On mount: pick up cross-app token from URL (SoluPlan → SoluFlow SSO),
+  // then run the normal auth check.
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get('token');
+    if (tokenParam) {
+      // Store the token and clean it from the URL for security
+      localStorage.setItem('token', tokenParam);
+      params.delete('token');
+      const remaining = params.toString();
+      const clean = window.location.pathname + (remaining ? `?${remaining}` : '') + window.location.hash;
+      window.history.replaceState({}, '', clean);
+    }
     checkAuth();
   }, []);
 
