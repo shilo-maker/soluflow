@@ -80,6 +80,42 @@ const workspaceService = {
   getWorkspaceMembers: async (workspaceId) => {
     const response = await api.get(`/workspaces/${workspaceId}/members`);
     return response.data;
+  },
+
+  // Search user by email for member invite
+  searchUserByEmail: async (workspaceId, email) => {
+    const response = await api.get(`/workspaces/${workspaceId}/search-user`, { params: { email } });
+    return response.data;
+  },
+
+  // Send member invite by email
+  sendMemberInvite: async (workspaceId, email, role) => {
+    const response = await api.post(`/workspaces/${workspaceId}/member-invites`, { email, role });
+    return response.data;
+  },
+
+  // Get pending member invites
+  getMemberInvites: async (workspaceId) => {
+    const response = await api.get(`/workspaces/${workspaceId}/member-invites`);
+    return response.data;
+  },
+
+  // Revoke a member invite
+  revokeMemberInvite: async (workspaceId, inviteId) => {
+    const response = await api.delete(`/workspaces/${workspaceId}/member-invites/${inviteId}`);
+    return response.data;
+  },
+
+  // Get member invite by token
+  getMemberInviteByToken: async (token) => {
+    const response = await api.get(`/workspaces/member-invite/${token}`);
+    return response.data;
+  },
+
+  // Respond to member invite (accept/decline)
+  respondToMemberInvite: async (token, action) => {
+    const response = await api.post(`/workspaces/member-invite/${token}/respond`, { action });
+    return response.data;
   }
 };
 

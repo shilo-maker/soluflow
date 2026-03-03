@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,6 +17,29 @@ const WorkspaceManagement = () => {
   const [workspaceDetails, setWorkspaceDetails] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const successTimerRef = useRef(null);
+  const redirectTimerRef = useRef(null);
+
+  // Email invite state
+  const [searchEmail, setSearchEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('member');
+  const [memberInvites, setMemberInvites] = useState([]);
+  const [emailInvite, setEmailInvite] = useState({
+    searchResult: null,
+    isSearching: false,
+    sendingInvite: false,
+    revokingId: null,
+    successMsg: '',
+    errorMsg: '',
+  });
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
 
   const loadWorkspaceDetails = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -28,15 +51,97 @@ const WorkspaceManagement = () => {
       setWorkspaceDetails(data);
     } catch (err) {
       console.error('Failed to load workspace details:', err);
-      setError(err.message || 'Failed to load workspace details');
+      setError(err.error || err.message || 'Failed to load workspace details');
     } finally {
       setLoading(false);
     }
   }, [activeWorkspace]);
 
+  const loadMemberInvites = useCallback(async () => {
+    if (!activeWorkspace || activeWorkspace.workspace_type === 'personal') return;
+    try {
+      const data = await workspaceService.getMemberInvites(activeWorkspace.id);
+      setMemberInvites(data);
+    } catch (err) {
+      console.error('Failed to load member invites:', err);
+    }
+  }, [activeWorkspace]);
+
   useEffect(() => {
     loadWorkspaceDetails();
-  }, [loadWorkspaceDetails]);
+    loadMemberInvites();
+  }, [loadWorkspaceDetails, loadMemberInvites]);
+
+  // Debounced email search
+  useEffect(() => {
+    if (!searchEmail || !searchEmail.trim() || !activeWorkspace) {
+      setEmailInvite(prev => ({ ...prev, searchResult: null }));
+      return;
+    }
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        setEmailInvite(prev => ({ ...prev, isSearching: true, errorMsg: '' }));
+        const result = await workspaceService.searchUserByEmail(activeWorkspace.id, searchEmail.trim());
+        if (!isCancelled) {
+          setEmailInvite(prev => ({ ...prev, searchResult: result, isSearching: false }));
+        }
+      } catch (err) {
+        console.error('Search failed:', err);
+        if (!isCancelled) {
+          setEmailInvite(prev => ({ ...prev, searchResult: null, isSearching: false }));
+        }
+      }
+    }, 400);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchEmail, activeWorkspace]);
+
+  const handleSendMemberInvite = async () => {
+    if (emailInvite.sendingInvite) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(searchEmail.trim())) {
+      setEmailInvite(prev => ({ ...prev, errorMsg: 'Please enter a valid email address' }));
+      return;
+    }
+    try {
+      setEmailInvite(prev => ({ ...prev, errorMsg: '', successMsg: '', sendingInvite: true }));
+      await workspaceService.sendMemberInvite(activeWorkspace.id, searchEmail.trim(), inviteRole);
+      setEmailInvite(prev => ({
+        ...prev,
+        successMsg: `Invitation sent to ${searchEmail.trim()}`,
+        searchResult: null,
+        sendingInvite: false,
+      }));
+      setSearchEmail('');
+      setInviteRole('member');
+      loadMemberInvites();
+      successTimerRef.current = setTimeout(() => setEmailInvite(prev => ({ ...prev, successMsg: '' })), 4000);
+    } catch (err) {
+      console.error('Failed to send invite:', err);
+      setEmailInvite(prev => ({
+        ...prev,
+        errorMsg: err.error || err.message || 'Failed to send invite',
+        sendingInvite: false,
+      }));
+    }
+  };
+
+  const handleRevokeMemberInvite = async (inviteId) => {
+    if (emailInvite.revokingId) return;
+    try {
+      setEmailInvite(prev => ({ ...prev, revokingId: inviteId, errorMsg: '' }));
+      await workspaceService.revokeMemberInvite(activeWorkspace.id, inviteId);
+      loadMemberInvites();
+    } catch (err) {
+      console.error('Failed to revoke invite:', err);
+      setEmailInvite(prev => ({ ...prev, errorMsg: err.error || err.message || 'Failed to revoke invite' }));
+    } finally {
+      setEmailInvite(prev => ({ ...prev, revokingId: null }));
+    }
+  };
 
   // Redirect if user is not admin or planner
   useEffect(() => {
@@ -44,7 +149,7 @@ const WorkspaceManagement = () => {
       const userRole = workspaceDetails.role;
       if (userRole !== 'admin' && userRole !== 'planner') {
         setError('Access denied. Only admins and planners can access workspace settings.');
-        setTimeout(() => {
+        redirectTimerRef.current = setTimeout(() => {
           navigate('/home');
         }, 2000);
       }
@@ -151,7 +256,7 @@ const WorkspaceManagement = () => {
   }
 
   const isPersonalWorkspace = activeWorkspace.workspace_type === 'personal';
-  const canGenerateInvite = !isPersonalWorkspace;
+  const canGenerateInvite = !isPersonalWorkspace && (workspaceDetails?.role === 'admin' || workspaceDetails?.role === 'planner');
   const canLeave = !isPersonalWorkspace;
   const canDelete = workspaceDetails?.role === 'admin' || workspaceDetails?.created_by_id === user?.id;
 
@@ -246,8 +351,110 @@ const WorkspaceManagement = () => {
       )}
 
       {canGenerateInvite && (
+        <div className="invite-email-section">
+          <h2>Invite by Email</h2>
+          <p className="invite-description">
+            Search for a user by email address and send them a direct invitation to join this workspace.
+          </p>
+
+          {emailInvite.successMsg && <div className="success-message">{emailInvite.successMsg}</div>}
+          {emailInvite.errorMsg && <div className="error-message">{emailInvite.errorMsg}</div>}
+
+          <div className="invite-email-form">
+            <div className="form-group" style={{ maxWidth: '300px' }}>
+              <label htmlFor="searchEmail">Email address:</label>
+              <input
+                id="searchEmail"
+                type="email"
+                value={searchEmail}
+                onChange={(e) => setSearchEmail(e.target.value)}
+                placeholder="user@example.com"
+                className="invite-email-input"
+              />
+            </div>
+            <div className="form-group" style={{ maxWidth: '150px' }}>
+              <label htmlFor="inviteRole">Role:</label>
+              <select
+                id="inviteRole"
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+              >
+                <option value="member">Member</option>
+                <option value="leader">Leader</option>
+                <option value="planner">Planner</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+
+          {emailInvite.isSearching && <p className="search-status">Searching...</p>}
+
+          {emailInvite.searchResult && (
+            <div className="search-result">
+              {emailInvite.searchResult.found ? (
+                <div className="search-result-user">
+                  {emailInvite.searchResult.user.avatar_url ? (
+                    <img src={emailInvite.searchResult.user.avatar_url} alt={emailInvite.searchResult.user.username} className="member-avatar" />
+                  ) : (
+                    <div
+                      className="member-avatar member-avatar-initials"
+                      style={{ backgroundColor: getAvatarColor(emailInvite.searchResult.user.username || emailInvite.searchResult.user.email || '') }}
+                    >
+                      {getInitials(emailInvite.searchResult.user.username || emailInvite.searchResult.user.email || '?')}
+                    </div>
+                  )}
+                  <div className="member-info">
+                    <span className="member-username">{emailInvite.searchResult.user.username}</span>
+                    <span className="member-email">{emailInvite.searchResult.user.email}</span>
+                  </div>
+                  {emailInvite.searchResult.alreadyMember ? (
+                    <span className="badge-already-member">Already a member</span>
+                  ) : emailInvite.searchResult.alreadyInvited ? (
+                    <span className="badge-already-invited">Already invited</span>
+                  ) : (
+                    <button className="btn-send-invite" onClick={handleSendMemberInvite} disabled={emailInvite.sendingInvite}>
+                      {emailInvite.sendingInvite ? 'Sending...' : 'Send Invite'}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="search-result-not-found">
+                  <p>No user found with this email.</p>
+                  <button className="btn-send-invite" onClick={handleSendMemberInvite} disabled={emailInvite.sendingInvite}>
+                    {emailInvite.sendingInvite ? 'Sending...' : 'Send Invite Anyway'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {memberInvites.length > 0 && (
+            <div className="pending-invites">
+              <h3>Pending Invitations</h3>
+              {memberInvites.map((invite) => (
+                <div key={invite.id} className="pending-invite-item">
+                  <div className="member-info">
+                    <span className="member-email">{invite.invited_email}</span>
+                    <span className="member-role-label">Role: {invite.role} &middot; Invited by {invite.invitedBy?.username || 'unknown'}</span>
+                  </div>
+                  <button
+                    className="btn-revoke"
+                    onClick={() => handleRevokeMemberInvite(invite.id)}
+                    disabled={!!emailInvite.revokingId}
+                    title="Revoke invite"
+                  >
+                    {emailInvite.revokingId === invite.id ? 'Revoking...' : 'Revoke'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {canGenerateInvite && (
         <div className="invite-card">
-          <h2>Invite Members</h2>
+          <h2>Invite by Link</h2>
           <p className="invite-description">
             Generate an invite link to add new members to this team workspace.
             Invite links are temporary and expire after the specified number of days.

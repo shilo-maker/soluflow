@@ -400,4 +400,161 @@ const sendPasswordResetEmail = async (email, token, username) => {
   }
 };
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail };
+// Helper function to get workspace invite email content based on language
+function getWorkspaceInviteEmailContent(recipientName, workspaceName, role, inviterName, acceptUrl, declineUrl, language) {
+  const isHebrew = language === 'he';
+  const dir = isHebrew ? 'rtl' : 'ltr';
+  const year = new Date().getFullYear();
+
+  const translations = {
+    en: {
+      subject: `You're invited to join "${workspaceName}" on SoluFlow`,
+      title: 'Workspace Invitation',
+      greeting: `Hi${recipientName ? ` <strong>${recipientName}</strong>` : ''},`,
+      message: `<strong>${inviterName}</strong> has invited you to join the workspace <strong>"${workspaceName}"</strong> as a <strong>${role}</strong>.`,
+      acceptBtn: 'Accept Invitation',
+      declineBtn: 'Decline',
+      orCopy: 'Or copy and paste this link into your browser to accept:',
+      expires: 'This invitation will expire in 7 days.',
+      ignore: "If you didn't expect this invitation, you can safely ignore this email.",
+      footer: `\u00A9 ${year} SoluFlow. All rights reserved.`
+    },
+    he: {
+      subject: `הוזמנת להצטרף ל-"${workspaceName}" ב-SoluFlow`,
+      title: 'הזמנה לסביבת עבודה',
+      greeting: `שלום${recipientName ? ` <strong>${recipientName}</strong>` : ''},`,
+      message: `<strong>${inviterName}</strong> הזמין/ה אותך להצטרף לסביבת העבודה <strong>"${workspaceName}"</strong> בתפקיד <strong>${role}</strong>.`,
+      acceptBtn: 'קבל הזמנה',
+      declineBtn: 'דחה',
+      orCopy: 'או העתק והדבק את הקישור הזה בדפדפן שלך כדי לקבל:',
+      expires: 'הזמנה זו תפוג בעוד 7 ימים.',
+      ignore: 'אם לא ציפית להזמנה זו, תוכל להתעלם מאימייל זה בבטחה.',
+      footer: `\u00A9 ${year} SoluFlow. כל הזכויות שמורות.`
+    }
+  };
+
+  const t = translations[isHebrew ? 'he' : 'en'];
+
+  const html = `
+      <!DOCTYPE html>
+      <html dir="${dir}">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${t.subject}</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); padding: 40px 20px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 28px;">SoluFlow</h1>
+                  </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px 30px;" dir="${dir}">
+                    <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px;">${t.title}</h2>
+                    <p style="color: #666666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
+                      ${t.greeting}
+                    </p>
+                    <p style="color: #666666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
+                      ${t.message}
+                    </p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="padding: 20px 0;">
+                          <a href="${acceptUrl}" style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block; margin-right: 10px;">
+                            ${t.acceptBtn}
+                          </a>
+                          <a href="${declineUrl}" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; font-weight: bold; display: inline-block;">
+                            ${t.declineBtn}
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="color: #666666; font-size: 14px; line-height: 1.5; margin: 20px 0 0 0;">
+                      ${t.orCopy}
+                    </p>
+                    <p style="color: #4ECDC4; font-size: 14px; word-break: break-all; margin: 10px 0 20px 0;" dir="ltr">
+                      ${acceptUrl}
+                    </p>
+                    <p style="color: #999999; font-size: 13px; line-height: 1.5; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #eeeeee;">
+                      ${t.expires}
+                    </p>
+                    <p style="color: #999999; font-size: 13px; line-height: 1.5; margin: 10px 0 0 0;">
+                      ${t.ignore}
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f8f8f8; padding: 20px 30px; text-align: center; border-top: 1px solid #eeeeee;">
+                    <p style="color: #999999; font-size: 12px; margin: 0;">
+                      ${t.footer}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+  const text = `
+${t.title}
+
+${t.greeting.replace(/<[^>]*>/g, '')}
+
+${t.message.replace(/<[^>]*>/g, '')}
+
+Accept: ${acceptUrl}
+Decline: ${declineUrl}
+
+${t.expires}
+
+${t.ignore}
+
+${t.footer}
+    `;
+
+  return { html, text, subject: t.subject };
+}
+
+// Send workspace member invite email
+const sendWorkspaceInviteEmail = async (email, recipientName, workspaceName, role, inviterName, acceptUrl, declineUrl, language = 'en') => {
+  try {
+    const emailFrom = process.env.EMAIL_FROM || '"SoluFlow" <noreply@soluflow.com>';
+
+    // Get language-specific content
+    const content = getWorkspaceInviteEmailContent(recipientName, workspaceName, role, inviterName, acceptUrl, declineUrl, language);
+
+    // Get email content based on language
+    const htmlContent = content.html;
+    const textContent = content.text;
+    const subject = content.subject;
+
+    // Choose email provider based on environment
+    const emailService = process.env.EMAIL_SERVICE || 'smtp';
+
+    if (emailService === 'resend') {
+      return await sendViaResend(email, emailFrom, htmlContent, textContent, subject);
+    } else if (emailService === 'sendgrid') {
+      return await sendViaSendGrid(email, emailFrom, htmlContent, textContent, subject);
+    } else {
+      return await sendViaSMTP(email, emailFrom, htmlContent, textContent, subject);
+    }
+  } catch (error) {
+    console.error('Error sending workspace invite email:', error);
+    throw new Error('Failed to send workspace invite email');
+  }
+};
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendWorkspaceInviteEmail, getWorkspaceInviteEmailContent };

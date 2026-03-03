@@ -13,6 +13,7 @@ const SongWorkspace = require('./SongWorkspace');
 const SongReport = require('./SongReport');
 const Tag = require('./Tag');
 const SongTag = require('./SongTag');
+const WorkspaceMemberInvite = require('./WorkspaceMemberInvite');
 
 // Define associations
 
@@ -45,6 +46,12 @@ User.belongsToMany(Workspace, {
 WorkspaceInvitation.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'workspace' });
 WorkspaceInvitation.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 Workspace.hasMany(WorkspaceInvitation, { foreignKey: 'workspace_id', as: 'invitations' });
+
+// WorkspaceMemberInvite associations
+WorkspaceMemberInvite.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'workspace' });
+WorkspaceMemberInvite.belongsTo(User, { foreignKey: 'invited_user_id', as: 'invitedUser' });
+WorkspaceMemberInvite.belongsTo(User, { foreignKey: 'invited_by_id', as: 'invitedBy' });
+Workspace.hasMany(WorkspaceMemberInvite, { foreignKey: 'workspace_id', as: 'memberInvites' });
 
 // User associations
 User.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'defaultWorkspace' }); // Keep for backward compatibility
@@ -216,6 +223,7 @@ module.exports = {
   SongReport,
   Tag,
   SongTag,
+  WorkspaceMemberInvite,
   syncDatabase,
   testConnection
 };

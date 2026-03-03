@@ -12,7 +12,13 @@ const {
   leaveWorkspace,
   updateMemberRole,
   getWorkspaceMembers,
-  removeMember
+  removeMember,
+  searchUserByEmail,
+  sendMemberInvite,
+  listMemberInvites,
+  revokeMemberInvite,
+  getMemberInviteByToken,
+  respondToMemberInvite
 } = require('../controllers/workspaceController');
 
 // All routes require authentication
@@ -23,6 +29,10 @@ router.get('/', getAllWorkspaces);
 
 // Accept invite (must be before /:id routes to avoid conflicts)
 router.post('/join/:token', acceptInvite);
+
+// Member invite by token routes (must be before /:id routes)
+router.get('/member-invite/:token', getMemberInviteByToken);
+router.post('/member-invite/:token/respond', respondToMemberInvite);
 
 // Get specific workspace details
 router.get('/:id', getWorkspaceById);
@@ -50,5 +60,11 @@ router.delete('/:id/members/:userId', removeMember);
 
 // Get workspace members
 router.get('/:id/members', getWorkspaceMembers);
+
+// Member invite routes (email-based)
+router.get('/:id/search-user', searchUserByEmail);
+router.post('/:id/member-invites', sendMemberInvite);
+router.get('/:id/member-invites', listMemberInvites);
+router.delete('/:id/member-invites/:inviteId', revokeMemberInvite);
 
 module.exports = router;

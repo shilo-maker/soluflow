@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -38,6 +38,7 @@ const getHueRotate = (r, g, b) => {
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const { t, setLanguage } = useLanguage();
   const { theme } = useTheme();
@@ -79,9 +80,10 @@ const Login = () => {
       }
 
       await login(formData.email, formData.password);
-      // Success - navigate to home
+      // Success - navigate to returnUrl or home
       setLoading(false);
-      navigate('/home');
+      const returnUrl = searchParams.get('returnUrl');
+      navigate(returnUrl || '/home');
     } catch (err) {
       console.error('Login error:', err);
 

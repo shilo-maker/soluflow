@@ -1,7 +1,8 @@
-const { User, Workspace, WorkspaceMember, WorkspaceInvitation, Service, ServiceSong, SongWorkspace } = require('../models');
+const { User, Workspace, WorkspaceMember, WorkspaceInvitation, WorkspaceMemberInvite, Service, ServiceSong, SongWorkspace } = require('../models');
 const { sequelize } = require('../config/database');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
+const { sendWorkspaceInviteEmail } = require('../utils/emailService');
 
 // GET /api/workspaces - Get all user's workspaces
 const getAllWorkspaces = async (req, res) => {
@@ -312,6 +313,12 @@ const deleteWorkspace = async (req, res) => {
       // Delete workspace invitations
       await sequelize.query(
         `DELETE FROM workspace_invitations WHERE workspace_id = $1`,
+        { bind: [id], transaction, type: sequelize.QueryTypes.DELETE }
+      );
+
+      // Delete workspace member invites
+      await sequelize.query(
+        `DELETE FROM workspace_member_invites WHERE workspace_id = $1`,
         { bind: [id], transaction, type: sequelize.QueryTypes.DELETE }
       );
 
@@ -905,6 +912,403 @@ const removeMember = async (req, res) => {
   }
 };
 
+// Helper: check if user is admin or planner in a workspace. Returns membership or null.
+const requireAdminOrPlanner = async (workspaceId, userId) => {
+  return WorkspaceMember.findOne({
+    where: {
+      workspace_id: workspaceId,
+      user_id: userId,
+      role: { [Op.in]: ['admin', 'planner'] }
+    }
+  });
+};
+
+// GET /api/workspaces/:id/search-user?email= - Search user by email for member invite
+const searchUserByEmail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.query;
+    const userId = req.user.id;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const membership = await requireAdminOrPlanner(id, userId);
+    if (!membership) {
+      return res.status(403).json({ error: 'Only admins and planners can search users' });
+    }
+
+    // Find user by email
+    const foundUser = await User.findOne({
+      where: { email: email.trim().toLowerCase() },
+      attributes: ['id', 'username', 'email', 'avatar_url']
+    });
+
+    if (!foundUser) {
+      return res.json({ found: false });
+    }
+
+    // Check if already a member
+    const existingMember = await WorkspaceMember.findOne({
+      where: { workspace_id: id, user_id: foundUser.id }
+    });
+
+    // Check if already invited (pending)
+    const existingInvite = await WorkspaceMemberInvite.findOne({
+      where: { workspace_id: id, invited_email: email.trim().toLowerCase(), status: 'pending' }
+    });
+
+    res.json({
+      found: true,
+      user: {
+        id: foundUser.id,
+        username: foundUser.username,
+        email: foundUser.email,
+        avatar_url: foundUser.avatar_url
+      },
+      alreadyMember: !!existingMember,
+      alreadyInvited: !!existingInvite
+    });
+  } catch (error) {
+    console.error('Search user by email error:', error);
+    res.status(500).json({ error: 'Failed to search user' });
+  }
+};
+
+// POST /api/workspaces/:id/member-invites - Send member invite by email
+const sendMemberInvite = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { email, role = 'member' } = req.body;
+
+    // Validate inputs
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    const validRoles = ['admin', 'planner', 'leader', 'member'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: `Role must be one of: ${validRoles.join(', ')}` });
+    }
+
+    // Get workspace and verify it's not personal
+    const workspace = await Workspace.findByPk(id);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    if (workspace.workspace_type === 'personal') {
+      return res.status(403).json({ error: 'Cannot invite to personal workspace' });
+    }
+
+    const membership = await requireAdminOrPlanner(id, userId);
+    if (!membership) {
+      return res.status(403).json({ error: 'Only admins and planners can send invites' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if already a member
+    const targetUser = await User.findOne({ where: { email: normalizedEmail } });
+    if (targetUser) {
+      const existingMember = await WorkspaceMember.findOne({
+        where: { workspace_id: id, user_id: targetUser.id }
+      });
+      if (existingMember) {
+        return res.status(409).json({ error: 'User is already a member of this workspace' });
+      }
+    }
+
+    // Check if already has a pending invite
+    const existingInvite = await WorkspaceMemberInvite.findOne({
+      where: { workspace_id: id, invited_email: normalizedEmail, status: 'pending' }
+    });
+    if (existingInvite) {
+      return res.status(409).json({ error: 'User already has a pending invite for this workspace' });
+    }
+
+    // Remove any old declined/confirmed invites for this email+workspace
+    // (the UNIQUE constraint on [workspace_id, invited_email] would block re-inviting otherwise)
+    await WorkspaceMemberInvite.destroy({
+      where: {
+        workspace_id: id,
+        invited_email: normalizedEmail,
+        status: { [Op.in]: ['declined', 'confirmed'] }
+      }
+    });
+
+    // Generate token and create invite
+    const token = crypto.randomBytes(48).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const invite = await WorkspaceMemberInvite.create({
+      workspace_id: id,
+      invited_email: normalizedEmail,
+      invited_user_id: targetUser ? targetUser.id : null,
+      role,
+      status: 'pending',
+      token,
+      invited_by_id: userId,
+      expires_at: expiresAt
+    });
+
+    // Send email
+    const inviter = await User.findByPk(userId, { attributes: ['username'] });
+    const baseUrl = process.env.CLIENT_URL || 'http://localhost:3001';
+    const acceptUrl = `${baseUrl}/workspace/member-invite/${token}?action=accept`;
+    const declineUrl = `${baseUrl}/workspace/member-invite/${token}?action=decline`;
+
+    try {
+      await sendWorkspaceInviteEmail(
+        normalizedEmail,
+        targetUser ? targetUser.username : null,
+        workspace.name,
+        role,
+        inviter.username,
+        acceptUrl,
+        declineUrl,
+        targetUser ? (targetUser.language || 'en') : 'en'
+      );
+    } catch (emailErr) {
+      console.error('Failed to send invite email (invite still created):', emailErr);
+    }
+
+    res.status(201).json({
+      id: invite.id,
+      invited_email: invite.invited_email,
+      role: invite.role,
+      status: invite.status,
+      expires_at: invite.expires_at,
+      created_at: invite.created_at
+    });
+  } catch (error) {
+    console.error('Send member invite error:', error);
+    res.status(500).json({ error: 'Failed to send invite' });
+  }
+};
+
+// GET /api/workspaces/:id/member-invites - List pending member invites
+const listMemberInvites = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const membership = await requireAdminOrPlanner(id, userId);
+    if (!membership) {
+      return res.status(403).json({ error: 'Only admins and planners can view invites' });
+    }
+
+    const invites = await WorkspaceMemberInvite.findAll({
+      where: { workspace_id: id, status: 'pending' },
+      include: [
+        { model: User, as: 'invitedUser', attributes: ['id', 'username', 'email', 'avatar_url'] },
+        { model: User, as: 'invitedBy', attributes: ['id', 'username'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    res.json(invites);
+  } catch (error) {
+    console.error('List member invites error:', error);
+    res.status(500).json({ error: 'Failed to list invites' });
+  }
+};
+
+// DELETE /api/workspaces/:id/member-invites/:inviteId - Revoke a member invite
+const revokeMemberInvite = async (req, res) => {
+  try {
+    const { id, inviteId } = req.params;
+    const userId = req.user.id;
+
+    const membership = await requireAdminOrPlanner(id, userId);
+    if (!membership) {
+      return res.status(403).json({ error: 'Only admins and planners can revoke invites' });
+    }
+
+    const invite = await WorkspaceMemberInvite.findOne({
+      where: { id: inviteId, workspace_id: id }
+    });
+
+    if (!invite) {
+      return res.status(404).json({ error: 'Invite not found' });
+    }
+
+    await invite.destroy();
+    res.json({ message: 'Invite revoked successfully' });
+  } catch (error) {
+    console.error('Revoke member invite error:', error);
+    res.status(500).json({ error: 'Failed to revoke invite' });
+  }
+};
+
+// GET /api/workspaces/member-invite/:token - Get member invite by token
+const getMemberInviteByToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const invite = await WorkspaceMemberInvite.findOne({
+      where: { token },
+      include: [
+        { model: Workspace, as: 'workspace', attributes: ['id', 'name'] },
+        { model: User, as: 'invitedBy', attributes: ['id', 'username'] }
+      ]
+    });
+
+    if (!invite) {
+      return res.status(404).json({ error: 'Invite not found' });
+    }
+
+    if (invite.status !== 'pending') {
+      return res.status(410).json({ error: 'This invite has already been responded to' });
+    }
+
+    if (new Date() > invite.expires_at) {
+      return res.status(410).json({ error: 'This invite has expired' });
+    }
+
+    // Verify the logged-in user's email matches the invite
+    const userEmail = req.user.email ? req.user.email.toLowerCase() : '';
+    if (userEmail !== invite.invited_email.toLowerCase()) {
+      return res.status(403).json({ error: 'This invite was sent to a different email address' });
+    }
+
+    res.json({
+      id: invite.id,
+      workspace: invite.workspace,
+      role: invite.role,
+      invited_email: invite.invited_email,
+      invitedBy: invite.invitedBy,
+      expires_at: invite.expires_at
+    });
+  } catch (error) {
+    console.error('Get member invite by token error:', error);
+    res.status(500).json({ error: 'Failed to get invite details' });
+  }
+};
+
+// POST /api/workspaces/member-invite/:token/respond - Accept or decline a member invite
+const respondToMemberInvite = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { action } = req.body; // 'accept' or 'decline'
+    const userId = req.user.id;
+
+    if (!['accept', 'decline'].includes(action)) {
+      return res.status(400).json({ error: 'Action must be "accept" or "decline"' });
+    }
+
+    const invite = await WorkspaceMemberInvite.findOne({
+      where: { token },
+      include: [
+        { model: Workspace, as: 'workspace' }
+      ]
+    });
+
+    if (!invite) {
+      return res.status(404).json({ error: 'Invite not found' });
+    }
+
+    if (invite.status !== 'pending') {
+      return res.status(410).json({ error: 'This invite has already been responded to' });
+    }
+
+    if (new Date() > invite.expires_at) {
+      return res.status(410).json({ error: 'This invite has expired' });
+    }
+
+    // Verify the logged-in user's email matches the invite
+    const userEmail = req.user.email ? req.user.email.toLowerCase() : '';
+    if (userEmail !== invite.invited_email.toLowerCase()) {
+      return res.status(403).json({ error: 'This invite was sent to a different email address' });
+    }
+
+    if (action === 'decline') {
+      await invite.update({ status: 'declined', responded_at: new Date() });
+      return res.json({ message: 'Invite declined' });
+    }
+
+    // Accept: create membership in a transaction
+    const transaction = await sequelize.transaction();
+    try {
+      // Check if already a member
+      const existingMember = await WorkspaceMember.findOne({
+        where: { workspace_id: invite.workspace_id, user_id: userId },
+        transaction
+      });
+
+      if (existingMember) {
+        await invite.update({ status: 'confirmed', responded_at: new Date() }, { transaction });
+        await transaction.commit();
+        return res.json({
+          message: 'You are already a member of this workspace',
+          workspace: { id: invite.workspace.id, name: invite.workspace.name }
+        });
+      }
+
+      // Check workspace limit
+      const memberCount = await WorkspaceMember.count({
+        where: { user_id: userId },
+        transaction
+      });
+
+      if (memberCount >= 5) {
+        await transaction.rollback();
+        return res.status(403).json({
+          error: 'Maximum workspace limit reached',
+          message: 'You can be a member of maximum 5 workspaces. Leave a workspace to join this one.'
+        });
+      }
+
+      // Create membership with the role from the invite
+      await WorkspaceMember.create({
+        workspace_id: invite.workspace_id,
+        user_id: userId,
+        role: invite.role
+      }, { transaction });
+
+      // Update invite status
+      await invite.update({
+        status: 'confirmed',
+        responded_at: new Date(),
+        invited_user_id: userId
+      }, { transaction });
+
+      await transaction.commit();
+
+      res.json({
+        message: 'Successfully joined workspace',
+        workspace: {
+          id: invite.workspace.id,
+          name: invite.workspace.name,
+          role: invite.role
+        }
+      });
+    } catch (txError) {
+      await transaction.rollback();
+      // Handle race condition where user was already added concurrently
+      if (txError.name === 'SequelizeUniqueConstraintError') {
+        return res.json({
+          message: 'You are already a member of this workspace',
+          workspace: { id: invite.workspace.id, name: invite.workspace.name }
+        });
+      }
+      throw txError;
+    }
+  } catch (error) {
+    console.error('Respond to member invite error:', error);
+    res.status(500).json({ error: 'Failed to respond to invite' });
+  }
+};
+
 module.exports = {
   getAllWorkspaces,
   getWorkspaceById,
@@ -916,5 +1320,11 @@ module.exports = {
   leaveWorkspace,
   updateMemberRole,
   getWorkspaceMembers,
-  removeMember
+  removeMember,
+  searchUserByEmail,
+  sendMemberInvite,
+  listMemberInvites,
+  revokeMemberInvite,
+  getMemberInviteByToken,
+  respondToMemberInvite
 };

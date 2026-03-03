@@ -25,6 +25,7 @@ const UserManagement = lazy(() => import('./pages/UserManagement'));
 const UserSettings = lazy(() => import('./pages/UserSettings'));
 const WorkspaceManagement = lazy(() => import('./pages/WorkspaceManagement'));
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
+const MemberInviteResponse = lazy(() => import('./pages/MemberInviteResponse'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
@@ -135,6 +136,7 @@ function AppContent() {
             <Route path="/settings" element={<PrivateRoute><UserSettings /></PrivateRoute>} />
             <Route path="/workspace/settings" element={<PrivateRoute><WorkspaceManagement /></PrivateRoute>} />
             <Route path="/workspace/invite/:token" element={<PrivateRoute><AcceptInvite /></PrivateRoute>} />
+            <Route path="/workspace/member-invite/:token" element={<PrivateRoute><MemberInviteResponse /></PrivateRoute>} />
             <Route path="/admin/reports" element={<PrivateRoute><SongReports /></PrivateRoute>} />
             <Route path="/create-for-soluplan" element={<CreateForSoluPlan />} />
           </Routes>
