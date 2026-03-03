@@ -38,6 +38,15 @@ const verifyToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
   } catch (error) {
+    // Fallback: try cross-app secret (SoluPlan/SoluEvents uses a different JWT_SECRET)
+    const crossAppSecret = process.env.SOLUPLAN_JWT_SECRET;
+    if (crossAppSecret) {
+      try {
+        return jwt.verify(token, crossAppSecret);
+      } catch {
+        // Fall through to throw
+      }
+    }
     throw new Error('Invalid or expired token');
   }
 };
