@@ -79,14 +79,17 @@ const CreateForSoluPlan = () => {
 
     const newService = await serviceService.createService(serviceData);
 
-    // Add songs to setlist if provided
+    // Add items to setlist if provided
     if (setlist && setlist.length > 0) {
       for (let i = 0; i < setlist.length; i++) {
-        const song = setlist[i];
+        const item = setlist[i];
+        const isPrayer = item.segment_type === 'prayer';
         await serviceService.addSongToService(newService.id, {
-          song_id: song.id,
+          song_id: isPrayer ? null : item.id,
           position: i,
-          segment_type: 'song',
+          segment_type: isPrayer ? 'prayer' : 'song',
+          segment_title: isPrayer ? item.segment_title : undefined,
+          segment_content: isPrayer ? item.segment_content : undefined,
         });
       }
     }
