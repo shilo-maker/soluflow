@@ -27,6 +27,13 @@ const generateGuestToken = (serviceId) => {
   }, '24h');
 };
 
+const generateGuestEditorToken = (serviceId) => {
+  return generateToken({
+    type: 'guest_editor',
+    serviceId
+  }, '24h');
+};
+
 const verifyToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
@@ -39,5 +46,6 @@ module.exports = {
   generateToken,
   generateAccessToken,
   generateGuestToken,
+  generateGuestEditorToken,
   verifyToken
 };

@@ -423,6 +423,66 @@ const getServiceByCode = async (req, res) => {
   }
 };
 
+// Get service by edit token (for guest edit access)
+const getServiceByEditToken = async (req, res) => {
+  try {
+    const { editToken } = req.params;
+
+    const service = await Service.findOne({
+      where: { edit_token: editToken },
+      include: [
+        {
+          model: User,
+          as: 'leader',
+          attributes: ['id', 'username']
+        },
+        {
+          model: ServiceSong,
+          as: 'serviceSongs',
+          include: [
+            {
+              model: Song,
+              as: 'song'
+            }
+          ]
+        }
+      ],
+      order: [[{ model: ServiceSong, as: 'serviceSongs' }, 'position', 'ASC']]
+    });
+
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    // Transform serviceSongs to songs array for frontend
+    const serviceData = service.toJSON();
+    if (serviceData.serviceSongs) {
+      serviceData.songs = serviceData.serviceSongs.map(ss => {
+        if (!ss.song) return null;
+        return {
+          ...ss.song,
+          transposition: ss.transposition || 0,
+          serviceSongId: ss.id
+        };
+      }).filter(song => song !== null);
+      delete serviceData.serviceSongs;
+    }
+
+    // Generate guest editor token
+    const { generateGuestEditorToken } = require('../utils/jwt');
+    const guestEditorToken = generateGuestEditorToken(service.id);
+
+    res.json({
+      ...serviceData,
+      canEdit: true,
+      guestEditorToken
+    });
+  } catch (error) {
+    console.error('Error fetching service by edit token:', error);
+    res.status(500).json({ error: 'Failed to fetch service' });
+  }
+};
+
 // Create a new service
 const createService = async (req, res) => {
   try {
@@ -582,12 +642,17 @@ const addSongToService = async (req, res) => {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    // Check if user has permission to edit services in this workspace
-    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
-    if (!canEdit) {
-      return res.status(403).json({
-        error: 'Access denied. Only admins and planners can edit service setlists.'
-      });
+    // Allow guest_editor tokens for the matching service
+    const isGuestEditor = req.user.type === 'guest_editor' && req.user.serviceId === service.id;
+
+    if (!isGuestEditor) {
+      // Check if user has permission to edit services in this workspace
+      const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+      if (!canEdit) {
+        return res.status(403).json({
+          error: 'Access denied. Only admins and planners can edit service setlists.'
+        });
+      }
     }
 
     const serviceSong = await ServiceSong.create({
@@ -630,11 +695,16 @@ const updateServiceSong = async (req, res) => {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
-    if (!canEdit) {
-      return res.status(403).json({
-        error: 'Access denied. Only admins and planners can edit service setlists.'
-      });
+    // Allow guest_editor tokens for the matching service
+    const isGuestEditor = req.user.type === 'guest_editor' && req.user.serviceId === service.id;
+
+    if (!isGuestEditor) {
+      const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+      if (!canEdit) {
+        return res.status(403).json({
+          error: 'Access denied. Only admins and planners can edit service setlists.'
+        });
+      }
     }
 
     const { position, notes, segment_title, segment_content, transposition } = req.body;
@@ -681,11 +751,16 @@ const removeSongFromService = async (req, res) => {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
-    if (!canEdit) {
-      return res.status(403).json({
-        error: 'Access denied. Only admins and planners can edit service setlists.'
-      });
+    // Allow guest_editor tokens for the matching service
+    const isGuestEditor = req.user.type === 'guest_editor' && req.user.serviceId === service.id;
+
+    if (!isGuestEditor) {
+      const canEdit = await canEditServicesInWorkspace(req.user.id, service.workspace_id);
+      if (!canEdit) {
+        return res.status(403).json({
+          error: 'Access denied. Only admins and planners can edit service setlists.'
+        });
+      }
     }
 
     await serviceSong.destroy();
@@ -976,6 +1051,7 @@ module.exports = {
   getAllServices,
   getServiceById,
   getServiceByCode,
+  getServiceByEditToken,
   createService,
   updateService,
   deleteService,

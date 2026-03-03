@@ -61,6 +61,12 @@ const Service = sequelize.define('Service', {
   is_archived: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  edit_token: {
+    type: DataTypes.STRING(64),
+    unique: true,
+    allowNull: true,
+    comment: 'Secret token for guest edit access'
   }
 }, {
   tableName: 'services',
@@ -92,6 +98,10 @@ const Service = sequelize.define('Service', {
     {
       // Index for is_public queries
       fields: ['is_public']
+    },
+    {
+      fields: ['edit_token'],
+      unique: true
     }
   ],
   hooks: {
@@ -104,6 +114,10 @@ const Service = sequelize.define('Service', {
           code += chars.charAt(crypto.randomInt(chars.length));
         }
         service.code = code;
+      }
+      // Generate edit_token for secret edit link access
+      if (!service.edit_token) {
+        service.edit_token = crypto.randomBytes(32).toString('hex');
       }
     }
   }

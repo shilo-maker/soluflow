@@ -23,6 +23,12 @@ const authenticate = async (req, res, next) => {
       return next();
     }
 
+    // Check if it's a guest editor token
+    if (decoded.type === 'guest_editor') {
+      req.user = { type: 'guest_editor', serviceId: decoded.serviceId };
+      return next();
+    }
+
     // For regular users, fetch full user details
     const user = await User.findByPk(decoded.id, {
       attributes: { exclude: ['password_hash'] }
@@ -54,6 +60,8 @@ const authenticateOptional = async (req, res, next) => {
 
     if (decoded.type === 'guest') {
       req.user = { type: 'guest', serviceId: decoded.serviceId };
+    } else if (decoded.type === 'guest_editor') {
+      req.user = { type: 'guest_editor', serviceId: decoded.serviceId };
     } else {
       const user = await User.findByPk(decoded.id, {
         attributes: { exclude: ['password_hash'] }

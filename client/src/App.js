@@ -16,6 +16,7 @@ import './App.css';
 const Home = lazy(() => import('./pages/Home'));
 const Service = lazy(() => import('./pages/Service'));
 const GuestServiceView = lazy(() => import('./pages/GuestServiceView'));
+const GuestEditView = lazy(() => import('./pages/GuestEditView'));
 const SharedSongView = lazy(() => import('./pages/SharedSongView'));
 const GuestLanding = lazy(() => import('./pages/GuestLanding'));
 const Library = lazy(() => import('./pages/Library'));
@@ -67,6 +68,7 @@ function AppContent() {
                     location.pathname === '/create-for-soluplan';
   const isGuestPage = location.pathname.startsWith('/open/') ||
                       location.pathname.startsWith('/service/code/') ||
+                      location.pathname.startsWith('/service/edit/') ||
                       location.pathname.startsWith('/song/code/') ||
                       location.pathname.startsWith('/song/') ||
                       (!isAuthenticated && location.pathname === '/');
@@ -112,6 +114,7 @@ function AppContent() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/open/:code" element={<SolucastRedirect />} />
             <Route path="/service/code/:code" element={<GuestServiceView />} />
+            <Route path="/service/edit/:editToken" element={<GuestEditView />} />
             <Route path="/song/code/:code" element={<SharedSongView />} />
             <Route path="/sso" element={<SSOCallback />} />
 

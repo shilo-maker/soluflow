@@ -5,6 +5,7 @@ const {
   getAllServices,
   getServiceById,
   getServiceByCode,
+  getServiceByEditToken,
   createService,
   updateService,
   deleteService,
@@ -25,6 +26,9 @@ router.get('/', authenticate, getAllServices);
 // GET /api/services/code/:code - Get service by code (optional auth for already-added detection)
 router.get('/code/:code', authenticateOptional, getServiceByCode);
 
+// GET /api/services/edit/:editToken - Get service by edit token (grants edit access)
+router.get('/edit/:editToken', authenticateOptional, getServiceByEditToken);
+
 // GET /api/services/:id - Get single service (authenticated)
 router.get('/:id', authenticate, getServiceById);
 
@@ -37,16 +41,16 @@ router.put('/:id', authenticate, updateService);
 // DELETE /api/services/:id - Delete service (authenticated)
 router.delete('/:id', authenticate, deleteService);
 
-// POST /api/services/:id/songs - Add song to service (authenticated)
+// POST /api/services/:id/songs - Add song to service (authenticated or guest_editor)
 router.post('/:id/songs', authenticate, addSongToService);
 
-// PUT /api/services/:id/songs/:songId - Update service song (authenticated)
+// PUT /api/services/:id/songs/:songId - Update service song (authenticated or guest_editor)
 router.put('/:id/songs/:songId', authenticate, updateServiceSong);
 
 // PUT /api/services/:id/songs/:songId/transpose - Update song transposition (authenticated)
 router.put('/:id/songs/:songId/transpose', authenticate, updateSongTransposition);
 
-// DELETE /api/services/:id/songs/:songId - Remove song from service (authenticated)
+// DELETE /api/services/:id/songs/:songId - Remove song from service (authenticated or guest_editor)
 router.delete('/:id/songs/:songId', authenticate, removeSongFromService);
 
 // GET /api/services/:id/share - Get share link for service (authenticated)

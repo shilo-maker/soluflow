@@ -99,6 +99,18 @@ const serviceService = {
     return normalizeServiceSongs(response.data.service || response.data);
   },
 
+  // Get service by edit token (for guest edit access)
+  getServiceByEditToken: async (editToken) => {
+    const response = await api.get(`/services/edit/${editToken}`);
+    const service = normalizeServiceSongs(response.data.service || response.data);
+    // Preserve guestEditorToken from top-level response (may be snake_case from flowCaseTransform)
+    const token = response.data.guestEditorToken || response.data.guest_editor_token;
+    if (token) {
+      service.guestEditorToken = token;
+    }
+    return service;
+  },
+
   // Create new service
   createService: async (serviceData) => {
     const response = await api.post('/services', serviceData);

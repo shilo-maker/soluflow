@@ -34,7 +34,7 @@ api.interceptors.response.use(
       if (error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
         // But only if we're not on a guest-accessible page or auth pages
-        const guestPages = ['/', '/open', '/service/code', '/song'];
+        const guestPages = ['/', '/open', '/service/code', '/service/edit', '/song'];
         const authPages = ['/login', '/register', '/sso'];
         const currentPath = window.location.pathname;
         const isGuestPage = guestPages.some(page => currentPath === page || currentPath.startsWith(page + '/'));
