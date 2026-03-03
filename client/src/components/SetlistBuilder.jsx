@@ -37,7 +37,8 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     fetchingRef.current = true;
     try {
       setLoading(true);
-      const wsId = service?.workspace_id || service?.workspaceId || 1;
+      // Guest editors (canEdit via edit token) see all songs; normal users scope to workspace
+      const wsId = service?.can_edit ? null : (service?.workspace_id || service?.workspaceId || 1);
       const songs = await songService.getAllSongs(wsId);
       setAvailableSongs(songs);
     } catch (err) {
