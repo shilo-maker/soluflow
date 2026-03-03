@@ -37,7 +37,8 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     fetchingRef.current = true;
     try {
       setLoading(true);
-      const songs = await songService.getAllSongs(1); // workspace_id = 1
+      const wsId = service?.workspace_id || service?.workspaceId || 1;
+      const songs = await songService.getAllSongs(wsId);
       setAvailableSongs(songs);
     } catch (err) {
       console.error('Error fetching songs:', err);
@@ -51,8 +52,8 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     // Strip niqqud from query for Hebrew search matching
     const query = stripNiqqud(searchQuery.toLowerCase());
 
-    // Filter out songs already in setlist
-    const available = availableSongs.filter(song => !setlist.some(s => s.id === song.id));
+    // Filter out songs already in setlist (compare by song_id for existing items, id for newly added)
+    const available = availableSongs.filter(song => !setlist.some(s => (s.song_id || s.id) === song.id));
 
     if (!query) return available;
 

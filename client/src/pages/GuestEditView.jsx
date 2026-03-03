@@ -72,13 +72,20 @@ const GuestEditView = () => {
 
   const handleUpdateSetlist = async (newSetlist) => {
     try {
+      // Build lookup: Song ID -> junction record ID (FlowServiceSong.id)
+      const junctionIdBySongId = {};
+      for (const s of currentSetList) {
+        if (s.song_id) junctionIdBySongId[s.song_id] = s.id;
+      }
+
       const oldSongIds = currentSetList.map(s => s.song_id || s.id);
       const newSongIds = newSetlist.map(s => s.song_id || s.id);
 
-      // Remove songs no longer in setlist
+      // Remove songs no longer in setlist (use junction record ID)
       for (const songId of oldSongIds) {
         if (!newSongIds.includes(songId)) {
-          await serviceService.removeSongFromService(serviceDetails.id, songId);
+          const junctionId = junctionIdBySongId[songId] || songId;
+          await serviceService.removeSongFromService(serviceDetails.id, junctionId);
         }
       }
 
@@ -88,12 +95,13 @@ const GuestEditView = () => {
         const songId = song.song_id || song.id;
 
         if (oldSongIds.includes(songId)) {
-          // Update position for existing song
-          await serviceService.updateServiceSong(serviceDetails.id, songId, {
+          // Update position using junction record ID
+          const junctionId = junctionIdBySongId[songId] || song.id;
+          await serviceService.updateServiceSong(serviceDetails.id, junctionId, {
             position: i
           });
         } else {
-          // Add new song
+          // Add new song (uses Song ID in body, which is correct)
           await serviceService.addSongToService(serviceDetails.id, {
             song_id: songId,
             position: i,
