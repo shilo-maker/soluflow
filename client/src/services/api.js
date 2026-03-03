@@ -35,7 +35,7 @@ api.interceptors.response.use(
         // Unauthorized - clear token and redirect to login
         // But only if we're not on a guest-accessible page or auth pages
         const guestPages = ['/', '/open', '/service/code', '/service/edit', '/song'];
-        const authPages = ['/login', '/register', '/sso'];
+        const authPages = ['/login', '/register', '/sso', '/create-for-soluplan'];
         const currentPath = window.location.pathname;
         const isGuestPage = guestPages.some(page => currentPath === page || currentPath.startsWith(page + '/'));
         const isAuthPage = authPages.some(page => currentPath === page || currentPath.startsWith(page + '/'));
@@ -43,7 +43,8 @@ api.interceptors.response.use(
         // Also check if this is a login/register API call - don't redirect on failed auth attempts
         const isAuthRequest = error.config && (
           error.config.url.includes('/auth/login') ||
-          error.config.url.includes('/auth/register')
+          error.config.url.includes('/auth/register') ||
+          error.config.url.includes('/auth/me')
         );
 
         if (!isGuestPage && !isAuthPage && !isAuthRequest) {
