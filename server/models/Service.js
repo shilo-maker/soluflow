@@ -99,10 +99,6 @@ const Service = sequelize.define('Service', {
       // Index for is_public queries
       fields: ['is_public']
     },
-    {
-      fields: ['edit_token'],
-      unique: true
-    }
   ],
   hooks: {
     beforeCreate: (service) => {
