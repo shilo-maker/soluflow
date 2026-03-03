@@ -26,7 +26,7 @@ const CreateForSoluPlan = () => {
     const time = searchParams.get('time') || '';
     const location = searchParams.get('location') || '';
     const datetime = date && time ? `${date}T${time}` : date ? `${date}T12:00` : '';
-    prefill.current = { title, datetime, location };
+    prefill.current = { title, datetime, location: location ? `[Generated] ${location}` : '' };
   }
 
   // Handle token from URL params for cross-app auth
