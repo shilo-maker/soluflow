@@ -1,0 +1,39 @@
+.bible-ref-picker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bible-ref-picker select,
+.bible-ref-picker input {
+  padding: 6px 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.bible-ref-picker select:focus,
+.bible-ref-picker input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.bible-ref-picker .bible-book-select {
+  width: 130px;
+}
+
+.bible-ref-picker .bible-chapter-select {
+  width: 65px;
+}
+
+.bible-ref-picker .bible-verse-input {
+  width: 55px;
+}
+
+.bible-ref-picker .bible-verse-separator {
+  color: #6c757d;
+  font-size: 12px;
+}

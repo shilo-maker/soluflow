@@ -1,112 +1,155 @@
 const nodemailer = require('nodemailer');
 
+// Helper function to get verification email content based on language
+function getVerificationEmailContent(username, verificationUrl, language) {
+  const isHebrew = language === 'he';
+  const dir = isHebrew ? 'rtl' : 'ltr';
+  const year = new Date().getFullYear();
+
+  const translations = {
+    en: {
+      subject: 'Verify Your Email - SoluFlow',
+      title: 'Welcome to SoluFlow!',
+      greeting: `Hi <strong>${username}</strong>,`,
+      message: 'Thank you for registering with SoluFlow. To complete your registration and start using your account, please verify your email address.',
+      button: 'Verify Email Address',
+      orCopy: 'Or copy and paste this link into your browser:',
+      expires: 'This verification link will expire in 24 hours.',
+      ignore: "If you didn't create this account, you can safely ignore this email.",
+      footer: `© ${year} SoluFlow. All rights reserved.`
+    },
+    he: {
+      subject: 'אמת את האימייל שלך - SoluFlow',
+      title: '!SoluFlow ברוכים הבאים ל',
+      greeting: `שלום <strong>${username}</strong>,`,
+      message: 'תודה שנרשמת ל-SoluFlow. כדי להשלים את ההרשמה ולהתחיל להשתמש בחשבון שלך, אנא אמת את כתובת האימייל שלך.',
+      button: 'אמת כתובת אימייל',
+      orCopy: 'או העתק והדבק את הקישור הזה בדפדפן שלך:',
+      expires: 'קישור האימות יפוג בעוד 24 שעות.',
+      ignore: 'אם לא יצרת את החשבון הזה, תוכל להתעלם מאימייל זה בבטחה.',
+      footer: `© ${year} SoluFlow. כל הזכויות שמורות.`
+    }
+  };
+
+  const t = translations[isHebrew ? 'he' : 'en'];
+
+  const html = `
+    <!DOCTYPE html>
+    <html dir="${dir}">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${t.subject}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); padding: 40px 20px; text-align: center;">
+                  <h1 style="color: #ffffff; margin: 0; font-size: 28px;">SoluFlow</h1>
+                </td>
+              </tr>
+
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px 30px;" dir="${dir}">
+                  <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px;">${t.title}</h2>
+                  <p style="color: #666666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
+                    ${t.greeting}
+                  </p>
+                  <p style="color: #666666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
+                    ${t.message}
+                  </p>
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td align="center" style="padding: 20px 0;">
+                        <a href="${verificationUrl}" style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">
+                          ${t.button}
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="color: #666666; font-size: 14px; line-height: 1.5; margin: 20px 0 0 0;">
+                    ${t.orCopy}
+                  </p>
+                  <p style="color: #4ECDC4; font-size: 14px; word-break: break-all; margin: 10px 0 20px 0;" dir="ltr">
+                    ${verificationUrl}
+                  </p>
+                  <p style="color: #999999; font-size: 13px; line-height: 1.5; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #eeeeee;">
+                    ${t.expires}
+                  </p>
+                  <p style="color: #999999; font-size: 13px; line-height: 1.5; margin: 10px 0 0 0;">
+                    ${t.ignore}
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f8f8f8; padding: 20px 30px; text-align: center; border-top: 1px solid #eeeeee;">
+                  <p style="color: #999999; font-size: 12px; margin: 0;">
+                    ${t.footer}
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const text = `
+${t.title}
+
+${t.greeting.replace(/<[^>]*>/g, '')}
+
+${t.message}
+
+${t.orCopy}
+${verificationUrl}
+
+${t.expires}
+
+${t.ignore}
+
+${t.footer}
+  `;
+
+  return { html, text, subject: t.subject };
+}
+
 // Email service that supports multiple providers
-const sendVerificationEmail = async (email, token, username) => {
+const sendVerificationEmail = async (email, token, username, language = 'en') => {
   try {
     const baseUrl = process.env.CLIENT_URL || 'http://localhost:3001';
     const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
     const emailFrom = process.env.EMAIL_FROM || '"SoluFlow" <noreply@soluflow.com>';
 
-    // Email content (HTML + plain text)
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html dir="ltr">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Verify Your Email - SoluFlow</title>
-      </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <!-- Header -->
-                <tr>
-                  <td style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); padding: 40px 20px; text-align: center;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px;">SoluFlow</h1>
-                  </td>
-                </tr>
+    // Get language-specific content
+    const content = getVerificationEmailContent(username, verificationUrl, language);
 
-                <!-- Content -->
-                <tr>
-                  <td style="padding: 40px 30px;">
-                    <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px;">Welcome to SoluFlow!</h2>
-                    <p style="color: #666666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
-                      Hi <strong>${username}</strong>,
-                    </p>
-                    <p style="color: #666666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
-                      Thank you for registering with SoluFlow. To complete your registration and start using your account, please verify your email address.
-                    </p>
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td align="center" style="padding: 20px 0;">
-                          <a href="${verificationUrl}" style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">
-                            Verify Email Address
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
-                    <p style="color: #666666; font-size: 14px; line-height: 1.5; margin: 20px 0 0 0;">
-                      Or copy and paste this link into your browser:
-                    </p>
-                    <p style="color: #4ECDC4; font-size: 14px; word-break: break-all; margin: 10px 0 20px 0;">
-                      ${verificationUrl}
-                    </p>
-                    <p style="color: #999999; font-size: 13px; line-height: 1.5; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #eeeeee;">
-                      This verification link will expire in 24 hours.
-                    </p>
-                    <p style="color: #999999; font-size: 13px; line-height: 1.5; margin: 10px 0 0 0;">
-                      If you didn't create this account, you can safely ignore this email.
-                    </p>
-                  </td>
-                </tr>
-
-                <!-- Footer -->
-                <tr>
-                  <td style="background-color: #f8f8f8; padding: 20px 30px; text-align: center; border-top: 1px solid #eeeeee;">
-                    <p style="color: #999999; font-size: 12px; margin: 0;">
-                      © ${new Date().getFullYear()} SoluFlow. All rights reserved.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
-
-    const textContent = `
-Welcome to SoluFlow!
-
-Hi ${username},
-
-Thank you for registering with SoluFlow. To complete your registration and start using your account, please verify your email address.
-
-Verify your email by clicking this link:
-${verificationUrl}
-
-This verification link will expire in 24 hours.
-
-If you didn't create this account, you can safely ignore this email.
-
-© ${new Date().getFullYear()} SoluFlow. All rights reserved.
-    `;
+    // Get email content based on language
+    const htmlContent = content.html;
+    const textContent = content.text;
+    const subject = content.subject;
 
     // Choose email provider based on environment
     const emailService = process.env.EMAIL_SERVICE || 'smtp';
 
     if (emailService === 'resend') {
       // Use Resend API
-      return await sendViaResend(email, emailFrom, htmlContent, textContent, 'Verify Your Email - SoluFlow');
+      return await sendViaResend(email, emailFrom, htmlContent, textContent, subject);
     } else if (emailService === 'sendgrid') {
       // Use SendGrid API
-      return await sendViaSendGrid(email, emailFrom, htmlContent, textContent, 'Verify Your Email - SoluFlow');
+      return await sendViaSendGrid(email, emailFrom, htmlContent, textContent, subject);
     } else {
       // Use SMTP (nodemailer)
-      return await sendViaSMTP(email, emailFrom, htmlContent, textContent, 'Verify Your Email - SoluFlow');
+      return await sendViaSMTP(email, emailFrom, htmlContent, textContent, subject);
     }
   } catch (error) {
     console.error('Error sending verification email:', error);

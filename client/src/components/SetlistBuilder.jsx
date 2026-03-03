@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
 import { stripChords } from '../utils/transpose';
+import PrayerItemModal from './PrayerItemModal';
 import './SetlistBuilder.css';
 
 // Strip Hebrew niqqud (vowel points) from text for search matching
@@ -15,12 +17,15 @@ const stripNiqqud = (text) => {
 };
 
 const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) => {
+  const { t } = useLanguage();
   const [setlist, setSetlist] = useState([]);
   const [availableSongs, setAvailableSongs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [isPrayerModalOpen, setIsPrayerModalOpen] = useState(false);
+  const [editingPrayerItem, setEditingPrayerItem] = useState(null);
   const fetchingRef = useRef(false);
 
   useEffect(() => {
@@ -53,8 +58,8 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     // Strip niqqud from query for Hebrew search matching
     const query = stripNiqqud(searchQuery.toLowerCase());
 
-    // Filter out songs already in setlist (compare by song_id for existing items, id for newly added)
-    const available = availableSongs.filter(song => !setlist.some(s => (s.song_id || s.id) === song.id));
+    // Filter out songs already in setlist (skip prayer items which have no song_id)
+    const available = availableSongs.filter(song => !setlist.some(s => s.segment_type !== 'prayer' && (s.song_id || s.id) === song.id));
 
     if (!query) return available;
 
@@ -87,14 +92,34 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
     setSetlist(prev => [...prev, song]);
   };
 
-  const handleRemoveSong = (songId, index) => {
-    setSetlist(prev => prev.filter(s => s.id !== songId));
-    // Clear selection or adjust if needed
+  const handleRemoveItem = (item, index) => {
+    setSetlist(prev => prev.filter((_, i) => i !== index));
     if (selectedIndex === index) {
       setSelectedIndex(null);
     } else if (selectedIndex !== null && selectedIndex > index) {
       setSelectedIndex(selectedIndex - 1);
     }
+  };
+
+  const handleSavePrayer = (prayerItem) => {
+    if (editingPrayerItem) {
+      setSetlist(prev => {
+        const idx = prev.findIndex(s => s.id === editingPrayerItem.id && s.segment_type === 'prayer');
+        if (idx === -1) return [...prev, prayerItem];
+        const next = [...prev];
+        next[idx] = prayerItem;
+        return next;
+      });
+    } else {
+      setSetlist(prev => [...prev, prayerItem]);
+    }
+    setEditingPrayerItem(null);
+  };
+
+  const handleEditPrayer = (item, e) => {
+    e.stopPropagation();
+    setEditingPrayerItem(item);
+    setIsPrayerModalOpen(true);
   };
 
   const handleSelectSong = (index) => {
@@ -157,7 +182,15 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
         <div className="setlist-content">
           {/* Current Setlist */}
           <div className="setlist-current">
-            <h3>Current Setlist ({setlist.length} songs)</h3>
+            <div className="setlist-current-header">
+              <h3>Current Setlist ({setlist.length} items)</h3>
+              <button
+                className="btn-add-prayer-setlist"
+                onClick={() => { setEditingPrayerItem(null); setIsPrayerModalOpen(true); }}
+              >
+                + {t('prayer.addPrayer')}
+              </button>
+            </div>
             <div className="setlist-with-controls">
               <div className="reorder-controls-side">
                 <button
@@ -165,7 +198,7 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                   onClick={handleMoveUp}
                   disabled={selectedIndex === null || selectedIndex === 0}
                   aria-label="Move up"
-                  title="Move selected song up"
+                  title="Move selected item up"
                 >
                   ▲
                 </button>
@@ -174,7 +207,7 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                   onClick={handleMoveDown}
                   disabled={selectedIndex === null || selectedIndex === setlist.length - 1}
                   aria-label="Move down"
-                  title="Move selected song down"
+                  title="Move selected item down"
                 >
                   ▼
                 </button>
@@ -185,26 +218,38 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
                   No songs in setlist yet. Add songs from the library below.
                 </div>
               ) : (
-                setlist.map((song, index) => (
+                setlist.map((item, index) => (
                   <div
-                    key={song.id}
-                    className={`setlist-song-item ${draggedIndex === index ? 'dragging' : ''} ${selectedIndex === index ? 'selected' : ''}`}
+                    key={item.segment_type === 'prayer' ? `prayer-${item.id || index}-${index}` : `song-${item.id}-${index}`}
+                    className={`setlist-song-item ${item.segment_type === 'prayer' ? 'prayer-item' : ''} ${draggedIndex === index ? 'dragging' : ''} ${selectedIndex === index ? 'selected' : ''}`}
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
                     onClick={() => handleSelectSong(index)}
                   >
-                    <div className="song-number">{index + 1}</div>
+                    <div className={`song-number ${item.segment_type === 'prayer' ? 'prayer-number' : ''}`}>{index + 1}</div>
                     <div className="song-details">
-                      <div className="song-title">{song.title}</div>
+                      <div className="song-title">
+                        {item.segment_type === 'prayer' && <span className="prayer-icon">🙏 </span>}
+                        {item.title || item.segment_title}
+                      </div>
                       <div className="song-meta">
-                        {song.authors} • Key: {song.key}
+                        {item.segment_type === 'prayer' ? t('prayer.prayer') : `${item.authors} • Key: ${item.key}`}
                       </div>
                     </div>
+                    {item.segment_type === 'prayer' && (
+                      <button
+                        className="btn-edit-prayer"
+                        onClick={(e) => handleEditPrayer(item, e)}
+                        title={t('prayer.editPrayer')}
+                      >
+                        ✎
+                      </button>
+                    )}
                     <button
                       className="btn-remove-song"
-                      onClick={(e) => { e.stopPropagation(); handleRemoveSong(song.id, index); }}
+                      onClick={(e) => { e.stopPropagation(); handleRemoveItem(item, index); }}
                     >
                       ×
                     </button>
@@ -215,7 +260,7 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
             </div>
             {setlist.length > 0 && (
               <div className="setlist-hint">
-                Tap a song to select, then use arrows to reorder
+                Tap an item to select, then use arrows to reorder
               </div>
             )}
           </div>
@@ -267,6 +312,13 @@ const SetlistBuilder = ({ service, currentSetlist, isOpen, onClose, onUpdate }) 
             Save Setlist
           </button>
         </div>
+
+        <PrayerItemModal
+          isOpen={isPrayerModalOpen}
+          onClose={() => { setIsPrayerModalOpen(false); setEditingPrayerItem(null); }}
+          onSave={handleSavePrayer}
+          existingItem={editingPrayerItem}
+        />
       </div>
     </div>
   );

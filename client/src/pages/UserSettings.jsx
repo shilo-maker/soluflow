@@ -59,7 +59,7 @@ const UserSettings = () => {
 
     try {
       // Update profile on server
-      const response = await api.put('/auth/profile', {
+      const response = await api.put('/auth/preferences', {
         language: selectedLanguage
       });
 
@@ -68,7 +68,7 @@ const UserSettings = () => {
 
       // Update user in auth context
       if (updateUser) {
-        updateUser(response.data.user);
+        updateUser({ language: selectedLanguage, ...response.data.preferences });
       }
 
       setMessage({ type: 'success', text: t('userSettings.successMessage') });
@@ -118,8 +118,8 @@ const UserSettings = () => {
     setMessage({ type: '', text: '' });
     try {
       const base64 = await compressAvatar(cropFile, 128, 0.6, croppedAreaPixels);
-      const response = await api.put('/auth/profile', { avatar_url: base64 });
-      if (updateUser) updateUser(response.data.user);
+      const response = await api.put('/auth/preferences', { avatar_url: base64 });
+      if (updateUser) updateUser({ avatar_url: response.data.avatar_url });
       setMessage({ type: 'success', text: t('userSettings.avatarUpdated') || 'Profile photo updated' });
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to update photo' });
@@ -139,8 +139,8 @@ const UserSettings = () => {
     setAvatarLoading(true);
     setMessage({ type: '', text: '' });
     try {
-      const response = await api.put('/auth/profile', { avatar_url: null });
-      if (updateUser) updateUser(response.data.user);
+      const response = await api.put('/auth/preferences', { avatar_url: null });
+      if (updateUser) updateUser({ avatar_url: response.data.avatar_url });
       setMessage({ type: 'success', text: t('userSettings.avatarRemoved') || 'Profile photo removed' });
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to remove photo' });

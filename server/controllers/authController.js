@@ -323,7 +323,7 @@ const updateProfile = async (req, res) => {
       return res.status(403).json({ error: 'Guests cannot update profile' });
     }
 
-    const { language } = req.body;
+    const { language, avatar_url } = req.body;
 
     // Get current user
     const user = await User.findByPk(req.user.id);
@@ -332,12 +332,31 @@ const updateProfile = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Validate and update language
+    // Build update object - validate everything BEFORE any DB write
+    const updates = {};
+
     if (language !== undefined) {
       if (!['en', 'he'].includes(language)) {
         return res.status(400).json({ error: 'Invalid language. Must be "en" or "he"' });
       }
-      await user.update({ language });
+      updates.language = language;
+    }
+
+    if (avatar_url !== undefined) {
+      if (avatar_url !== null) {
+        if (typeof avatar_url !== 'string' || avatar_url.length > 50000) {
+          return res.status(400).json({ error: 'Avatar too large (max 50KB)' });
+        }
+        if (!/^data:image\/(jpeg|png|webp);base64,/.test(avatar_url)) {
+          return res.status(400).json({ error: 'Invalid avatar format' });
+        }
+      }
+      updates.avatar_url = avatar_url;
+    }
+
+    // Apply all validated updates in a single call
+    if (Object.keys(updates).length > 0) {
+      await user.update(updates);
     }
 
     res.json({

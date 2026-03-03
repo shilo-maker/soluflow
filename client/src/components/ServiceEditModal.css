@@ -235,7 +235,7 @@
   transition: all 0.2s ease;
 }
 
-.setlist-toggle-btn:first-child {
+.setlist-toggle-btn:not(:last-child) {
   border-right: 1px solid #dee2e6;
 }
 
@@ -479,6 +479,52 @@
 .song-search-mini:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+/* Prayer items in setlist */
+.setlist-add-prayer-btn {
+  background-color: #6f42c1 !important;
+  color: white !important;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 12px !important;
+  padding: 8px 12px !important;
+}
+
+.setlist-add-prayer-btn:hover {
+  background-color: #5a32a3 !important;
+}
+
+.selected-song-item.prayer-item {
+  border-left: 3px solid #6f42c1;
+}
+
+.prayer-number {
+  background-color: #6f42c1 !important;
+}
+
+.prayer-icon {
+  font-size: 12px;
+}
+
+.btn-edit-prayer-mini {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background-color: #6f42c1;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.btn-edit-prayer-mini:hover {
+  background-color: #5a32a3;
 }
 
 @media (max-width: 768px) {

@@ -1,0 +1,278 @@
+.prayer-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  padding: 20px;
+}
+
+.prayer-modal {
+  background-color: white;
+  border-radius: 8px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.prayer-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.prayer-modal-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #333;
+}
+
+.prayer-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #6c757d;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.prayer-modal-close:hover {
+  color: #333;
+}
+
+.prayer-modal-body {
+  padding: 25px;
+}
+
+.prayer-form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.prayer-form-row .prayer-form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.prayer-form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.prayer-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 4px;
+}
+
+.prayer-form-group input,
+.prayer-form-group textarea {
+  padding: 8px 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.prayer-form-group input:focus,
+.prayer-form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.prayer-form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.prayer-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.prayer-checkbox-group input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.prayer-checkbox-group label {
+  font-size: 13px;
+  color: #495057;
+  cursor: pointer;
+}
+
+.prayer-shared-ref {
+  margin-bottom: 16px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.prayer-shared-ref label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 6px;
+}
+
+.prayer-points-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.prayer-points-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.btn-add-point {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-add-point:hover {
+  background-color: #218838;
+}
+
+.prayer-point {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background-color: #fafbfc;
+  position: relative;
+}
+
+.prayer-point-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.prayer-point-number {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.btn-remove-point {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.btn-remove-point:hover {
+  background-color: #c82333;
+}
+
+.prayer-point-bible-ref {
+  margin-top: 8px;
+}
+
+.prayer-point-bible-ref label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 4px;
+}
+
+.prayer-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 25px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.prayer-modal-footer button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.prayer-btn-cancel {
+  background-color: #6c757d;
+  color: white;
+}
+
+.prayer-btn-cancel:hover {
+  background-color: #5a6268;
+}
+
+.prayer-btn-save {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.prayer-btn-save:hover {
+  background-color: #b8844e;
+}
+
+.prayer-form-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .prayer-modal-overlay {
+    padding: 10px;
+  }
+
+  .prayer-modal {
+    max-height: 95vh;
+  }
+
+  .prayer-form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .prayer-form-row .prayer-form-group {
+    margin-bottom: 16px;
+  }
+}

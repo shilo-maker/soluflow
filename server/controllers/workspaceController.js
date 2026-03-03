@@ -62,7 +62,7 @@ const getWorkspaceById = async (req, res) => {
         include: [{
           model: User,
           as: 'user',
-          attributes: ['id', 'username', 'email']
+          attributes: ['id', 'username', 'email', 'avatar_url']
         }]
       }]
     });
@@ -91,6 +91,7 @@ const getWorkspaceById = async (req, res) => {
         id: m.user.id,
         username: m.user.username,
         email: m.user.email,
+        avatar_url: m.user.avatar_url,
         role: m.role,
         joined_at: m.joined_at
       }))
@@ -776,7 +777,7 @@ const getWorkspaceMembers = async (req, res) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'email', 'username']
+        attributes: ['id', 'email', 'username', 'avatar_url']
       }],
       order: [['joined_at', 'ASC']]
     });

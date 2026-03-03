@@ -154,8 +154,8 @@
 
 .member-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-hover-bg);
   border: 2px solid var(--color-border-light);
@@ -170,10 +170,29 @@
   box-shadow: var(--shadow-md);
 }
 
+.member-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.member-avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
 .member-info {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  flex: 1;
+  min-width: 0;
 }
 
 .member-username {

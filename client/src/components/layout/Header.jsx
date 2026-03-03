@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { GRADIENT_PRESETS } from '../../contexts/ThemeContext';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 import authService from '../../services/authService';
+import { getInitials, getAvatarColor } from '../../utils/imageUtils';
 import './Header.css';
 
 const Header = ({ title, user, showLogout = false, onLogout }) => {
@@ -204,7 +205,7 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
             <div className="user-menu-container" ref={userMenuRef}>
               <button
                 ref={userBtnRef}
-                className="settings-icon-button"
+                className="settings-icon-button user-avatar-button"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!userMenuOpen) setUserMenuPos(computeDropdownPos(userBtnRef));
@@ -213,10 +214,13 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
                 }}
                 title={t('common.settings')}
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.username} className="header-avatar-img" />
+                ) : (
+                  <span className="header-avatar-initials" style={{ backgroundColor: getAvatarColor(user.username || user.email || '') }}>
+                    {getInitials(user.username || user.email || '?')}
+                  </span>
+                )}
               </button>
               {userMenuOpen && (
                 <div className="user-dropdown-menu" style={userMenuPos}>

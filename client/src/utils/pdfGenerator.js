@@ -13,6 +13,11 @@ import A4PDFView from '../components/A4PDFView';
  * @param {Object} options - Optional settings like fontSize
  */
 export const generateSetlistPDF = async (service, songs, options = {}) => {
+  // Filter out prayer items — they have no chord sheet content
+  songs = songs.filter(s => s.segment_type !== 'prayer');
+  if (songs.length === 0) {
+    throw new Error('No songs to generate PDF for');
+  }
   const { fontSize = 14 } = options;
 
   // Load the footer image as base64
@@ -359,6 +364,12 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
  */
 export const generateMultiSongPDF = async (service, songs, options = {}) => {
   const { fontSize = 14 } = options;
+
+  // Filter out prayer items — they have no chord sheet content
+  songs = songs.filter(s => s.segment_type !== 'prayer');
+  if (songs.length === 0) {
+    throw new Error('No songs to generate PDF for');
+  }
 
   console.log('Generating multi-song PDF for:', songs.length, 'songs');
 
@@ -835,6 +846,12 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
 export const generateMultiSongPDFBlob = async (service, songs, options = {}) => {
   const { fontSize = 14 } = options;
 
+  // Filter out prayer items — they have no chord sheet content
+  songs = songs.filter(s => s.segment_type !== 'prayer');
+  if (songs.length === 0) {
+    throw new Error('No songs to generate PDF for');
+  }
+
   console.log('Generating multi-song PDF blob for:', songs.length, 'songs');
 
   // Format filename: [Date] - [Time] - [Venue]
@@ -1190,6 +1207,9 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
  * @param {number} fontSize - Font size for the content
  */
 export const generateSongPDF = async (song, transposition = 0, fontSize = 14) => {
+  if (song.segment_type === 'prayer') {
+    throw new Error('Cannot generate PDF for prayer items');
+  }
   const filename = `SoluFlow - ${song.title}.pdf`;
 
   // A4 page dimensions

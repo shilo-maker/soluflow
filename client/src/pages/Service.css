@@ -541,6 +541,86 @@
   box-shadow: var(--shadow-md);
 }
 
+.song-pill.prayer-pill {
+  background-color: #f3edff;
+  border-color: #6f42c1;
+  color: #6f42c1;
+}
+
+.song-pill.prayer-pill:hover {
+  background-color: #e8dcff;
+}
+
+.song-pill.prayer-pill.active {
+  background-color: #6f42c1;
+  color: white;
+  border-color: #6f42c1;
+}
+
+/* Prayer content display */
+.prayer-display {
+  cursor: default;
+}
+
+.prayer-translation {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.prayer-content-display {
+  padding: 20px;
+  line-height: 1.8;
+}
+
+.prayer-shared-verse {
+  padding: 10px 14px;
+  background-color: rgba(111, 66, 193, 0.1);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-weight: 500;
+  color: #6f42c1;
+}
+
+.prayer-point-display {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.prayer-point-display:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.prayer-point-subtitle {
+  margin-bottom: 6px;
+}
+
+.prayer-point-subtitle-translation {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.prayer-point-description {
+  margin-bottom: 6px;
+  opacity: 0.9;
+  white-space: pre-wrap;
+}
+
+.prayer-point-description-translation {
+  font-style: italic;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.prayer-point-verse {
+  margin-top: 6px;
+  font-weight: 500;
+  color: #6f42c1;
+  font-size: 0.9em;
+}
+
 .song-title-row {
   display: flex;
   align-items: center;

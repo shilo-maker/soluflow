@@ -153,6 +153,35 @@
   display: block;
 }
 
+/* User avatar in header */
+.user-avatar-button {
+  padding: 4px;
+}
+
+.header-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.header-avatar-initials {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.settings-icon-button.user-avatar-button:hover {
+  transform: none;
+  opacity: 0.85;
+}
+
 /* Legacy support */
 .username {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);

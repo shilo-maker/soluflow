@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import userService from '../services/userService';
+import { getInitials, getAvatarColor } from '../utils/imageUtils';
 import Toast from '../components/Toast';
 import './UserManagement.css';
 
@@ -111,6 +112,16 @@ const UserManagement = () => {
           {users.map(u => (
             <div key={u.id} className="user-card">
               <div className="user-card-content">
+                {u.avatar_url ? (
+                  <img src={u.avatar_url} alt={u.username} className="user-card-avatar" />
+                ) : (
+                  <div
+                    className="user-card-avatar user-card-avatar-initials"
+                    style={{ backgroundColor: getAvatarColor(u.username || u.email || '') }}
+                  >
+                    {getInitials(u.username || u.email || '?')}
+                  </div>
+                )}
                 <div className="user-info">
                   <div className="user-name-section">
                     <h3 className="user-name">{u.username}</h3>

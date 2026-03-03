@@ -349,3 +349,63 @@
     font-size: 24px;
   }
 }
+
+/* Prayer items */
+.setlist-current-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.setlist-current-header h3 {
+  margin: 0;
+}
+
+.btn-add-prayer-setlist {
+  background-color: #6f42c1;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-add-prayer-setlist:hover {
+  background-color: #5a32a3;
+}
+
+.setlist-song-item.prayer-item {
+  border-left: 3px solid #6f42c1;
+}
+
+.song-number.prayer-number {
+  background-color: #6f42c1;
+}
+
+.prayer-icon {
+  font-size: 13px;
+}
+
+.btn-edit-prayer {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background-color: #6f42c1;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.btn-edit-prayer:hover {
+  background-color: #5a32a3;
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useAuth } from '../contexts/AuthContext';
+import { getInitials, getAvatarColor } from '../utils/imageUtils';
 import workspaceService from '../services/workspaceService';
 import './WorkspaceManagement.css';
 
@@ -195,6 +196,16 @@ const WorkspaceManagement = () => {
           <div className="members-list">
             {workspaceDetails.members.map((member) => (
               <div key={member.id} className="member-item">
+                {member.avatar_url ? (
+                  <img src={member.avatar_url} alt={member.username} className="member-avatar" />
+                ) : (
+                  <div
+                    className="member-avatar member-avatar-initials"
+                    style={{ backgroundColor: getAvatarColor(member.username || member.email || '') }}
+                  >
+                    {getInitials(member.username || member.email || '?')}
+                  </div>
+                )}
                 <div className="member-info">
                   <span className="member-username">{member.username}</span>
                   <span className="member-email">{member.email}</span>

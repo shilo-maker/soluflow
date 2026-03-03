@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import songService from '../services/songService';
 import { stripChords } from '../utils/transpose';
+import PrayerItemModal from './PrayerItemModal';
 import './ServiceEditModal.css';
 
 const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSave, onUpdate, prefill }) => {
@@ -24,6 +25,8 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [listView, setListView] = useState('database');
   const [previewSongId, setPreviewSongId] = useState(null);
+  const [isPrayerModalOpen, setIsPrayerModalOpen] = useState(false);
+  const [editingPrayerItem, setEditingPrayerItem] = useState(null);
   const fetchingRef = useRef(false);
   const prevIsOpenRef = useRef(false);
 
@@ -89,6 +92,8 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     setError('');
     setSearchQuery('');
     setSelectedIndex(null);
+    setIsPrayerModalOpen(false);
+    setEditingPrayerItem(null);
 
     // Only fetch songs when the modal first opens
     if (justOpened) {
@@ -125,13 +130,34 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
     setSetlist(prev => [...prev, song]);
   };
 
-  const handleRemoveSong = (songId, index) => {
-    setSetlist(prev => prev.filter(s => s.id !== songId));
+  const handleRemoveItem = (item, index) => {
+    setSetlist(prev => prev.filter((_, i) => i !== index));
     if (selectedIndex === index) {
       setSelectedIndex(null);
     } else if (selectedIndex !== null && selectedIndex > index) {
       setSelectedIndex(selectedIndex - 1);
     }
+  };
+
+  const handleSavePrayer = (prayerItem) => {
+    if (editingPrayerItem) {
+      setSetlist(prev => {
+        const idx = prev.findIndex(s => s.id === editingPrayerItem.id && s.segment_type === 'prayer');
+        if (idx === -1) return [...prev, prayerItem];
+        const next = [...prev];
+        next[idx] = prayerItem;
+        return next;
+      });
+    } else {
+      setSetlist(prev => [...prev, prayerItem]);
+    }
+    setEditingPrayerItem(null);
+  };
+
+  const handleEditPrayer = (item, e) => {
+    e.stopPropagation();
+    setEditingPrayerItem(item);
+    setIsPrayerModalOpen(true);
   };
 
   const handleSelectSong = (index) => {
@@ -179,8 +205,8 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
   const filteredSongs = React.useMemo(() => {
     const query = searchQuery.toLowerCase();
 
-    // Filter out songs already in setlist
-    const available = availableSongs.filter(song => !setlist.some(s => s.id === song.id));
+    // Filter out songs already in setlist (skip prayer items which have no matching song id)
+    const available = availableSongs.filter(song => !setlist.some(s => s.segment_type !== 'prayer' && s.id === song.id));
 
     if (!query) return available;
 
@@ -333,6 +359,13 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                 >
                   {t('serviceEdit.currentSetlist')}{setlist.length > 0 ? ` (${setlist.length})` : ''}
                 </button>
+                <button
+                  type="button"
+                  className="setlist-toggle-btn setlist-add-prayer-btn"
+                  onClick={() => { setEditingPrayerItem(null); setIsPrayerModalOpen(true); }}
+                >
+                  + {t('prayer.addPrayer')}
+                </button>
               </div>
 
               <div className="setlist-mini-builder">
@@ -407,32 +440,47 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
                         {setlist.length === 0 ? (
                           <div className="no-songs-selected">{t('serviceEdit.noSongsSelected')}</div>
                         ) : (
-                          setlist.map((song, index) => (
+                          setlist.map((item, index) => (
                             <div
-                              key={song.id}
-                              className={`selected-song-item ${draggedIndex === index ? 'dragging' : ''} ${selectedIndex === index ? 'selected' : ''}`}
+                              key={item.segment_type === 'prayer' ? `prayer-${item.id || index}-${index}` : `song-${item.id}-${index}`}
+                              className={`selected-song-item ${item.segment_type === 'prayer' ? 'prayer-item' : ''} ${draggedIndex === index ? 'dragging' : ''} ${selectedIndex === index ? 'selected' : ''}`}
                               draggable
                               onDragStart={(e) => handleDragStart(e, index)}
                               onDragOver={(e) => handleDragOver(e, index)}
                               onDragEnd={handleDragEnd}
                             >
-                              <div className="song-row-mini" onClick={() => { handleSelectSong(index); setPreviewSongId(previewSongId === song.id ? null : song.id); }}>
-                                <span className="song-number-mini">{index + 1}</span>
+                              <div className="song-row-mini" onClick={() => { handleSelectSong(index); setPreviewSongId(previewSongId === item.id ? null : item.id); }}>
+                                <span className={`song-number-mini ${item.segment_type === 'prayer' ? 'prayer-number' : ''}`}>{index + 1}</span>
                                 <div className="song-info-mini">
-                                  <div className="song-title-mini">{song.title}</div>
-                                  <div className="song-meta-mini">{song.authors}</div>
+                                  <div className="song-title-mini">
+                                    {item.segment_type === 'prayer' && <span className="prayer-icon">🙏 </span>}
+                                    {item.title || item.segment_title}
+                                  </div>
+                                  <div className="song-meta-mini">
+                                    {item.segment_type === 'prayer' ? t('prayer.prayer') : item.authors}
+                                  </div>
                                 </div>
+                                {item.segment_type === 'prayer' && (
+                                  <button
+                                    type="button"
+                                    className="btn-edit-prayer-mini"
+                                    onClick={(e) => handleEditPrayer(item, e)}
+                                    title={t('prayer.editPrayer')}
+                                  >
+                                    ✎
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   className="btn-remove-mini"
-                                  onClick={(e) => { e.stopPropagation(); handleRemoveSong(song.id, index); }}
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveItem(item, index); }}
                                 >
                                   ×
                                 </button>
                               </div>
-                              {previewSongId === song.id && (
+                              {item.segment_type !== 'prayer' && previewSongId === item.id && (
                                 <div className="song-preview-content">
-                                  {stripChords(song.content || '').replace(/\{[^}]*\}/g, '').replace(/^\s*\n/gm, '\n').trim()}
+                                  {stripChords(item.content || '').replace(/\{[^}]*\}/g, '').replace(/^\s*\n/gm, '\n').trim()}
                                 </div>
                               )}
                             </div>
@@ -471,6 +519,13 @@ const ServiceEditModal = ({ service, currentSetlist = [], isOpen, onClose, onSav
             </div>
           </div>
         </form>
+
+        <PrayerItemModal
+          isOpen={isPrayerModalOpen}
+          onClose={() => { setIsPrayerModalOpen(false); setEditingPrayerItem(null); }}
+          onSave={handleSavePrayer}
+          existingItem={editingPrayerItem}
+        />
       </div>
     </div>
   );

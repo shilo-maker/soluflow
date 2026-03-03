@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -21,6 +21,25 @@ import './Service.css';
 
 // Stable empty array reference to prevent re-render loops in child components
 const EMPTY_ARRAY = [];
+
+// Pure helpers — defined outside component to avoid re-creation on every render
+const hasHebrew = (text) => /[\u0590-\u05FF]/.test(text || '');
+
+const getPreviewContent = (content) => {
+  if (!content) return '';
+  const lines = content.split('\n');
+  if (lines.length <= 20) return content;
+  return lines.slice(0, 20).join('\n') + '\n...';
+};
+
+const parsePrayerContent = (segmentContent) => {
+  if (!segmentContent) return {};
+  try {
+    return typeof segmentContent === 'string'
+      ? JSON.parse(segmentContent)
+      : segmentContent;
+  } catch { return {}; }
+};
 
 const Service = () => {
   const navigate = useNavigate();
@@ -168,6 +187,10 @@ const Service = () => {
     }
 
     const currentSong = serviceDetails.songs[selectedSongIndex];
+
+    // Skip transposition saves for prayer items (they don't have transposition)
+    if (currentSong.segment_type === 'prayer') return;
+
     const currentTransposition = transposition;
     const currentSongId = currentSong.id;
     const currentServiceId = selectedService.id;
@@ -494,16 +517,11 @@ const Service = () => {
   const currentItem = currentSetList[selectedSongIndex];
   const currentSong = currentItem;
 
-  // Detect Hebrew in song content
-  const hasHebrew = (text) => /[\u0590-\u05FF]/.test(text || '');
-
-  // Get preview of song content (first 20 lines)
-  const getPreviewContent = (content) => {
-    if (!content) return '';
-    const lines = content.split('\n');
-    if (lines.length <= 20) return content;
-    return lines.slice(0, 20).join('\n') + '\n...';
-  };
+  // Memoize parsed prayer data to avoid double-parsing on every render
+  const parsedPrayerData = useMemo(() => {
+    if (currentSong?.segment_type !== 'prayer') return null;
+    return parsePrayerContent(currentSong.segment_content);
+  }, [currentSong]);
 
   // Handle service selection
   const handleSelectService = (service) => {
@@ -621,15 +639,25 @@ const Service = () => {
         // Create mode - add new service
         const newService = enrichService(await serviceService.createService(serviceData));
 
-        // Add songs to setlist if provided
+        // Add songs/prayers to setlist if provided
         if (setlist && setlist.length > 0) {
           for (let i = 0; i < setlist.length; i++) {
-            const song = setlist[i];
-            await serviceService.addSongToService(newService.id, {
-              song_id: song.id,
-              position: i,
-              segment_type: 'song'
-            });
+            const item = setlist[i];
+            if (item.segment_type === 'prayer') {
+              await serviceService.addSongToService(newService.id, {
+                song_id: null,
+                position: i,
+                segment_type: 'prayer',
+                segment_title: item.segment_title || item.title,
+                segment_content: item.segment_content
+              });
+            } else {
+              await serviceService.addSongToService(newService.id, {
+                song_id: item.id,
+                position: i,
+                segment_type: 'song'
+              });
+            }
           }
         }
 
@@ -673,36 +701,49 @@ const Service = () => {
 
   const handleUpdateSetlist = async (newSetlist) => {
     try {
-      // Get current songs in the service
-      const currentSongs = serviceDetails?.songs || [];
-      const currentSongIds = currentSongs.map(s => s.id);
-      const newSongIds = newSetlist.map(s => s.id);
+      // Get current items in the service
+      const currentItems = serviceDetails?.songs || [];
+      const currentItemIds = currentItems.map(s => s.id);
+      const newItemIds = newSetlist.map(s => s.id);
 
-      console.log('Current songs:', currentSongs);
+      console.log('Current items:', currentItems);
       console.log('New setlist:', newSetlist);
 
-      // Remove songs that are no longer in the setlist
-      for (const song of currentSongs) {
-        if (!newSongIds.includes(song.id)) {
-          console.log('Removing song:', song.id);
-          await serviceService.removeSongFromService(selectedService.id, song.id);
+      // Remove items that are no longer in the setlist
+      for (const item of currentItems) {
+        if (!newItemIds.includes(item.id)) {
+          console.log('Removing item:', item.id);
+          await serviceService.removeSongFromService(selectedService.id, item.id);
         }
       }
 
-      // Add new songs and update positions
+      // Add new items and update positions
       for (let i = 0; i < newSetlist.length; i++) {
-        const song = newSetlist[i];
-        if (currentSongIds.includes(song.id)) {
-          // Update position of existing song
-          console.log('Updating position for song:', song.id, 'to position:', i);
-          await serviceService.updateServiceSong(selectedService.id, song.id, {
-            position: i
+        const item = newSetlist[i];
+        if (currentItemIds.includes(item.id)) {
+          // Update position of existing item (and content for prayer items)
+          const updateData = { position: i };
+          if (item.segment_type === 'prayer') {
+            updateData.segment_title = item.segment_title || item.title;
+            updateData.segment_content = item.segment_content;
+          }
+          console.log('Updating item:', item.id, 'to position:', i);
+          await serviceService.updateServiceSong(selectedService.id, item.id, updateData);
+        } else if (item.segment_type === 'prayer') {
+          // Add new prayer item
+          console.log('Adding new prayer:', item.segment_title, 'at position:', i);
+          await serviceService.addSongToService(selectedService.id, {
+            song_id: null,
+            position: i,
+            segment_type: 'prayer',
+            segment_title: item.segment_title || item.title,
+            segment_content: item.segment_content
           });
         } else {
           // Add new song
-          console.log('Adding new song:', song.id, 'at position:', i);
+          console.log('Adding new song:', item.id, 'at position:', i);
           await serviceService.addSongToService(selectedService.id, {
-            song_id: song.id,
+            song_id: item.id,
             position: i,
             segment_type: 'song'
           });
@@ -1295,19 +1336,70 @@ const Service = () => {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
-            {currentSetList.map((song, index) => (
+            {currentSetList.map((item, index) => (
               <button
-                key={song.id}
-                className={`song-pill ${index === selectedSongIndex ? 'active' : ''}`}
+                key={`${item.segment_type || 'song'}-${item.id}`}
+                className={`song-pill ${index === selectedSongIndex ? 'active' : ''} ${item.segment_type === 'prayer' ? 'prayer-pill' : ''}`}
                 onClick={() => handleSelectSong(index)}
               >
-                {song.title}
+                {item.segment_type === 'prayer' && '🙏 '}
+                {item.title || item.segment_title}
               </button>
             ))}
           </div>
 
-          {/* Song Display */}
-          {currentSong && (
+          {/* Song/Prayer Display */}
+          {currentSong && currentSong.segment_type === 'prayer' ? (
+            <div className="song-display prayer-display">
+              <div className="song-header">
+                <div className="song-info">
+                  <div className="song-title-row">
+                    <h2 className="song-title">🙏 {currentSong.title || currentSong.segment_title}</h2>
+                  </div>
+                  {parsedPrayerData?.title_translation && (
+                    <p className="song-authors prayer-translation">{parsedPrayerData.title_translation}</p>
+                  )}
+                </div>
+                <div className="song-meta">
+                  <div className="zoom-controls-service">
+                    <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
+                    <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="prayer-content-display" style={{ fontSize: `${fontSize}px` }}>
+                {parsedPrayerData?.same_verse_for_all && parsedPrayerData.shared_bible_ref && (
+                  <div className="prayer-shared-verse">
+                    📖 {parsedPrayerData.shared_bible_ref}
+                  </div>
+                )}
+                {(parsedPrayerData?.prayer_points || []).map((point, idx) => (
+                  <div key={idx} className="prayer-point-display">
+                    {point.subtitle && (
+                      <div className="prayer-point-subtitle">
+                        <strong>{idx + 1}. {point.subtitle}</strong>
+                        {point.subtitle_translation && (
+                          <span className="prayer-point-subtitle-translation"> — {point.subtitle_translation}</span>
+                        )}
+                      </div>
+                    )}
+                    {point.description && (
+                      <div className="prayer-point-description">
+                        {point.description}
+                        {point.description_translation && (
+                          <div className="prayer-point-description-translation">{point.description_translation}</div>
+                        )}
+                      </div>
+                    )}
+                    {!parsedPrayerData?.same_verse_for_all && point.bible_ref && (
+                      <div className="prayer-point-verse">📖 {point.bible_ref}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : currentSong && (
             <div
               className="song-display"
               onClick={() => navigate(`/song/${currentSong.song_id || currentSong.id}`, {
@@ -1465,7 +1557,7 @@ const Service = () => {
       />
 
       {/* Key Selector Modal */}
-      {currentSong && (
+      {currentSong && currentSong.segment_type !== 'prayer' && (
         <KeySelectorModal
           isOpen={showKeySelectorModal}
           onClose={() => setShowKeySelectorModal(false)}

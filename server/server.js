@@ -258,8 +258,12 @@ const startServer = async () => {
     // Test database connection
     await testConnection();
 
-    // Sync database (create tables if they don't exist, don't alter existing tables)
-    await syncDatabase({ alter: false });
+    // Sync database
+    // In development with SQLite, use alter:true so new model columns are added automatically.
+    // In production, the shared PostgreSQL schema is managed by migrations (alter:false).
+    const isDev = process.env.NODE_ENV !== 'production';
+    const isSQLite = process.env.DB_DIALECT === 'sqlite';
+    await syncDatabase({ alter: isDev && isSQLite });
 
     // Start server
     server.listen(PORT, '0.0.0.0', () => {

@@ -430,17 +430,71 @@ const GuestServiceView = () => {
           <div className="song-pills">
             {currentSetList.map((song, index) => (
               <button
-                key={song.id}
-                className={`song-pill ${index === selectedSongIndex ? 'active' : ''}`}
+                key={`${song.segment_type || 'song'}-${song.id}`}
+                className={`song-pill ${index === selectedSongIndex ? 'active' : ''} ${song.segment_type === 'prayer' ? 'prayer-pill' : ''}`}
                 onClick={() => handleSelectSong(index)}
               >
-                {song.title}
+                {song.segment_type === 'prayer' && '🙏 '}
+                {song.title || song.segment_title}
               </button>
             ))}
           </div>
 
-          {/* Song Display */}
-          {currentSong && (
+          {/* Song/Prayer Display */}
+          {currentSong && currentSong.segment_type === 'prayer' ? (
+            <div className="song-display prayer-display">
+              <div className="song-header">
+                <div className="song-info">
+                  <div className="song-title-row">
+                    <h2 className="song-title">🙏 {currentSong.title || currentSong.segment_title}</h2>
+                  </div>
+                  {(() => {
+                    let prayerData = {};
+                    try { prayerData = typeof currentSong.segment_content === 'string' ? JSON.parse(currentSong.segment_content) : (currentSong.segment_content || {}); } catch { /* ignore */ }
+                    return prayerData.title_translation ? <p className="song-authors prayer-translation">{prayerData.title_translation}</p> : null;
+                  })()}
+                </div>
+                <div className="song-meta">
+                  <div className="zoom-controls">
+                    <button className="btn-zoom" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
+                    <button className="btn-zoom" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
+                  </div>
+                </div>
+              </div>
+              <div className="prayer-content-display" style={{ fontSize: `${fontSize}px` }}>
+                {(() => {
+                  let data = {};
+                  try { data = typeof currentSong.segment_content === 'string' ? JSON.parse(currentSong.segment_content) : (currentSong.segment_content || {}); } catch { /* ignore */ }
+                  return (
+                    <>
+                      {data.same_verse_for_all && data.shared_bible_ref && (
+                        <div className="prayer-shared-verse">📖 {data.shared_bible_ref}</div>
+                      )}
+                      {(data.prayer_points || []).map((point, idx) => (
+                        <div key={idx} className="prayer-point-display">
+                          {point.subtitle && (
+                            <div className="prayer-point-subtitle">
+                              <strong>{idx + 1}. {point.subtitle}</strong>
+                              {point.subtitle_translation && <span className="prayer-point-subtitle-translation"> — {point.subtitle_translation}</span>}
+                            </div>
+                          )}
+                          {point.description && (
+                            <div className="prayer-point-description">
+                              {point.description}
+                              {point.description_translation && <div className="prayer-point-description-translation">{point.description_translation}</div>}
+                            </div>
+                          )}
+                          {!data.same_verse_for_all && point.bible_ref && (
+                            <div className="prayer-point-verse">📖 {point.bible_ref}</div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          ) : currentSong && (
             <div
               className="song-display"
               onClick={() => navigate(`/song/${currentSong.song_id || currentSong.id}`, {
@@ -516,7 +570,7 @@ const GuestServiceView = () => {
 
       {/* Toast */}
       {/* Key Selector Modal */}
-      {currentSong && (
+      {currentSong && currentSong.segment_type !== 'prayer' && (
         <KeySelectorModal
           isOpen={showKeySelectorModal}
           onClose={() => setShowKeySelectorModal(false)}

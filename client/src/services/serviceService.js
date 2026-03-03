@@ -8,15 +8,15 @@ function normalizeServiceSongs(service) {
   service.songs = rawSongs.map(item => {
     const song = item.song || {};
     return {
-      id: item.id,
-      song_id: song.id || item.song_id || item.songId,
+      id: item.serviceSongId || item.id,
+      song_id: song.id || item.song_id || item.songId || null,
       position: item.position,
       transposition: item.transposition || 0,
       segment_type: item.segment_type || item.segmentType || 'song',
       segment_title: item.segment_title || item.segmentTitle,
       segment_content: item.segment_content || item.segmentContent,
       notes: item.notes,
-      title: song.title || item.segment_title || '',
+      title: song.title || item.title || item.segment_title || '',
       content: song.chord_pro_content || song.chordProContent || song.content || '',
       key: song.musical_key || song.musicalKey || song.key || '',
       bpm: song.bpm,

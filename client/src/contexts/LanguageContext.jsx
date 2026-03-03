@@ -69,7 +69,7 @@ export const LanguageProvider = ({ children }) => {
 
       // Update on server if user is logged in
       if (user && !user.isGuest) {
-        await api.put('/auth/profile', { language: newLanguage });
+        await api.put('/auth/preferences', { language: newLanguage });
       } else {
         // For guests, save to localStorage
         localStorage.setItem('guestLanguage', newLanguage);

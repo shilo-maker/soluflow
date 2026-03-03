@@ -12,6 +12,44 @@ const canEditServicesInWorkspace = async (userId, workspaceId) => {
   return !!membership;
 };
 
+// Helper function to transform serviceSongs into a songs array for frontend
+const mapServiceSongsToSongs = (serviceSongs) => {
+  return serviceSongs.map(ss => {
+    if (ss.segment_type === 'prayer') {
+      return {
+        id: ss.id,
+        song_id: null,
+        segment_type: 'prayer',
+        segment_title: ss.segment_title,
+        segment_content: ss.segment_content,
+        title: ss.segment_title,
+        position: ss.position,
+        serviceSongId: ss.id
+      };
+    }
+    if (!ss.song) return null;
+    return {
+      ...ss.song,
+      segment_type: ss.segment_type || 'song',
+      transposition: ss.transposition || 0,
+      serviceSongId: ss.id
+    };
+  }).filter(song => song !== null);
+};
+
+// Helper function to find a ServiceSong by ServiceSong ID first, then song_id fallback
+const findServiceSong = async (serviceId, songId) => {
+  // Try by ServiceSong.id first (preferred — avoids cross-table ID collisions)
+  let record = await ServiceSong.findOne({
+    where: { service_id: parseInt(serviceId), id: parseInt(songId) }
+  });
+  if (record) return record;
+  // Fall back to song_id for backwards compatibility
+  return await ServiceSong.findOne({
+    where: { service_id: parseInt(serviceId), song_id: parseInt(songId) }
+  });
+};
+
 // Get all services for the authenticated user
 const getAllServices = async (req, res) => {
   try {
@@ -24,82 +62,42 @@ const getAllServices = async (req, res) => {
     let workspaceServices = [];
     let sharedServices = [];
 
-    // Get services from user's active workspace
-    if (canEditAll) {
-      // Admins and planners see ALL services in the workspace
-      const services = await Service.findAll({
-        where: {
-          workspace_id: workspaceId,
-          is_archived: false
+    // Get services from user's active workspace (same query for admins/planners and members)
+    const services = await Service.findAll({
+      where: {
+        workspace_id: workspaceId,
+        is_archived: false
+      },
+      include: [
+        {
+          model: User,
+          as: 'leader',
+          attributes: ['id', 'username', 'email']
         },
-        include: [
-          {
-            model: User,
-            as: 'leader',
-            attributes: ['id', 'username', 'email']
-          },
-          {
-            model: User,
-            as: 'creator',
-            attributes: ['id', 'username', 'email']
-          },
-          {
-            model: ServiceSong,
-            as: 'serviceSongs',
-            attributes: ['id', 'song_id']
-          }
-        ]
-      });
-
-      workspaceServices = services.map(s => {
-        const service = s.toJSON();
-        service.isShared = service.created_by !== req.user.id;
-        service.canEdit = true; // Admins/planners can edit all
-        service.isFromSharedLink = false;
-        service.isCreator = service.created_by === req.user.id; // Track if user is the creator
-        service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
-        service.song_ids = service.serviceSongs ? service.serviceSongs.map(ss => ss.song_id) : [];
-        delete service.serviceSongs; // Remove full serviceSongs to keep response small
-        return service;
-      });
-    } else {
-      // Members can VIEW all services in the workspace (read-only)
-      const services = await Service.findAll({
-        where: {
-          workspace_id: workspaceId,
-          is_archived: false
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'username', 'email']
         },
-        include: [
-          {
-            model: User,
-            as: 'leader',
-            attributes: ['id', 'username', 'email']
-          },
-          {
-            model: User,
-            as: 'creator',
-            attributes: ['id', 'username', 'email']
-          },
-          {
-            model: ServiceSong,
-            as: 'serviceSongs',
-            attributes: ['id', 'song_id']
-          }
-        ]
-      });
+        {
+          model: ServiceSong,
+          as: 'serviceSongs',
+          attributes: ['id', 'song_id', 'segment_type']
+        }
+      ]
+    });
 
-      workspaceServices = services.map(s => {
-        const service = s.toJSON();
-        service.isShared = service.created_by !== req.user.id;
-        service.canEdit = false; // Members cannot edit any services
-        service.isFromSharedLink = false;
-        service.isCreator = service.created_by === req.user.id; // Track if user is the creator
-        service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
-        service.song_ids = service.serviceSongs ? service.serviceSongs.map(ss => ss.song_id) : [];
-        delete service.serviceSongs; // Remove full serviceSongs to keep response small
-        return service;
-      });
-    }
+    workspaceServices = services.map(s => {
+      const service = s.toJSON();
+      service.isShared = service.created_by !== req.user.id;
+      service.canEdit = canEditAll; // Admins/planners can edit, members cannot
+      service.isFromSharedLink = false;
+      service.isCreator = service.created_by === req.user.id;
+      service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
+      service.song_ids = service.serviceSongs ? service.serviceSongs.map(ss => ss.song_id).filter(id => id != null) : [];
+      delete service.serviceSongs;
+      return service;
+    });
 
     // Get services shared with this user (from other workspaces)
     // ONLY show shared services in personal workspace
@@ -132,7 +130,7 @@ const getAllServices = async (req, res) => {
               {
                 model: ServiceSong,
                 as: 'serviceSongs',
-                attributes: ['id', 'song_id']
+                attributes: ['id', 'song_id', 'segment_type']
               }
             ]
           }
@@ -145,7 +143,7 @@ const getAllServices = async (req, res) => {
         service.canEdit = false; // Shared services are read-only
         service.isFromSharedLink = true; // Mark as added via share link
         service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
-        service.song_ids = service.serviceSongs ? service.serviceSongs.map(s => s.song_id) : [];
+        service.song_ids = service.serviceSongs ? service.serviceSongs.map(s => s.song_id).filter(id => id != null) : [];
         delete service.serviceSongs;
         return service;
       });
@@ -292,18 +290,11 @@ const getServiceById = async (req, res) => {
         console.log(`  Position: ${ss.position}, Song ID: ${ss.song_id}, Song Title: ${ss.song?.title || 'N/A'}`);
       });
 
-      serviceData.songs = serviceData.serviceSongs.map(ss => {
-        if (!ss.song) return null;
-        return {
-          ...ss.song,
-          transposition: ss.transposition || 0, // Include transposition from ServiceSong
-          serviceSongId: ss.id // Include ServiceSong ID for reference
-        };
-      }).filter(song => song !== null);
+      serviceData.songs = mapServiceSongsToSongs(serviceData.serviceSongs);
 
       console.log('[GET SERVICE] Songs array after mapping:');
       serviceData.songs.forEach((song, index) => {
-        console.log(`  Index: ${index}, Song ID: ${song.id}, Song Title: ${song.title}`);
+        console.log(`  Index: ${index}, ID: ${song.id}, Title: ${song.title}, Type: ${song.segment_type || 'song'}`);
       });
 
       delete serviceData.serviceSongs;
@@ -372,14 +363,7 @@ const getServiceByCode = async (req, res) => {
     // Transform serviceSongs to songs array for frontend
     const serviceData = service.toJSON();
     if (serviceData.serviceSongs) {
-      serviceData.songs = serviceData.serviceSongs.map(ss => {
-        if (!ss.song) return null;
-        return {
-          ...ss.song,
-          transposition: ss.transposition || 0, // Include transposition from ServiceSong
-          serviceSongId: ss.id // Include ServiceSong ID for reference
-        };
-      }).filter(song => song !== null);
+      serviceData.songs = mapServiceSongsToSongs(serviceData.serviceSongs);
       delete serviceData.serviceSongs;
     }
 
@@ -457,14 +441,7 @@ const getServiceByEditToken = async (req, res) => {
     // Transform serviceSongs to songs array for frontend
     const serviceData = service.toJSON();
     if (serviceData.serviceSongs) {
-      serviceData.songs = serviceData.serviceSongs.map(ss => {
-        if (!ss.song) return null;
-        return {
-          ...ss.song,
-          transposition: ss.transposition || 0,
-          serviceSongId: ss.id
-        };
-      }).filter(song => song !== null);
+      serviceData.songs = mapServiceSongsToSongs(serviceData.serviceSongs);
       delete serviceData.serviceSongs;
     }
 
@@ -675,15 +652,10 @@ const addSongToService = async (req, res) => {
 // Update service song
 const updateServiceSong = async (req, res) => {
   try {
-    const { id, songId } = req.params; // service_id, song_id (actual song ID)
+    const { id, songId } = req.params; // service_id, song_id or ServiceSong ID
 
-    // Find the ServiceSong by service_id and song_id combination
-    const serviceSong = await ServiceSong.findOne({
-      where: {
-        service_id: parseInt(id),
-        song_id: parseInt(songId)
-      }
-    });
+    // Find by ServiceSong ID or song_id (backwards compatibility) in a single query
+    const serviceSong = await findServiceSong(id, songId);
 
     if (!serviceSong) {
       return res.status(404).json({ error: 'Service song not found' });
@@ -731,15 +703,10 @@ const updateServiceSong = async (req, res) => {
 // Remove song from service
 const removeSongFromService = async (req, res) => {
   try {
-    const { id, songId } = req.params; // service_id, song_id (actual song ID)
+    const { id, songId } = req.params; // service_id, song_id or ServiceSong ID
 
-    // Find the ServiceSong by service_id and song_id combination
-    const serviceSong = await ServiceSong.findOne({
-      where: {
-        service_id: parseInt(id),
-        song_id: parseInt(songId)
-      }
-    });
+    // Find by ServiceSong ID or song_id (backwards compatibility) in a single query
+    const serviceSong = await findServiceSong(id, songId);
 
     if (!serviceSong) {
       return res.status(404).json({ error: 'Service song not found' });

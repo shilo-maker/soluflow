@@ -102,6 +102,10 @@ const User = sequelize.define('User', {
     type: DataTypes.DECIMAL(3, 2),
     allowNull: true,
     defaultValue: 1.0
+  },
+  avatar_url: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   tableName: 'users',
