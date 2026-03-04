@@ -34,7 +34,7 @@ api.interceptors.response.use(
       if (error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
         // But only if we're not on a guest-accessible page or auth pages
-        const guestPages = ['/', '/open', '/service/code', '/service/edit', '/song'];
+        const guestPages = ['/', '/open', '/services/code', '/services/edit', '/service/code', '/service/edit', '/song'];
         const authPages = ['/login', '/register', '/sso', '/create-for-soluplan'];
         const currentPath = window.location.pathname;
         const isGuestPage = guestPages.some(page => currentPath === page || currentPath.startsWith(page + '/'));
@@ -60,7 +60,7 @@ api.interceptors.response.use(
           errorData?.error === 'Access denied';
 
         if (isWorkspaceAccessError) {
-          console.log('[API] Workspace access denied, switching to personal workspace...');
+          console.warn('[API] Workspace access denied, switching to personal workspace...');
 
           // Dispatch custom event for WorkspaceContext to handle
           window.dispatchEvent(new CustomEvent('workspace-access-denied'));
@@ -79,7 +79,7 @@ api.interceptors.response.use(
               if (personalWorkspace && !personalWorkspace.is_active) {
                 // Switch to personal workspace
                 await api.put(`/workspaces/${personalWorkspace.id}/switch`);
-                console.log('[API] Switched to personal workspace');
+                console.warn('[API] Switched to personal workspace');
 
                 // Reload the page to reflect new workspace
                 window.location.reload();

@@ -299,7 +299,7 @@ const GuestServiceView = () => {
       setShowToast(true);
       // Navigate to services page after a delay
       setTimeout(() => {
-        navigate('/service');
+        navigate('/services');
       }, 2000);
     } catch (err) {
       console.error('Error adding service:', err);
@@ -409,7 +409,7 @@ const GuestServiceView = () => {
               {(serviceDetails.isOwner || serviceDetails.is_owner) && (
                 <button
                   className="btn-edit-service"
-                  onClick={() => navigate(`/service/${serviceDetails.id}`)}
+                  onClick={() => navigate(`/services/${serviceDetails.id}`)}
                 >
                   ✏️ Edit Service
                 </button>

@@ -1,0 +1,274 @@
+/* ============================================
+   Sidebar Component
+   Teal gradient sidebar matching SoluPlan design
+   ============================================ */
+
+/* Mobile backdrop overlay */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-sidebar-backdrop);
+}
+
+/* Sidebar container */
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 256px;
+  display: flex;
+  flex-direction: column;
+  z-index: var(--z-sidebar);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* LTR: sidebar on left (default) */
+.sidebar {
+  left: 0;
+}
+
+/* RTL: sidebar on right */
+html[dir="rtl"] .sidebar,
+.sidebar[dir="rtl"] {
+  right: 0;
+  left: auto;
+}
+
+/* Close button - mobile only */
+.sidebar-close-btn {
+  display: none;
+  position: absolute;
+  top: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* LTR close button position (default) */
+.sidebar-close-btn {
+  right: 16px;
+}
+
+/* RTL close button position */
+html[dir="rtl"] .sidebar-close-btn,
+.sidebar[dir="rtl"] .sidebar-close-btn {
+  left: 16px;
+  right: auto;
+}
+
+/* Brand / Logo */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+/* Navigation */
+.sidebar-nav {
+  flex: 1;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.sidebar-nav-item-active {
+  background: white !important;
+  color: var(--color-primary, #BC556F) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+  transform: scale(1.02);
+}
+
+/* Footer - User info + Logout */
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.sidebar-avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.sidebar-user-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-role {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.sidebar-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sidebar-action-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sidebar-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* ============================================
+   Desktop Layout (>= 768px)
+   ============================================ */
+@media (min-width: 768px) {
+  .sidebar {
+    transform: translateX(0);
+  }
+
+  /* RTL desktop — no transform needed, it's already positioned right */
+  html[dir="rtl"] .sidebar,
+  .sidebar[dir="rtl"] {
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   Mobile Layout (< 768px)
+   ============================================ */
+@media (max-width: 767px) {
+  /* Backdrop is conditionally rendered in JSX when sidebar is open */
+  .sidebar-backdrop {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+  }
+
+  /* LTR: slide from left */
+  html:not([dir="rtl"]) .sidebar,
+  .sidebar:not([dir="rtl"]) {
+    transform: translateX(-100%);
+  }
+
+  html:not([dir="rtl"]) .sidebar.sidebar-open,
+  .sidebar:not([dir="rtl"]).sidebar-open {
+    transform: translateX(0);
+  }
+
+  /* RTL: slide from right */
+  html[dir="rtl"] .sidebar,
+  .sidebar[dir="rtl"] {
+    transform: translateX(100%);
+  }
+
+  html[dir="rtl"] .sidebar.sidebar-open,
+  .sidebar[dir="rtl"].sidebar-open {
+    transform: translateX(0);
+  }
+}
+
+/* Animated gradient for sidebar background */
+@keyframes gradient-shift {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}

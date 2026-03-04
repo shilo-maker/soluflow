@@ -46,7 +46,7 @@
 }
 
 .offline-indicator.online {
-  background-color: #4caf50;
+  background-color: var(--color-success);
   color: white;
 }
 

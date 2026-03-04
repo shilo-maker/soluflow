@@ -5,6 +5,7 @@ const {
   getAllWorkspaces,
   getWorkspaceById,
   createWorkspace,
+  renameWorkspace,
   switchWorkspace,
   deleteWorkspace,
   generateInvite,
@@ -43,6 +44,9 @@ router.get('/:id', getWorkspaceById);
 
 // Create new organization workspace
 router.post('/', createWorkspace);
+
+// Rename workspace (admin only)
+router.put('/:id', renameWorkspace);
 
 // Switch active workspace
 router.put('/:id/switch', switchWorkspace);

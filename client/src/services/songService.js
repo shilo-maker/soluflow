@@ -26,7 +26,7 @@ const songService = {
       const offlineSongs = await offlineStorage.getAllSongs();
 
       if (offlineSongs && offlineSongs.length > 0) {
-        console.log('Loaded songs from offline storage');
+        console.debug('Loaded songs from offline storage');
         return offlineSongs;
       }
 
@@ -55,7 +55,7 @@ const songService = {
       const offlineSong = await offlineStorage.getSong(parseInt(id));
 
       if (offlineSong) {
-        console.log('Loaded song from offline storage');
+        console.debug('Loaded song from offline storage');
         return offlineSong;
       }
 

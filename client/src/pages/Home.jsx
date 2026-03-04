@@ -124,7 +124,7 @@ const Home = () => {
     try {
       // Try to fetch as a service first
       await serviceService.getServiceByCode(code);
-      navigate(`/service/code/${code}`);
+      navigate(`/services/code/${code}`);
     } catch (serviceError) {
       // If service fails, try as a song
       try {
@@ -139,7 +139,7 @@ const Home = () => {
   };
 
   const handleCreateService = () => {
-    navigate('/service/create');
+    navigate('/services');
   };
 
   const handleCloseToast = () => {
@@ -175,7 +175,7 @@ const Home = () => {
               <div
                 key={service.id}
                 className="service-item"
-                onClick={() => navigate(`/service/${service.id}`)}
+                onClick={() => navigate(`/services/${service.id}`)}
               >
                 <div className="service-info">
                   <div className="service-title">{service.title}</div>

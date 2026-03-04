@@ -69,8 +69,8 @@
 }
 
 .add-tag-btn:hover {
-  border-color: var(--color-primary, #4ECDC4);
-  color: var(--color-primary, #4ECDC4);
+  border-color: var(--color-primary, #BC556F);
+  color: var(--color-primary, #BC556F);
 }
 
 .tag-dropdown {
@@ -139,7 +139,7 @@
   border: none;
   border-top: 1px solid #eee;
   background: transparent;
-  color: var(--color-primary, #4ECDC4);
+  color: var(--color-primary, #BC556F);
   font-weight: 500;
   text-align: start;
   cursor: pointer;
@@ -171,7 +171,7 @@
 
 .create-tag-form input[type="text"]:focus {
   outline: none;
-  border-color: var(--color-primary, #4ECDC4);
+  border-color: var(--color-primary, #BC556F);
 }
 
 .color-picker {
@@ -206,7 +206,7 @@
 
 .btn-create-small {
   border: none;
-  background: var(--color-primary, #4ECDC4);
+  background: var(--color-primary, #BC556F);
   color: white;
 }
 

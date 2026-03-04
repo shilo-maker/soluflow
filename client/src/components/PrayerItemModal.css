@@ -8,7 +8,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1100;
+  z-index: var(--z-modal);
   padding: 20px;
 }
 
@@ -148,7 +148,7 @@
 }
 
 .btn-add-point {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
   border: none;
   padding: 5px 12px;
@@ -160,7 +160,7 @@
 }
 
 .btn-add-point:hover {
-  background-color: #218838;
+  background-color: var(--color-success-light);
 }
 
 .prayer-point {

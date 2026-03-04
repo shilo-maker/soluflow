@@ -34,6 +34,12 @@ const workspaceService = {
     return response.data;
   },
 
+  // Rename workspace (admin only)
+  renameWorkspace: async (id, name) => {
+    const response = await api.put(`/workspaces/${id}`, { name });
+    return response.data;
+  },
+
   // Switch active workspace
   switchWorkspace: async (id) => {
     const response = await api.put(`/workspaces/${id}/switch`);

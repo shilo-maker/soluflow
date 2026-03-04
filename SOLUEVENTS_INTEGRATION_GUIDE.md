@@ -14,27 +14,35 @@ Quick start guide for integrating SoluFlow with SoluEvents.
 
 Create `.env` file in your SoluEvents project:
 
+**For Production (default):**
 ```env
-REACT_APP_SOLUFLOW_API_URL=http://localhost:5002/api/integration
+# Main API base (for auth, services, setlists)
+REACT_APP_SOLUFLOW_API_URL=https://soluflow.app/api
+
+# Integration API (for search only)
+REACT_APP_SOLUFLOW_INTEGRATION_URL=https://soluflow.app/api/integration
 REACT_APP_SOLUFLOW_API_KEY=05b1e84075787db67e5a4926912105690ceed7387cb972d410b476d44eaafce1
 ```
 
-For production (when SoluEvents goes live):
+**For Local Development:**
 ```env
-REACT_APP_SOLUFLOW_API_URL=https://soluflow.app/api/integration
+REACT_APP_SOLUFLOW_API_URL=http://localhost:5002/api
+REACT_APP_SOLUFLOW_INTEGRATION_URL=http://localhost:5002/api/integration
 REACT_APP_SOLUFLOW_API_KEY=05b1e84075787db67e5a4926912105690ceed7387cb972d410b476d44eaafce1
 ```
 
 ### 2. Create SoluFlow Service (utils/soluflowApi.js)
 
 ```javascript
-const SOLUFLOW_API_URL = process.env.REACT_APP_SOLUFLOW_API_URL || 'http://localhost:5002/api/integration';
+// API URLs
+const SOLUFLOW_API_BASE = process.env.REACT_APP_SOLUFLOW_API_URL || 'https://soluflow.app/api';
+const SOLUFLOW_INTEGRATION_URL = process.env.REACT_APP_SOLUFLOW_INTEGRATION_URL || 'https://soluflow.app/api/integration';
 const API_KEY = process.env.REACT_APP_SOLUFLOW_API_KEY;
 
 export const searchSongs = async (query, limit = 10) => {
   try {
     const response = await fetch(
-      `${SOLUFLOW_API_URL}/songs/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+      `${SOLUFLOW_INTEGRATION_URL}/songs/search?q=${encodeURIComponent(query)}&limit=${limit}`,
       {
         headers: {
           'X-API-Key': API_KEY
@@ -52,7 +60,7 @@ export const searchSongs = async (query, limit = 10) => {
 export const getSongDetails = async (songId) => {
   try {
     const response = await fetch(
-      `${SOLUFLOW_API_URL}/songs/${songId}`,
+      `${SOLUFLOW_INTEGRATION_URL}/songs/${songId}`,
       {
         headers: {
           'X-API-Key': API_KEY
@@ -67,15 +75,53 @@ export const getSongDetails = async (songId) => {
   }
 };
 
-export const createSoluFlowService = async (eventData, userToken) => {
+// SoluFlow Service Account Authentication
+const SOLUFLOW_SERVICE_EMAIL = 'EventsApp@soluisrael.org';
+const SOLUFLOW_SERVICE_PASSWORD = '1397152535Bh@';
+
+let soluflowToken = null;
+
+const authenticateSoluFlow = async () => {
+  if (soluflowToken) return soluflowToken;
+
   try {
+    const response = await fetch(`${SOLUFLOW_API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: SOLUFLOW_SERVICE_EMAIL,
+        password: SOLUFLOW_SERVICE_PASSWORD
+      })
+    });
+
+    const data = await response.json();
+    if (data.success && data.token) {
+      soluflowToken = data.token;
+      return soluflowToken;
+    }
+    throw new Error('Authentication failed');
+  } catch (error) {
+    console.error('SoluFlow authentication error:', error);
+    return null;
+  }
+};
+
+export const createSoluFlowService = async (eventData) => {
+  try {
+    const token = await authenticateSoluFlow();
+    if (!token) {
+      throw new Error('Failed to authenticate with SoluFlow');
+    }
+
     const response = await fetch(
-      `${SOLUFLOW_API_URL}/services`,
+      `${SOLUFLOW_API_BASE}/services`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}` // Use user's SoluFlow token
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           name: eventData.name,
@@ -89,6 +135,10 @@ export const createSoluFlowService = async (eventData, userToken) => {
     return data.success ? data.service : null;
   } catch (error) {
     console.error('SoluFlow create service error:', error);
+    // If error is auth-related, clear token and retry once
+    if (error.message?.includes('auth') || error.message?.includes('token')) {
+      soluflowToken = null;
+    }
     return null;
   }
 };
@@ -200,19 +250,13 @@ function EventProgramEditor() {
   };
 
   const handleCreateSoluFlowService = async () => {
-    const userToken = localStorage.getItem('soluflowToken'); // Or however you store it
-
-    if (!userToken) {
-      alert('יש להתחבר לסולו פלואו כדי ליצור שירות');
-      return;
-    }
-
+    // No need for user authentication - using service account
     const service = await createSoluFlowService({
       name: eventData.name,
       date: new Date(eventData.date).toISOString(),
       songIds: selectedSongs.map(s => s.soluflowId),
       notes: `נוצר מסולו אירועים: ${eventData.description}`
-    }, userToken);
+    });
 
     if (service) {
       setSoluflowServiceUrl(service.shareUrl);
@@ -296,9 +340,71 @@ export default EventProgramEditor;
 
 ## User Authentication Flow
 
-For the best experience, users should be logged into SoluFlow:
+### Dedicated Service Account (Recommended)
 
-1. **Option 1**: User logs into SoluFlow first, then use their token in SoluEvents
+A dedicated SoluFlow account has been created for SoluEvents integration:
+
+**Credentials:**
+- Email: `EventsApp@soluisrael.org`
+- Password: `1397152535Bh@`
+- Workspace ID: `3` (Production: SoluTeam)
+- Workspace Name: `SoluTeam`
+
+**Authentication Flow:**
+
+```javascript
+// Use production or development URL based on environment
+const SOLUFLOW_API_BASE = process.env.REACT_APP_SOLUFLOW_API_URL || 'https://soluflow.app/api';
+
+// 1. Login to get JWT token (do this once when app starts or token expires)
+const loginToSoluFlow = async () => {
+  const response = await fetch(`${SOLUFLOW_API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      email: 'EventsApp@soluisrael.org',
+      password: '1397152535Bh@'
+    })
+  });
+
+  const data = await response.json();
+  if (data.success) {
+    // Store token for subsequent requests
+    localStorage.setItem('soluflowToken', data.token);
+    return data.token;
+  }
+  throw new Error('Failed to authenticate with SoluFlow');
+};
+
+// 2. Use token for creating services/setlists
+const createService = async (serviceData) => {
+  const token = localStorage.getItem('soluflowToken') || await loginToSoluFlow();
+
+  const response = await fetch(`${SOLUFLOW_API_BASE}/services`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(serviceData)
+  });
+
+  return await response.json();
+};
+```
+
+**Benefits:**
+- All services/setlists created by SoluEvents are in the **SoluTeam** workspace
+- Shared with the entire team - seamless collaboration
+- No need for individual user login
+- Simplified integration flow
+- Easy to track and manage programmatically created content
+
+### Alternative Options
+
+1. **Option 1**: Individual user accounts - Users log into SoluFlow with their own credentials
 2. **Option 2**: Implement SoluFlow OAuth (future enhancement)
 3. **Option 3**: Use API key for search only, require manual login for creating services
 

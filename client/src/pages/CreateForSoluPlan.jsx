@@ -126,7 +126,7 @@ const CreateForSoluPlan = () => {
   };
 
   const handleStayInSoluFlow = () => {
-    navigate(`/service/${createdService.id}`);
+    navigate(`/services/${createdService.id}`);
   };
 
   // Show loading until auth is resolved
@@ -193,7 +193,7 @@ const CreateForSoluPlan = () => {
           if (returnUrl) {
             window.location.href = returnUrl;
           } else {
-            navigate('/service');
+            navigate('/services');
           }
         }}
         onSave={handleSave}

@@ -8,7 +8,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: var(--z-modal);
 }
 
 .setlist-builder {
@@ -242,13 +242,13 @@
 }
 
 .btn-add-song {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
   font-size: 24px;
 }
 
 .btn-add-song:hover {
-  background-color: #218838;
+  background-color: var(--color-success-light);
 }
 
 .setlist-search {

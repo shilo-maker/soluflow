@@ -6,14 +6,13 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import PrivateRoute from './components/PrivateRoute';
 import ErrorBoundary from './components/ErrorBoundary';
-import Header from './components/layout/Header';
-import BottomNav from './components/layout/BottomNav';
+import AppLayout from './components/layout/AppLayout';
 import FullscreenButton from './components/FullscreenButton';
 import OfflineIndicator from './components/OfflineIndicator';
 import './App.css';
 
 // Lazy load pages for code splitting
-const Home = lazy(() => import('./pages/Home'));
+const ServicesList = lazy(() => import('./pages/ServicesList'));
 const Service = lazy(() => import('./pages/Service'));
 const GuestServiceView = lazy(() => import('./pages/GuestServiceView'));
 const GuestEditView = lazy(() => import('./pages/GuestEditView'));
@@ -68,10 +67,12 @@ function AppContent() {
                     location.pathname === '/sso' ||
                     location.pathname === '/create-for-soluplan';
   const isGuestPage = location.pathname.startsWith('/open/') ||
+                      location.pathname.startsWith('/services/code/') ||
+                      location.pathname.startsWith('/services/edit/') ||
                       location.pathname.startsWith('/service/code/') ||
                       location.pathname.startsWith('/service/edit/') ||
                       location.pathname.startsWith('/song/code/') ||
-                      location.pathname.startsWith('/song/') ||
+                      (!isAuthenticated && location.pathname.startsWith('/song/')) ||
                       (!isAuthenticated && location.pathname === '/');
 
   // Show loading screen while checking authentication
@@ -83,67 +84,86 @@ function AppContent() {
         alignItems: 'center',
         height: '100vh',
         fontSize: '18px',
-        color: '#4ECDC4'
+        color: '#BC556F'
       }}>
         Loading...
       </div>
     );
   }
 
+  const showAppLayout = isAuthenticated && !isAuthPage && !isGuestPage;
+
   return (
     <div className="App">
       {/* Offline/Online Indicator */}
       <OfflineIndicator />
 
-      {isAuthenticated && !isAuthPage && !isGuestPage && (
-        <Header
-          title="SoluFlow"
-          user={user}
-          showLogout={true}
-          onLogout={handleLogout}
-        />
+      {showAppLayout ? (
+        <AppLayout user={user} onLogout={handleLogout}>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              {/* Root route - redirect to library */}
+              <Route path="/" element={<Navigate to="/library" replace />} />
+
+              {/* Song view - accessible when logged in */}
+              <Route path="/song/:id" element={<SongView />} />
+
+              {/* Protected routes */}
+              <Route path="/home" element={<Navigate to="/library" replace />} />
+              <Route path="/services" element={<PrivateRoute><ServicesList /></PrivateRoute>} />
+              <Route path="/services/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
+              {/* Legacy /service redirects */}
+              <Route path="/service" element={<Navigate to="/services" replace />} />
+              <Route path="/service/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
+              <Route path="/library" element={<PrivateRoute><Library /></PrivateRoute>} />
+              <Route path="/users" element={<PrivateRoute><UserManagement /></PrivateRoute>} />
+              <Route path="/user/settings" element={<PrivateRoute><UserSettings /></PrivateRoute>} />
+              <Route path="/workspace/settings" element={<PrivateRoute><WorkspaceManagement /></PrivateRoute>} />
+              <Route path="/workspace/invite/:token" element={<PrivateRoute><AcceptInvite /></PrivateRoute>} />
+              <Route path="/workspace/member-invite/:token" element={<PrivateRoute><MemberInviteResponse /></PrivateRoute>} />
+              <Route path="/admin/reports" element={<PrivateRoute><SongReports /></PrivateRoute>} />
+
+              {/* Catch-all redirect for unknown paths */}
+              <Route path="*" element={<Navigate to="/library" replace />} />
+            </Routes>
+          </Suspense>
+        </AppLayout>
+      ) : (
+        <main className="auth-content">
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/open/:code" element={<SolucastRedirect />} />
+              <Route path="/services/code/:code" element={<GuestServiceView />} />
+              <Route path="/services/edit/:editToken" element={<GuestEditView />} />
+              {/* Legacy /service/code and /service/edit routes */}
+              <Route path="/service/code/:code" element={<GuestServiceView />} />
+              <Route path="/service/edit/:editToken" element={<GuestEditView />} />
+              <Route path="/song/code/:code" element={<SharedSongView />} />
+              <Route path="/sso" element={<SSOCallback />} />
+              <Route path="/create-for-soluplan" element={<CreateForSoluPlan />} />
+
+              {/* Workspace invites - accessible before login, redirect handled inside */}
+              <Route path="/workspace/invite/:token" element={<AcceptInvite />} />
+              <Route path="/workspace/member-invite/:token" element={<MemberInviteResponse />} />
+
+              {/* Root route - guest landing */}
+              <Route path="/" element={<GuestLanding />} />
+
+              {/* Song view - public for guests */}
+              <Route path="/song/:id" element={<SongView />} />
+
+              {/* Catch-all redirect to login */}
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </Suspense>
+        </main>
       )}
-
-      <main className={isAuthPage || isGuestPage ? "auth-content" : "app-content"}>
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/open/:code" element={<SolucastRedirect />} />
-            <Route path="/service/code/:code" element={<GuestServiceView />} />
-            <Route path="/service/edit/:editToken" element={<GuestEditView />} />
-            <Route path="/song/code/:code" element={<SharedSongView />} />
-            <Route path="/sso" element={<SSOCallback />} />
-
-            {/* Root route - conditional based on auth */}
-            <Route path="/" element={
-              isAuthenticated ? <Navigate to="/library" replace /> : <GuestLanding />
-            } />
-
-            {/* Song view - public for guests */}
-            <Route path="/song/:id" element={<SongView />} />
-
-            {/* Protected routes */}
-            <Route path="/home" element={<Navigate to="/library" replace />} />
-            <Route path="/service" element={<PrivateRoute><Service /></PrivateRoute>} />
-            <Route path="/service/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
-            <Route path="/library" element={<PrivateRoute><Library /></PrivateRoute>} />
-            <Route path="/users" element={<PrivateRoute><UserManagement /></PrivateRoute>} />
-            <Route path="/settings" element={<PrivateRoute><UserSettings /></PrivateRoute>} />
-            <Route path="/workspace/settings" element={<PrivateRoute><WorkspaceManagement /></PrivateRoute>} />
-            <Route path="/workspace/invite/:token" element={<PrivateRoute><AcceptInvite /></PrivateRoute>} />
-            <Route path="/workspace/member-invite/:token" element={<PrivateRoute><MemberInviteResponse /></PrivateRoute>} />
-            <Route path="/admin/reports" element={<PrivateRoute><SongReports /></PrivateRoute>} />
-            <Route path="/create-for-soluplan" element={<CreateForSoluPlan />} />
-          </Routes>
-        </Suspense>
-      </main>
-
-      {isAuthenticated && !isAuthPage && !isGuestPage && <BottomNav />}
 
       {/* Fullscreen button - available on all pages except auth pages */}
       {!isAuthPage && <FullscreenButton />}

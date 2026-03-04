@@ -3,22 +3,25 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   padding: 20px;
 }
 
 .accept-invite-page .invite-card {
-  background: white;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1.5rem;
   padding: 48px;
   max-width: 500px;
   width: 100%;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   text-align: center;
-  animation: fadeIn 0.3s ease;
+  animation: fadeInDown 0.3s ease;
 }
 
-@keyframes fadeIn {
+@keyframes fadeInDown {
   from {
     opacity: 0;
     transform: translateY(-20px);
@@ -46,19 +49,12 @@
 
 .accept-invite-page .success-icon {
   font-size: 72px;
-  color: #4caf50;
+  color: var(--color-success);
   margin-bottom: 24px;
   animation: scaleIn 0.5s ease;
 }
 
-@keyframes scaleIn {
-  from {
-    transform: scale(0);
-  }
-  to {
-    transform: scale(1);
-  }
-}
+/* scaleIn is defined globally in index.css */
 
 .accept-invite-page .error-icon {
   font-size: 72px;
@@ -94,7 +90,7 @@
 }
 
 .accept-invite-page .success-message {
-  color: #4caf50;
+  color: var(--color-success);
   font-size: 18px;
   font-weight: 500;
   margin: 0 0 16px 0;
@@ -126,7 +122,7 @@
 .accept-invite-page .btn-accept {
   width: 100%;
   padding: 14px 24px;
-  background: #4caf50;
+  background: var(--color-success);
   color: white;
   border: none;
   border-radius: 8px;
@@ -138,9 +134,9 @@
 }
 
 .accept-invite-page .btn-accept:hover:not(:disabled) {
-  background: #45a049;
+  background: var(--color-success-light);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--color-success-rgb), 0.3);
 }
 
 .accept-invite-page .btn-accept:disabled {
@@ -174,7 +170,7 @@
 
 .accept-invite-page .btn-home {
   padding: 14px 32px;
-  background: #c9956e;
+  background: var(--color-primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -185,9 +181,9 @@
 }
 
 .accept-invite-page .btn-home:hover {
-  background: #b58558;
+  background: var(--color-primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(201, 149, 110, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
 }
 
 /* Responsive */

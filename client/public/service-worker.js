@@ -2,7 +2,7 @@
 
 // Service Worker for SoluFlow - Offline Support
 // Increment version manually when deploying significant updates
-const CACHE_VERSION = '3.1.0';
+const CACHE_VERSION = '3.3.0';
 const CACHE_NAME = `soluflow-v${CACHE_VERSION}`;
 
 // Assets to cache on install for offline support
@@ -11,12 +11,14 @@ const STATIC_ASSETS = [
   '/index.html',
   '/offline.html',
   '/manifest.json',
-  '/solu_flow_logo.png',
+  '/neutral_logo.png',
   '/favicon.ico',
   '/favicon.png',
   '/apple-touch-icon.png',
   '/icon-192x192.png',
   '/icon-512x512.png',
+  '/solu_flow_footer.png',
+  '/pdf_stamp.png',
 ];
 
 // External font URLs to cache for offline support

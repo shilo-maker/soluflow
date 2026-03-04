@@ -37,7 +37,7 @@ const Toast = ({ message, type = 'success', isVisible, onClose }) => {
   return ReactDOM.createPortal(
     <div style={toastStyle}>
       <div className="toast-content">
-        <span className="toast-icon" style={{ color: type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8' }}>
+        <span className="toast-icon" style={{ color: type === 'success' ? '#D4856A' : type === 'error' ? '#dc3545' : '#BC556F' }}>
           {type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}
         </span>
         <span className="toast-message">{message}</span>

@@ -74,7 +74,7 @@
 }
 
 .btn-save-modal {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
   border: none;
   padding: 10px 30px;
@@ -86,7 +86,7 @@
 }
 
 .btn-save-modal:hover {
-  background-color: #218838;
+  background-color: var(--color-success-light);
 }
 
 .btn-save-modal:disabled {

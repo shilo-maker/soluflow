@@ -86,7 +86,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-primary, #4ecdc4);
+  background: var(--color-primary, #BC556F);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
@@ -95,7 +95,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-primary, #4ecdc4);
+  background: var(--color-primary, #BC556F);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   border: none;
@@ -127,7 +127,7 @@
 
 .avatar-crop-apply {
   padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-  background: var(--color-primary, #4ecdc4);
+  background: var(--color-primary, #BC556F);
   color: white;
   border: none;
   border-radius: var(--border-radius-md, 8px);

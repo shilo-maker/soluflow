@@ -1,17 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap');
-
 .app-header {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background-color: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(15px);
-  border-bottom: none;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
   z-index: var(--z-navigation);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  overflow: visible;
+}
+
+/* Desktop: push header to the right of sidebar */
+@media (min-width: 768px) {
+  .app-header {
+    margin-left: 256px;
+  }
+
+  /* RTL: push to the left instead */
+  [dir="rtl"] .app-header {
+    margin-left: 0;
+    margin-right: 256px;
+  }
 }
 
 .header-content {
@@ -20,117 +28,61 @@
   align-items: center;
   height: 100%;
   padding: 0 20px;
-  max-width: 1200px;
-  margin: 0 auto;
   position: relative;
 }
 
-/* RTL support - reverse the entire header layout */
-[dir="rtl"] .header-content {
-  flex-direction: row-reverse;
-}
+/* RTL support - flexbox auto-reverses with dir="rtl" on parent */
 
-.app-title {
-  font-size: 24px;
-  font-weight: 400;
-  color: #333;
+.header-left {
   display: flex;
   align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
-.app-logo {
-  height: 40px;
-  width: auto;
-  transition: filter 0.3s ease;
+
+/* Hamburger button - mobile only */
+.header-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: #374151;
+  padding: 8px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.app-logo-text {
-  font-family: 'Cherry Bomb One', cursive;
-  font-size: 32px;
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  background: linear-gradient(
-    135deg,
-    var(--logo-gradient-1, #667eea) 0%,
-    var(--logo-gradient-2, #764ba2) 25%,
-    var(--logo-gradient-3, #8b7dd6) 50%,
-    var(--logo-gradient-4, #a991e8) 75%,
-    var(--logo-gradient-5, #667eea) 100%
-  );
-  background-size: 300% 300%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  position: relative;
-  user-select: none;
-  animation: gradientShift 4s ease infinite;
+.header-hamburger:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
+@media (max-width: 767px) {
+  .header-hamburger {
+    display: flex;
   }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.app-logo-text::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(
-    135deg,
-    var(--logo-gradient-1, #667eea) 0%,
-    var(--logo-gradient-2, #764ba2) 25%,
-    var(--logo-gradient-3, #8b7dd6) 50%,
-    var(--logo-gradient-4, #a991e8) 75%,
-    var(--logo-gradient-5, #667eea) 100%
-  );
-  background-size: 300% 300%;
-  opacity: 0.4;
-  border-radius: 2px;
-  animation: gradientShift 4s ease infinite;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
+  /* Keep LTR order so user avatar is always leftmost in RTL layout */
+  direction: ltr;
 }
 
-/* RTL support - reverse the order of items in header-actions so username appears first */
-[dir="rtl"] .header-actions {
-  flex-direction: row-reverse;
-  justify-content: flex-end;
-}
 
 .user-menu-container {
   position: relative;
-}
-
-/* Workspace text in header */
-.header-workspace-text {
-  font-size: 22px;
-  font-weight: 700;
-  /* color is set via inline style based on theme */
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Settings gear icon button */
 .settings-icon-button {
   background: transparent;
   border: none;
-  color: var(--color-primary, #38b2ac);
+  color: var(--color-primary, #BC556F);
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
@@ -142,7 +94,6 @@
 
 .settings-icon-button:hover {
   opacity: 0.8;
-  transform: rotate(15deg);
 }
 
 .settings-icon-button:active {
@@ -156,25 +107,26 @@
 /* User avatar in header */
 .user-avatar-button {
   padding: 4px;
+  position: relative;
 }
 
 .header-avatar-img {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .header-avatar-initials {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 
 .settings-icon-button.user-avatar-button:hover {
@@ -182,42 +134,19 @@
   opacity: 0.85;
 }
 
-/* Legacy support */
-.username {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  padding: 8px 16px;
-  border-radius: var(--border-radius-md);
-  user-select: none;
-  display: inline-block;
-  border: none;
-  box-shadow: var(--shadow-primary);
-}
-
-.username:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-primary-hover);
-}
-
-.username:active {
-  transform: translateY(0);
-}
-
 .user-dropdown-menu {
   background: white;
   border: 1px solid #eee;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   min-width: 200px;
   max-width: min(280px, calc(100vw - 20px));
 }
 
 .user-dropdown-menu .menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   padding: 12px 16px;
   background: none;
@@ -230,7 +159,6 @@
   border-bottom: 1px solid #f5f5f5;
 }
 
-/* RTL support for menu items */
 [dir="rtl"] .user-dropdown-menu .menu-item {
   text-align: right;
 }
@@ -243,6 +171,29 @@
   background-color: #f5f5f5;
 }
 
+/* User menu header */
+.user-menu-header {
+  padding: 12px 16px;
+}
+
+.user-menu-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu-email {
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
 /* Menu section label */
 .menu-section-label {
   padding: 8px 16px 4px;
@@ -253,59 +204,8 @@
   letter-spacing: 0.5px;
 }
 
-/* Workspace list in dropdown */
-.workspace-list-compact {
-  padding: 0;
-}
-
-.workspace-item-compact {
-  display: flex !important;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px !important;
-}
-
-.workspace-item-compact.active {
-  background-color: #f0f7ff;
-  color: var(--color-primary);
-}
-
-.workspace-item-compact:disabled {
-  opacity: 1;
-  cursor: default;
-}
-
-.workspace-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.workspace-name-text {
-  flex: 1;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-[dir="rtl"] .workspace-name-text {
+[dir="rtl"] .menu-section-label {
   text-align: right;
-}
-
-.active-check {
-  color: var(--color-primary);
-  font-weight: bold;
-  flex-shrink: 0;
-}
-
-.workspace-settings-link {
-  font-size: 12px !important;
-  color: #666 !important;
-  padding: 8px 16px !important;
-}
-
-.workspace-settings-link:hover {
-  color: var(--color-primary) !important;
 }
 
 /* Menu divider */
@@ -322,57 +222,6 @@
 
 .logout-item:hover {
   background-color: #fff5f5 !important;
-}
-
-/* RTL support for section label */
-[dir="rtl"] .menu-section-label {
-  text-align: right;
-}
-
-@media (max-width: 768px) {
-  .app-title {
-    font-size: 20px;
-  }
-
-  .app-logo {
-    height: 35px;
-  }
-
-  .app-logo-text {
-    font-size: 32px;
-    letter-spacing: 0.05em;
-  }
-
-  .username {
-    font-size: 12px;
-  }
-
-  .header-workspace-text {
-    font-size: 18px;
-    max-width: 160px;
-  }
-
-  .settings-icon-button {
-    padding: 6px;
-  }
-
-  .settings-icon-button svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .header-content {
-    padding: 0 12px;
-  }
-
-  .header-actions {
-    gap: 8px;
-  }
-
-  .user-dropdown-menu {
-    min-width: 140px;
-    max-width: calc(100vw - 30px);
-  }
 }
 
 /* App Switcher (waffle menu) */
@@ -429,8 +278,8 @@
 }
 
 .app-card-active {
-  background: rgba(78, 205, 196, 0.08);
-  border-color: rgba(78, 205, 196, 0.2);
+  background: rgba(188, 85, 111, 0.08);
+  border-color: rgba(188, 85, 111, 0.2);
 }
 
 .app-card-link {
@@ -483,14 +332,10 @@
 }
 
 /* Invite notification badge on avatar */
-.user-avatar-button {
-  position: relative;
-}
-
 .invite-badge {
   position: absolute;
   top: 0;
-  right: 0;
+  inset-inline-end: 0;
   background: #e53e3e;
   color: white;
   font-size: 10px;
@@ -563,7 +408,7 @@
 }
 
 .btn-invite-accept {
-  background: #e6fffa;
+  background: #fdf2f0;
   color: #38a169;
 }
 
@@ -588,40 +433,18 @@
   cursor: not-allowed;
 }
 
-/* Extra small screens */
+/* Responsive */
+@media (max-width: 767px) {
+  .header-content {
+    padding: 0 12px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+}
+
 @media (max-width: 480px) {
-  .app-title {
-    font-size: 18px;
-  }
-
-  .app-logo {
-    height: 30px;
-  }
-
-  .app-logo-text {
-    font-size: 28px;
-    letter-spacing: 0.05em;
-  }
-
-  .username {
-    font-size: 12px;
-    padding: 6px 8px;
-  }
-
-  .header-workspace-text {
-    font-size: 16px;
-    max-width: 120px;
-  }
-
-  .settings-icon-button {
-    padding: 5px;
-  }
-
-  .settings-icon-button svg {
-    width: 18px;
-    height: 18px;
-  }
-
   .header-content {
     padding: 0 10px;
   }

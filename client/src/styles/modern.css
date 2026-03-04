@@ -7,15 +7,15 @@
    CSS VARIABLES - Color System
    ============================================ */
 :root {
-  /* Primary - Light Turquoise (Fresh/Vibrant theme) */
-  --color-primary: #4ECDC4;
-  --color-primary-dark: #2AA198;
-  --color-primary-rgb: 78, 205, 196;
+  /* Primary - Peach Rose */
+  --color-primary: #BC556F;
+  --color-primary-dark: #a3485e;
+  --color-primary-rgb: 188, 85, 111;
 
-  /* Success - Teal Green (Confirmations, positive actions) */
-  --color-success: #1DD1A1;
-  --color-success-light: #10AC84;
-  --color-success-rgb: 29, 209, 161;
+  /* Success - Warm Coral (Confirmations, positive actions) */
+  --color-success: #D4856A;
+  --color-success-light: #C97A5F;
+  --color-success-rgb: 212, 133, 106;
 
   /* Danger - Coral (Destructive actions, errors) */
   --color-danger: #FF6B6B;
@@ -58,7 +58,7 @@
   --color-badge-public: var(--color-success);
   --color-badge-workspace: var(--color-info);
   --color-badge-shared: #9c27b0;  /* Purple for shared items */
-  --color-badge-personal: #17a2b8;  /* Teal for personal items */
+  --color-badge-personal: #BC556F;  /* Rose for personal items */
 
   /* State colors */
   --color-disabled: #e9ecef;
@@ -99,26 +99,26 @@
   /* ============================================
      BORDER RADIUS
      ============================================ */
-  --border-radius-sm: 0.25rem;   /* 4px - Small elements, badges */
-  --border-radius-md: 0.5rem;    /* 8px - Buttons, inputs */
-  --border-radius-lg: 0.75rem;   /* 12px - Cards */
-  --border-radius-xl: 1rem;      /* 16px - Large cards, modals */
+  --border-radius-sm: 0.375rem;  /* 6px - Small elements, badges */
+  --border-radius-md: 0.75rem;   /* 12px - Buttons, inputs (rounded-xl) */
+  --border-radius-lg: 1rem;      /* 16px - Cards (rounded-2xl) */
+  --border-radius-xl: 1.5rem;    /* 24px - Large cards, modals (rounded-3xl) */
   --border-radius-full: 9999px;  /* Fully rounded - Pills, avatars */
 
   /* ============================================
      SHADOWS
      ============================================ */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
 
   /* Colored shadows (for buttons) */
-  --shadow-primary: 0 2px 8px rgba(78, 205, 196, 0.4);
-  --shadow-primary-hover: 0 4px 12px rgba(78, 205, 196, 0.6);
-  --shadow-success: 0 2px 8px rgba(29, 209, 161, 0.4);
-  --shadow-success-hover: 0 4px 12px rgba(29, 209, 161, 0.6);
+  --shadow-primary: 0 2px 8px rgba(188, 85, 111, 0.4);
+  --shadow-primary-hover: 0 4px 12px rgba(188, 85, 111, 0.6);
+  --shadow-success: 0 2px 8px rgba(212, 133, 106, 0.4);
+  --shadow-success-hover: 0 4px 12px rgba(212, 133, 106, 0.6);
   --shadow-danger: 0 2px 8px rgba(255, 107, 107, 0.4);
   --shadow-danger-hover: 0 4px 12px rgba(255, 107, 107, 0.6);
   --shadow-warning: 0 2px 8px rgba(255, 165, 2, 0.4);
@@ -280,9 +280,11 @@ body {
    CARD STYLES
    ============================================ */
 .card {
-  background: var(--color-white) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border-radius: var(--border-radius-lg) !important;
-  border: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   box-shadow: var(--shadow-md) !important;
   transition: all var(--transition-base) !important;
 }
@@ -416,7 +418,7 @@ body {
 }
 
 .alert-success {
-  background: linear-gradient(135deg, rgba(29, 209, 161, 0.1) 0%, rgba(16, 172, 132, 0.1) 100%) !important;
+  background: linear-gradient(135deg, rgba(var(--color-success-rgb), 0.1) 0%, rgba(var(--color-success-rgb), 0.05) 100%) !important;
   color: var(--color-success) !important;
   border-left: 4px solid var(--color-success) !important;
 }
@@ -469,16 +471,7 @@ body {
   100% { transform: scale(1); }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* fadeIn is defined globally in index.css */
 
 @keyframes slideInRight {
   from {
@@ -544,36 +537,36 @@ body {
 }
 
 /* ============================================
-   UTILITY CLASSES
+   UTILITY CLASSES (prefixed to avoid Tailwind collisions)
    ============================================ */
-.shadow-sm { box-shadow: var(--shadow-sm) !important; }
-.shadow-md { box-shadow: var(--shadow-md) !important; }
-.shadow-lg { box-shadow: var(--shadow-lg) !important; }
-.shadow-xl { box-shadow: var(--shadow-xl) !important; }
+.sf-shadow-sm { box-shadow: var(--shadow-sm); }
+.sf-shadow-md { box-shadow: var(--shadow-md); }
+.sf-shadow-lg { box-shadow: var(--shadow-lg); }
+.sf-shadow-xl { box-shadow: var(--shadow-xl); }
 
-.rounded-sm { border-radius: var(--border-radius-sm) !important; }
-.rounded-md { border-radius: var(--border-radius-md) !important; }
-.rounded-lg { border-radius: var(--border-radius-lg) !important; }
-.rounded-xl { border-radius: var(--border-radius-xl) !important; }
-.rounded-full { border-radius: var(--border-radius-full) !important; }
+.sf-rounded-sm { border-radius: var(--border-radius-sm); }
+.sf-rounded-md { border-radius: var(--border-radius-md); }
+.sf-rounded-lg { border-radius: var(--border-radius-lg); }
+.sf-rounded-xl { border-radius: var(--border-radius-xl); }
+.sf-rounded-full { border-radius: var(--border-radius-full); }
 
-.text-primary { color: var(--color-primary) !important; }
-.text-success { color: var(--color-success) !important; }
-.text-danger { color: var(--color-danger) !important; }
-.text-warning { color: var(--color-warning) !important; }
-.text-info { color: var(--color-info) !important; }
-.text-dark { color: var(--color-text-dark) !important; }
-.text-medium { color: var(--color-text-medium) !important; }
-.text-light { color: var(--color-text-light) !important; }
+.sf-text-primary { color: var(--color-primary); }
+.sf-text-success { color: var(--color-success); }
+.sf-text-danger { color: var(--color-danger); }
+.sf-text-warning { color: var(--color-warning); }
+.sf-text-info { color: var(--color-info); }
+.sf-text-dark { color: var(--color-text-dark); }
+.sf-text-medium { color: var(--color-text-medium); }
+.sf-text-light { color: var(--color-text-light); }
 
-.bg-primary { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%) !important; }
-.bg-light { background: var(--color-background) !important; }
-.bg-white { background: var(--color-white) !important; }
+.sf-bg-primary { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); }
+.sf-bg-light { background: var(--color-background); }
+.sf-bg-white { background: var(--color-white); }
 
-.fw-normal { font-weight: var(--font-normal) !important; }
-.fw-medium { font-weight: var(--font-medium) !important; }
-.fw-semibold { font-weight: var(--font-semibold) !important; }
-.fw-bold { font-weight: var(--font-bold) !important; }
+.fw-normal { font-weight: var(--font-normal); }
+.fw-medium { font-weight: var(--font-medium); }
+.fw-semibold { font-weight: var(--font-semibold); }
+.fw-bold { font-weight: var(--font-bold); }
 
 /* ============================================
    GLOBAL STYLES

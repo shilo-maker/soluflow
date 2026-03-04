@@ -3,10 +3,7 @@ import api from './api';
 const authService = {
   // Login user
   login: async (email, password) => {
-    console.log('Attempting login with API:', api.defaults.baseURL);
-    console.log('Email:', email);
     const response = await api.post('/auth/login', { email, password });
-    console.log('Login response received:', response.status);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));

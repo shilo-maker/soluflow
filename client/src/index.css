@@ -1,3 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   Tailwind Component Classes
+   Matching SoluPlan's visual design system
+   ============================================ */
+
+@layer components {
+  /* Gradient text effect */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700;
+  }
+
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl shadow-lg;
+  }
+}
+
+/* ============================================
+   Global Keyframe Animations
+   ============================================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
 html, body {
   margin: 0;
   font-family: var(--font-family);

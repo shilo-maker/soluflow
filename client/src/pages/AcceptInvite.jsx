@@ -33,7 +33,7 @@ const AcceptInvite = () => {
 
       // Redirect to home after 2 seconds
       setTimeout(() => {
-        window.location.href = '/home';
+        window.location.href = '/library';
       }, 2000);
     } catch (err) {
       console.error('Failed to accept invite:', err);
@@ -91,7 +91,7 @@ const AcceptInvite = () => {
 
             <button
               className="btn-cancel"
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/library')}
               disabled={loading}
             >
               Cancel
@@ -106,7 +106,7 @@ const AcceptInvite = () => {
             <p className="success-message">
               You've successfully joined {workspaceName ? `"${workspaceName}"` : 'the workspace'}!
             </p>
-            <p className="redirect-message">Redirecting to home...</p>
+            <p className="redirect-message">Redirecting to library...</p>
           </>
         )}
 
@@ -117,7 +117,7 @@ const AcceptInvite = () => {
             <p className="error-message">{error}</p>
             <button
               className="btn-home"
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/library')}
             >
               Go to Home
             </button>

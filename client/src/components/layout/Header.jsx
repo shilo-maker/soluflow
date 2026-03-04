@@ -1,21 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Menu, Settings } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import { GRADIENT_PRESETS } from '../../contexts/ThemeContext';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
+import WorkspaceSwitcher from '../WorkspaceSwitcher';
 import authService from '../../services/authService';
 import workspaceService from '../../services/workspaceService';
 import { getInitials, getAvatarColor } from '../../utils/imageUtils';
 import './Header.css';
 
-const Header = ({ title, user, showLogout = false, onLogout }) => {
+const Header = ({ user, showLogout = false, onLogout, onMenuToggle }) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { t, language } = useLanguage();
-  const { theme } = useTheme();
-  const { workspaces, activeWorkspace, switchWorkspace, loading: workspaceLoading } = useWorkspace();
-  const isOnUsersPage = location.pathname === '/users';
+  const { workspaces } = useWorkspace();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [appMenuOpen, setAppMenuOpen] = useState(false);
   const [ssoLoading, setSsoLoading] = useState(false);
@@ -29,7 +26,7 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
   const userBtnRef = useRef(null);
 
   // Compute fixed dropdown position from trigger button
-  const computeDropdownPos = (btnRef) => {
+  const computeDropdownPos = useCallback((btnRef) => {
     if (!btnRef.current) return {};
     const rect = btnRef.current.getBoundingClientRect();
     const pos = { position: 'fixed', top: rect.bottom + 4, zIndex: 1001 };
@@ -40,34 +37,7 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
       pos.left = rect.left;
     }
     return pos;
-  };
-
-  // Format workspace name based on language
-  const formatWorkspaceName = (workspace) => {
-    if (!workspace) return '';
-    if (workspace.workspace_type === 'personal') {
-      const match = workspace.name.match(/^(.+)'s Workspace$/);
-      if (match) {
-        const username = match[1];
-        if (language === 'he') {
-          return `הסביבה של ${username}`;
-        }
-        return workspace.name;
-      }
-    }
-    return workspace.name;
-  };
-
-  const handleSwitchWorkspace = async (workspaceId) => {
-    try {
-      await switchWorkspace(workspaceId);
-      setUserMenuOpen(false);
-      // Navigate to library to refresh content with new workspace
-      navigate('/library');
-    } catch (err) {
-      console.error('Failed to switch workspace:', err);
-    }
-  };
+  }, []);
 
   const SOLUCAST_URL = process.env.REACT_APP_SOLUCAST_URL || 'https://solucast.app';
 
@@ -102,15 +72,17 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
   // Fetch pending invites for the logged-in user
   useEffect(() => {
     if (!user || user.isGuest) return;
+    let cancelled = false;
     const fetchInvites = async () => {
       try {
         const invites = await workspaceService.getMyInvites();
-        setPendingInvites(invites);
+        if (!cancelled) setPendingInvites(invites);
       } catch (err) {
         // Silently ignore — non-critical
       }
     };
     fetchInvites();
+    return () => { cancelled = true; };
   }, [user, workspaces]); // re-fetch when workspaces change (after accept)
 
   const handleRespondInvite = async (token, action) => {
@@ -121,12 +93,12 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
       if (action === 'accept') {
         // Reload workspaces to include the new one
         window.location.reload();
+        return; // Skip finally cleanup — page is reloading
       }
     } catch (err) {
       console.error('Failed to respond to invite:', err);
-    } finally {
-      setRespondingToken(null);
     }
+    setRespondingToken(null);
   };
 
   // Close menus when clicking outside
@@ -153,87 +125,29 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [appMenuOpen, userMenuOpen]);
-
-  // Get the current gradient preset
-  const currentPreset = GRADIENT_PRESETS[theme?.gradientPreset] || GRADIENT_PRESETS.professional;
+  }, [appMenuOpen, userMenuOpen, computeDropdownPos]);
 
   return (
     <header className="app-header">
       <div className="header-content">
-        <div className="app-title">
-          <span
-            className="app-logo-text"
-            style={{
-              color: currentPreset.accentColor
-            }}
-          >
-            FLOW
-          </span>
+        {/* Left side: hamburger (mobile) + workspace name */}
+        <div className="header-left">
+          {/* Hamburger button - mobile only */}
+          {onMenuToggle && (
+            <button
+              className="header-hamburger"
+              onClick={onMenuToggle}
+              aria-label="Toggle menu"
+            >
+              <Menu size={24} />
+            </button>
+          )}
+
+          {/* Workspace switcher */}
+          {user && !user.isGuest && <WorkspaceSwitcher />}
         </div>
 
         <div className="header-actions">
-          {/* Workspace name */}
-          {user && !user.isGuest && activeWorkspace && (
-            <span
-              className="header-workspace-text"
-              style={{ color: currentPreset.accentColor }}
-            >
-              ({t('workspace.workspaceSuffix')}) {activeWorkspace.workspace_type === 'personal'
-                ? t('workspace.personalWorkspace')
-                : activeWorkspace.name
-              }
-            </span>
-          )}
-          {/* App Switcher (waffle menu) */}
-          {user && !user.isGuest && (
-            <div className="app-switcher-container" ref={appMenuRef}>
-              <button
-                ref={appBtnRef}
-                className="app-switcher-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!appMenuOpen) setAppMenuPos(computeDropdownPos(appBtnRef));
-                  setAppMenuOpen(!appMenuOpen);
-                  setUserMenuOpen(false);
-                }}
-                title="Switch apps"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  {[2, 8, 14].map(cy =>
-                    [2, 8, 14].map(cx => (
-                      <circle key={`${cx}-${cy}`} cx={cx + 1} cy={cy + 1} r="1.8" fill="currentColor" />
-                    ))
-                  )}
-                </svg>
-              </button>
-              {appMenuOpen && (
-                <div className="app-switcher-dropdown" style={appMenuPos}>
-                  {/* SoluFlow (current) */}
-                  <div className="app-card app-card-active">
-                    <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #4ecdc4, #2ba89e)' }}>SF</div>
-                    <div className="app-card-info">
-                      <div className="app-card-name">SoluFlow</div>
-                      <div className="app-card-desc">{t('common.currentApp')}</div>
-                    </div>
-                  </div>
-                  {/* SoluCast */}
-                  <button
-                    className="app-card app-card-link"
-                    onClick={handleOpenSoluCast}
-                    disabled={ssoLoading}
-                  >
-                    <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}>SC</div>
-                    <div className="app-card-info">
-                      <div className={`app-card-name${ssoError ? ' app-card-error' : ''}`}>{ssoLoading ? 'Opening...' : ssoError ? ssoError : 'SoluCast'}</div>
-                      <div className="app-card-desc">{t('common.presentation')}</div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
           {user && (
             <div className="user-menu-container" ref={userMenuRef}>
               <button
@@ -260,6 +174,15 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
               </button>
               {userMenuOpen && (
                 <div className="user-dropdown-menu" style={userMenuPos}>
+                  {/* User info header */}
+                  <div className="user-menu-header">
+                    <div className="user-menu-name">{user.username || user.email}</div>
+                    {user.email && user.username && (
+                      <div className="user-menu-email">{user.email}</div>
+                    )}
+                  </div>
+                  <div className="menu-divider" />
+
                   {/* Pending Invitations */}
                   {pendingInvites.length > 0 && (
                     <>
@@ -293,74 +216,20 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
                       <div className="menu-divider" />
                     </>
                   )}
-                  {/* Workspace Section */}
-                  {!user.isGuest && workspaces.length > 0 && (
-                    <>
-                      <div className="menu-section-label">{t('workspace.myWorkspaces')}</div>
-                      <div className="workspace-list-compact">
-                        {workspaces.map((workspace) => (
-                          <button
-                            key={workspace.id}
-                            className={`menu-item workspace-item-compact ${workspace.is_active ? 'active' : ''}`}
-                            onClick={() => handleSwitchWorkspace(workspace.id)}
-                            disabled={workspaceLoading || workspace.is_active}
-                          >
-                            <span className="workspace-icon">
-                              {workspace.workspace_type === 'personal' ? '👤' : '👥'}
-                            </span>
-                            <span className="workspace-name-text">{formatWorkspaceName(workspace)}</span>
-                            {workspace.is_active && <span className="active-check">✓</span>}
-                          </button>
-                        ))}
-                      </div>
-                      {activeWorkspace && (
-                        <button
-                          className="menu-item workspace-settings-link"
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            navigate('/workspace/settings');
-                          }}
-                        >
-                          {t('workspace.workspaceSettings')}
-                        </button>
-                      )}
-                      <div className="menu-divider" />
-                    </>
-                  )}
 
-                  {/* User Menu Items */}
+                  {/* User Settings */}
                   <button
                     className="menu-item"
                     onClick={() => {
                       setUserMenuOpen(false);
-                      navigate('/settings');
+                      navigate('/user/settings');
                     }}
                   >
-                    {t('common.settings')}
+                    <Settings size={16} />
+                    <span>{t('common.settings') || 'User Settings'}</span>
                   </button>
-                  {user?.role === 'admin' && !isOnUsersPage && (
-                    <button
-                      className="menu-item"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        navigate('/users');
-                      }}
-                    >
-                      {t('common.users')}
-                    </button>
-                  )}
-                  {user?.role === 'admin' && (
-                    <a
-                      className="menu-item"
-                      href={`${SOLUCAST_URL}/admin`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setUserMenuOpen(false)}
-                      style={{ textDecoration: 'none', color: 'inherit' }}
-                    >
-                      {t('common.adminPanel') || 'Admin Panel'}
-                    </a>
-                  )}
+
+                  {/* Logout */}
                   {showLogout && (
                     <button
                       className="menu-item logout-item"
@@ -372,6 +241,55 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
                       {t('common.logout')}
                     </button>
                   )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* App Switcher (waffle menu) */}
+          {user && !user.isGuest && (
+            <div className="app-switcher-container" ref={appMenuRef}>
+              <button
+                ref={appBtnRef}
+                className="app-switcher-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!appMenuOpen) setAppMenuPos(computeDropdownPos(appBtnRef));
+                  setAppMenuOpen(!appMenuOpen);
+                  setUserMenuOpen(false);
+                }}
+                title="Switch apps"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  {[2, 8, 14].map(cy =>
+                    [2, 8, 14].map(cx => (
+                      <circle key={`${cx}-${cy}`} cx={cx + 1} cy={cy + 1} r="1.8" fill="currentColor" />
+                    ))
+                  )}
+                </svg>
+              </button>
+              {appMenuOpen && (
+                <div className="app-switcher-dropdown" style={appMenuPos}>
+                  {/* SoluFlow (current) */}
+                  <div className="app-card app-card-active">
+                    <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #F9A470, #BC556F)' }}>SF</div>
+                    <div className="app-card-info">
+                      <div className="app-card-name">SoluFlow</div>
+                      <div className="app-card-desc">{t('common.currentApp')}</div>
+                    </div>
+                  </div>
+                  {/* SoluCast */}
+                  <button
+                    className="app-card app-card-link"
+                    onClick={handleOpenSoluCast}
+                    disabled={ssoLoading}
+                  >
+                    <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}>SC</div>
+                    <div className="app-card-info">
+                      <div className={`app-card-name${ssoError ? ' app-card-error' : ''}`}>{ssoLoading ? 'Opening...' : ssoError ? ssoError : 'SoluCast'}</div>
+                      <div className="app-card-desc">{t('common.presentation')}</div>
+                    </div>
+                  </button>
                 </div>
               )}
             </div>

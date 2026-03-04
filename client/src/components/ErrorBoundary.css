@@ -3,7 +3,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   padding: 20px;
 }
 
@@ -63,14 +63,14 @@
 }
 
 .btn-primary {
-  background: #4ECDC4;
+  background: var(--color-primary);
   color: white;
 }
 
 .btn-primary:hover {
-  background: #3db8af;
+  background: var(--color-primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.4);
 }
 
 .btn-secondary {

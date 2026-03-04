@@ -21,7 +21,7 @@
 .fullscreen-button:hover {
   opacity: 1;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.5);
+  box-shadow: 0 6px 20px rgba(188, 85, 111, 0.5);
 }
 
 .fullscreen-button:active {

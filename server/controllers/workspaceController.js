@@ -184,6 +184,42 @@ const createWorkspace = async (req, res) => {
   }
 };
 
+// PUT /api/workspaces/:id - Rename workspace (admin only)
+const renameWorkspace = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { name } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+
+    const workspace = await Workspace.findByPk(id);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    if (workspace.workspace_type === 'personal') {
+      return res.status(403).json({ error: 'Cannot rename personal workspace' });
+    }
+
+    const membership = await WorkspaceMember.findOne({
+      where: { workspace_id: id, user_id: userId, role: 'admin' }
+    });
+    if (!membership) {
+      return res.status(403).json({ error: 'Only admins can rename workspaces' });
+    }
+
+    await workspace.update({ name: name.trim() });
+
+    res.json({ id: workspace.id, name: workspace.name });
+  } catch (error) {
+    console.error('Rename workspace error:', error);
+    res.status(500).json({ error: 'Failed to rename workspace' });
+  }
+};
+
 // PUT /api/workspaces/:id/switch - Switch active workspace
 const switchWorkspace = async (req, res) => {
   try {
@@ -1341,6 +1377,7 @@ module.exports = {
   getAllWorkspaces,
   getWorkspaceById,
   createWorkspace,
+  renameWorkspace,
   switchWorkspace,
   deleteWorkspace,
   generateInvite,

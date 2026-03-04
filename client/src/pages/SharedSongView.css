@@ -96,7 +96,7 @@
 
 .already-added-notice {
   display: inline-block;
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
   padding: 12px 30px;
   border-radius: 8px;

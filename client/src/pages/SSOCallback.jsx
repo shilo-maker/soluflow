@@ -48,7 +48,7 @@ const SSOCallback = () => {
           style={{
             padding: '8px 24px',
             borderRadius: '8px',
-            background: '#4ecdc4',
+            background: '#BC556F',
             color: 'white',
             border: 'none',
             cursor: 'pointer',
@@ -68,7 +68,7 @@ const SSOCallback = () => {
       alignItems: 'center',
       height: '100vh',
       fontSize: '1.1rem',
-      color: '#4ECDC4'
+      color: '#BC556F'
     }}>
       Signing in...
     </div>

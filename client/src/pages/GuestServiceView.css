@@ -1,6 +1,5 @@
 .guest-service-page {
   min-height: 100vh;
-  background-color: #fafafa;
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
@@ -185,7 +184,7 @@
 }
 
 .btn-add-service {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
   border: none;
   padding: 12px 30px;
@@ -198,7 +197,7 @@
 }
 
 .btn-add-service:hover {
-  background-color: #218838;
+  background-color: var(--color-success-light);
 }
 
 .song-pills {
@@ -259,7 +258,7 @@
   gap: 4px;
   font-size: 14px;
   color: white;
-  background: linear-gradient(135deg, var(--color-success, #28a745) 0%, #34ce57 100%);
+  background: linear-gradient(135deg, var(--color-success, var(--color-success)) 0%, var(--color-success-light) 100%);
   font-weight: 600;
   text-decoration: none;
   padding: 6px 14px;
@@ -271,13 +270,15 @@
 
 .listen-link:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--color-success-rgb), 0.4);
 }
 
 .song-display {
-  background-color: white;
-  border: 2px solid #333;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
   padding: 20px;
   margin-bottom: 20px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -408,9 +409,11 @@
   color: #6c757d;
   padding: 60px 20px;
   font-size: 18px;
-  background-color: white;
-  border: 2px solid #333;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
 }
 
 .loading-state, .error-state {

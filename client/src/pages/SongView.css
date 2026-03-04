@@ -190,7 +190,7 @@
   gap: 4px;
   font-size: 14px;
   color: white;
-  background: linear-gradient(135deg, #28a745 0%, #34ce57 100%);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
   font-weight: 600;
   text-decoration: none;
   padding: 6px 16px;
@@ -203,7 +203,7 @@
 
 .song-view-title .listen-link:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--color-success-rgb), 0.4);
 }
 
 .song-view-subtitle {
@@ -647,9 +647,11 @@
 .notes-section {
   margin-top: 40px;
   padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .notes-toggle {
@@ -711,7 +713,7 @@
 
 .btn-save-notes {
   align-self: flex-end;
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -723,9 +725,9 @@
 }
 
 .btn-save-notes:hover {
-  background-color: #218838;
+  background-color: var(--color-success-light);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  box-shadow: 0 4px 8px rgba(var(--color-success-rgb), 0.3);
 }
 
 .btn-save-notes:active {
@@ -824,17 +826,20 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  animation: fadeIn 0.2s ease;
+  animation: fadeInSimple 0.2s ease;
 }
 
-@keyframes fadeIn {
+@keyframes fadeInSimple {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 /* Controls Drawer */
 .controls-drawer {
-  background-color: white;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px 20px 0 0;
   padding: 20px;
   width: 100%;

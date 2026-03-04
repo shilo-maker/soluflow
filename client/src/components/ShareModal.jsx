@@ -73,7 +73,7 @@ const ShareModal = ({ service, isOpen, onClose }) => {
   };
 
   const getShareUrl = () => {
-    return `${window.location.origin}/service/code/${shareCode}`;
+    return `${window.location.origin}/services/code/${shareCode}`;
   };
 
   const copyToClipboard = (text) => {

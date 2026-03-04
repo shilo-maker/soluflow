@@ -60,7 +60,7 @@ const serviceService = {
       console.warn('Network error, trying offline storage:', error.message);
       const offlineServices = await offlineStorage.getAllServices();
       if (offlineServices && offlineServices.length > 0) {
-        console.log('Returning services from offline storage');
+        console.debug('Returning services from offline storage');
         return offlineServices;
       }
       throw error;
@@ -86,7 +86,7 @@ const serviceService = {
       console.warn('Network error, trying offline storage:', error.message);
       const offlineService = await offlineStorage.getService(parseInt(id, 10));
       if (offlineService) {
-        console.log('Returning service from offline storage');
+        console.debug('Returning service from offline storage');
         return offlineService;
       }
       throw error;

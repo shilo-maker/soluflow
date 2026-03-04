@@ -8,7 +8,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: var(--z-modal);
   padding: 20px;
 }
 
@@ -192,12 +192,12 @@
 }
 
 .btn-edit-setlist-modal {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
 }
 
 .btn-edit-setlist-modal:hover:not(:disabled) {
-  background-color: #218838;
+  background-color: var(--color-success-light);
 }
 
 .btn-cancel:disabled,
@@ -459,12 +459,12 @@
 }
 
 .btn-add-mini {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
 }
 
 .btn-add-mini:hover {
-  background-color: #218838;
+  background-color: var(--color-success-light);
 }
 
 .song-search-mini {

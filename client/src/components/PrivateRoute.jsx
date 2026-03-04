@@ -14,7 +14,7 @@ const PrivateRoute = ({ children }) => {
         alignItems: 'center',
         height: '100vh',
         fontSize: '18px',
-        color: '#4ECDC4'
+        color: '#BC556F'
       }}>
         Loading...
       </div>

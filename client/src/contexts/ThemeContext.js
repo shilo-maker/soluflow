@@ -14,47 +14,74 @@ export const useTheme = () => {
 
 // Professional gradient preset themes - Carefully designed for visual harmony
 export const GRADIENT_PRESETS = {
+  warm: {
+    name: 'Peach Rose',
+    colors: ['#8f3d50', '#a3485e', '#BC556F', '#F9A470', '#fcd5b8'],
+    accentColor: '#BC556F',
+    accentColorDark: '#a3485e',
+    accentColorRgb: '188, 85, 111',
+    logoGradient: ['#a3485e', '#BC556F', '#F9A470', '#fcd5b8', '#a3485e'],
+    sidebarGradient: 'linear-gradient(90deg, #F9A470, #BC556F)',
+    bodyBackground: 'linear-gradient(to bottom right, #f9fafb, rgba(253, 242, 240, 0.3), rgba(252, 228, 223, 0.3))',
+    description: 'Peach-rose palette - warm and inviting'
+  },
+  flow: {
+    name: 'Flow',
+    colors: ['#1e1b4b', '#3730a3', '#6366f1', '#818cf8', '#a5b4fc'],
+    accentColor: '#6366f1',
+    accentColorDark: '#4f46e5',
+    accentColorRgb: '99, 102, 241',
+    logoGradient: ['#3730a3', '#6366f1', '#a5b4fc', '#c7d2fe', '#3730a3'],
+    sidebarGradient: 'linear-gradient(to bottom right, #1e1b4b, #4338ca, #7c3aed)',
+    bodyBackground: 'linear-gradient(to bottom right, #f9fafb, rgba(238, 242, 255, 0.3), rgba(224, 231, 254, 0.3))',
+    description: 'Indigo-violet palette - spiritual and contemplative'
+  },
   professional: {
     name: 'Professional',
     colors: ['#667eea', '#764ba2', '#5e72e4', '#825ee4', '#6f86d6'],
     accentColor: '#667eea',
+    accentColorDark: '#5a67d8',
+    accentColorRgb: '102, 126, 234',
     logoGradient: ['#4a5fd8', '#764ba2', '#b89fff', '#d4a9ff', '#4a5fd8'],
+    sidebarGradient: 'linear-gradient(to bottom right, #3b3086, #667eea, #764ba2)',
+    bodyBackground: 'linear-gradient(to bottom right, #f9fafb, rgba(238, 235, 255, 0.3), rgba(224, 219, 254, 0.3))',
     description: 'Classic blue-purple palette - trustworthy and calm'
-  },
-  warm: {
-    name: 'Warm',
-    colors: ['#f093fb', '#f5576c', '#fa709a', '#fee140', '#ffa07a'],
-    accentColor: '#f5576c',
-    logoGradient: ['#e03e5c', '#f093fb', '#ffc4d6', '#ff6b9d', '#e03e5c'],
-    description: 'Warm coral and pink - friendly and approachable'
   },
   nature: {
     name: 'Nature',
-    colors: ['#56ab2f', '#a8e063', '#38b2ac', '#4fd1c5', '#81e6d9'],
-    accentColor: '#38b2ac',
-    logoGradient: ['#3d7c1f', '#a8e063', '#2d9b95', '#81f0e5', '#3d7c1f'],
-    description: 'Fresh green and teal - calming and growth-oriented'
+    colors: ['#115e59', '#0d9488', '#14b8a6', '#2dd4bf', '#5eead4'],
+    accentColor: '#14b8a6',
+    accentColorDark: '#0d9488',
+    accentColorRgb: '20, 184, 166',
+    logoGradient: ['#0f766e', '#14b8a6', '#5eead4', '#99f6e4', '#0f766e'],
+    sidebarGradient: 'linear-gradient(to bottom right, #115e59, #0891b2, #059669)',
+    bodyBackground: 'linear-gradient(to bottom right, #f9fafb, rgba(240, 253, 251, 0.3), rgba(207, 250, 254, 0.3))',
+    description: 'Fresh teal palette - calming and growth-oriented'
   },
   elegant: {
     name: 'Elegant',
     colors: ['#1a2332', '#2c3e50', '#34495e', '#546e7a', '#607d8b'],
     accentColor: '#607d8b',
+    accentColorDark: '#546e7a',
+    accentColorRgb: '96, 125, 139',
     logoGradient: ['#1a2332', '#546e7a', '#8ba6b8', '#607d8b', '#1a2332'],
+    sidebarGradient: 'linear-gradient(to bottom right, #1a2332, #34495e, #546e7a)',
+    bodyBackground: 'linear-gradient(to bottom right, #f9fafb, rgba(236, 239, 241, 0.3), rgba(224, 228, 231, 0.3))',
     description: 'Dark navy and gray - elegant and professional'
   }
 };
 
 const defaultTheme = {
-  gradientPreset: 'nature',
+  gradientPreset: 'warm',
   textColor: '#000000',
-  chordColor: '#38b2ac',
+  chordColor: '#ad9100',
   chordSize: 1.0
 };
 
 const guestTheme = {
-  gradientPreset: 'nature',
+  gradientPreset: 'warm',
   textColor: '#000000',
-  chordColor: '#38b2ac',
+  chordColor: '#ad9100',
   chordSize: 1.0
 };
 
@@ -124,25 +151,32 @@ export const ThemeProvider = ({ children }) => {
       document.documentElement.style.setProperty('--theme-chord-color', theme.chordColor || defaultTheme.chordColor);
       document.documentElement.style.setProperty('--theme-chord-size', String(theme.chordSize ?? defaultTheme.chordSize));
 
-      // Apply gradient preset to body
-      const preset = GRADIENT_PRESETS[theme.gradientPreset] || GRADIENT_PRESETS.professional;
-      const gradientColors = preset.colors.join(', ');
-      document.body.style.background = `linear-gradient(-45deg, ${gradientColors})`;
-      document.body.style.backgroundSize = '400% 400%';
+      // Apply body background from preset
+      const preset = GRADIENT_PRESETS[theme.gradientPreset] || GRADIENT_PRESETS.warm;
+      document.body.style.background = preset.bodyBackground;
+      document.body.style.backgroundSize = '';
       document.body.style.backgroundAttachment = 'fixed';
       document.body.style.minHeight = '100vh';
-      document.body.style.animation = 'gradientShift 10s ease infinite';
+      document.body.style.animation = '';
 
       // Set accent color for section headers and buttons
       document.documentElement.style.setProperty('--theme-accent-color', preset.accentColor);
 
-      // Update primary color to match the accent color (affects all buttons and UI elements)
+      // Update primary colors (affects all buttons, form focus, badges, etc.)
       document.documentElement.style.setProperty('--color-primary', preset.accentColor);
-      document.documentElement.style.setProperty('--color-primary-dark', preset.accentColor);
+      document.documentElement.style.setProperty('--color-primary-dark', preset.accentColorDark);
+      document.documentElement.style.setProperty('--color-primary-rgb', preset.accentColorRgb);
+
+      // Update shadows to match
+      document.documentElement.style.setProperty('--shadow-primary', `0 2px 8px rgba(${preset.accentColorRgb}, 0.4)`);
+      document.documentElement.style.setProperty('--shadow-primary-hover', `0 4px 12px rgba(${preset.accentColorRgb}, 0.6)`);
 
       // Update workspace badge colors to match the theme
       document.documentElement.style.setProperty('--color-badge-personal', preset.accentColor);
       document.documentElement.style.setProperty('--color-badge-workspace', preset.accentColor);
+
+      // Set sidebar gradient as CSS variable for Sidebar component
+      document.documentElement.style.setProperty('--sidebar-gradient', preset.sidebarGradient);
 
       // Set logo gradient colors based on theme
       if (preset.logoGradient && preset.logoGradient.length === 5) {

@@ -13,9 +13,8 @@ import ShareModal from '../components/ShareModal';
 import PassLeadershipModal from '../components/PassLeadershipModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
-import ConfirmDialog from '../components/ConfirmDialog';
-import { getTransposeDisplay, transposeChord, convertKeyToFlat } from '../utils/transpose';
-import { generateSetlistPDF, generateSongPDF, generateMultiSongPDF, generateMultiSongPDFBlob } from '../utils/pdfGenerator';
+import { transposeChord, convertKeyToFlat } from '../utils/transpose';
+import { generateMultiSongPDF, generateMultiSongPDFBlob } from '../utils/pdfGenerator';
 import io from 'socket.io-client';
 import './Service.css';
 
@@ -47,7 +46,7 @@ const Service = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const { workspaces, activeWorkspace } = useWorkspace();
+  const { activeWorkspace } = useWorkspace();
 
   // Keep screen awake while in service view
   useWakeLock(true);
@@ -59,7 +58,6 @@ const Service = () => {
   const transpositionSaveTimerRef = useRef(null); // Debounce timer for transposition saves
   const currentSongIdRef = useRef(null); // Track current song ID for socket handler validation
 
-  const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
   const [serviceDetails, setServiceDetails] = useState(null);
   const [selectedSongIndex, setSelectedSongIndex] = useState(0);
@@ -71,19 +69,15 @@ const Service = () => {
   const [modalService, setModalService] = useState(null);
   const [isSetlistBuilderOpen, setIsSetlistBuilderOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
   const [showToast, setShowToast] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [serviceToShare, setServiceToShare] = useState(null);
-  const [showMoveDialog, setShowMoveDialog] = useState(false);
-  const [serviceToMove, setServiceToMove] = useState(null);
   const [isPassLeadershipModalOpen, setIsPassLeadershipModalOpen] = useState(false);
   const [serviceToPassLeadership, setServiceToPassLeadership] = useState(null);
-  const [openMenuId, setOpenMenuId] = useState(null);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [showPastEvents, setShowPastEvents] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(false); // Default to free mode
@@ -101,76 +95,59 @@ const Service = () => {
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
-  // Enrich a service object with computed UI flags
-  const enrichService = (s) => {
-    const today = new Date().toISOString().split('T')[0];
-    const creatorId = s.created_by_id || s.createdById;
-    const leaderId = s.leader_id || s.leaderId;
-    const isCreator = creatorId === user?.id;
-    const isLeaderOfService = leaderId === user?.id;
-    const serviceDate = s.date;
-    return {
-      ...s,
-      isCreator,
-      canEdit: isCreator || isLeaderOfService || user?.role === 'admin',
-      isToday: serviceDate === today,
-      isPast: serviceDate ? serviceDate < today : false,
-      isShared: s.is_shared || s.isShared || false,
-      isFromSharedLink: s.is_from_shared_link || s.isFromSharedLink || false,
-    };
-  };
+  // Drag-to-reorder state
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderDragIndex, setReorderDragIndex] = useState(null);
+  const [reorderOverIndex, setReorderOverIndex] = useState(null);
+  const touchReorderRef = useRef({ active: false, startY: 0 });
 
-  // Fetch all services on component mount with cancellation support
+  // If no :id param, redirect to /services list
+  useEffect(() => {
+    if (!id) {
+      navigate('/services', { replace: true });
+    }
+  }, [id, navigate]);
+
+  // Fetch service by ID from URL param
   useEffect(() => {
     let isMounted = true;
 
-    const fetchServices = async () => {
-      if (!user) {
-        if (isMounted) {
-          setLoading(false);
-          setError('Please log in to view your services.');
-        }
+    const fetchServiceById = async () => {
+      if (!id || !user) {
+        if (isMounted) { setLoading(false); }
         return;
       }
 
       try {
         setLoading(true);
-        const data = await serviceService.getAllServices(activeWorkspace?.id);
-
-        const enriched = data.map(enrichService);
-
+        const data = await serviceService.getServiceById(id);
         if (isMounted) {
-          setServices(enriched);
+          const today = new Date().toISOString().split('T')[0];
+          const enriched = {
+            ...data,
+            isCreator: data.created_by === user?.id,
+            canEdit: data.created_by === user?.id || data.leader_id === user?.id || user?.role === 'admin',
+            isToday: data.date === today,
+            isPast: data.date ? data.date < today : false,
+            isShared: data.isShared || false,
+          };
+          setSelectedService(enriched);
+          setServiceDetails(data);
           setError(null);
-
-          // Set initial selected service
-          if (enriched.length > 0) {
-            const initialService = id
-              ? enriched.find(s => s.id === id || s.id === parseInt(id)) || enriched[0]
-              : enriched[0];
-            setSelectedService(initialService);
-          }
         }
       } catch (err) {
-        // Ignore abort errors
         if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') return;
-
         if (isMounted) {
-          console.error('Error fetching services:', err);
-          setError('Failed to load services. Please try again.');
+          console.error('Error fetching service:', err);
+          setError('Failed to load service.');
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
-    fetchServices();
-
-    return () => {
-      isMounted = false;
-    };
+    fetchServiceById();
+    return () => { isMounted = false; };
   }, [id, user]);
 
   // Debounced transposition save to database
@@ -229,31 +206,27 @@ const Service = () => {
     };
   }, [transposition, selectedService, serviceDetails, selectedSongIndex]);
 
-  // Fetch service details (with set list) when selected service changes or when navigating back
+  // Re-fetch service details when navigating back (location.key changes)
   useEffect(() => {
-    const fetchServiceDetails = async () => {
-      if (!selectedService) return;
+    if (!selectedService || !location.key) return;
+    // Skip if this is the initial load (previousServiceIdRef not set yet)
+    if (previousServiceIdRef.current === null) {
+      previousServiceIdRef.current = selectedService.id;
+      return;
+    }
 
+    const refetchDetails = async () => {
       try {
-        console.log('[Service] Fetching fresh service details for service:', selectedService.id);
+        console.log('[Service] Refetching service details on navigation back');
         const details = await serviceService.getServiceById(selectedService.id);
         setServiceDetails(details);
-
-        // Only reset song index if the service changed, not on navigation back
-        const serviceChanged = previousServiceIdRef.current !== selectedService.id;
-        if (serviceChanged) {
-          setSelectedSongIndex(0);
-          previousServiceIdRef.current = selectedService.id;
-        }
-        // Don't reset transposition - it will be loaded from saved state
       } catch (err) {
-        console.error('Error fetching service details:', err);
-        setError('Failed to load service details.');
+        console.error('Error refetching service details:', err);
       }
     };
 
-    fetchServiceDetails();
-  }, [selectedService, location.key]); // Added location.key to refetch when navigating back
+    refetchDetails();
+  }, [location.key]); // Only re-run when location.key changes (navigation)
 
   // Load saved transposition when song changes
   useEffect(() => {
@@ -362,8 +335,7 @@ const Service = () => {
     // Handle reconnection failure
     socketRef.current.on('reconnect_failed', () => {
       console.error('Socket.IO reconnection failed');
-      setToastMessage('Connection lost. Please refresh the page.');
-      setShowToast(true);
+      showToastMsg('Connection lost. Please refresh the page.', 'error');
     });
 
     // Listen for leader events (only if not leader and in follow mode)
@@ -417,21 +389,13 @@ const Service = () => {
       // Update selected service leader_id
       setSelectedService(prev => prev ? { ...prev, leader_id: newLeaderId } : null);
 
-      // Update services list
-      setServices(prev => prev.map(s =>
-        s.id === selectedService.id
-          ? { ...s, leader_id: newLeaderId }
-          : s
-      ));
-
       // Update isLeader state for current user
       const newIsLeader = newLeaderId === user.id;
       setIsLeader(newIsLeader);
 
       // Show toast notification only when someone else becomes leader
       if (!newIsLeader) {
-        setToastMessage('Service leader has been changed');
-        setShowToast(true);
+        showToastMsg('Service leader has been changed');
       }
     });
 
@@ -444,8 +408,7 @@ const Service = () => {
       console.log('Leader disconnected from service');
       if (!userIsLeader) {
         setIsFollowMode(false); // Automatically switch to free mode
-        setToastMessage(message || 'Leader disconnected - switched to free mode');
-        setShowToast(true);
+        showToastMsg(message || 'Leader disconnected - switched to free mode');
       }
     });
 
@@ -453,8 +416,7 @@ const Service = () => {
     socketRef.current.on('leader-reconnected', ({ message }) => {
       console.log('Leader reconnected to service');
       if (!userIsLeader) {
-        setToastMessage(message || 'Leader reconnected - you can enable follow mode');
-        setShowToast(true);
+        showToastMsg(message || 'Leader reconnected - you can enable follow mode');
       }
     });
 
@@ -480,7 +442,9 @@ const Service = () => {
         socketRef.current.off('leader-reconnected');
 
         // Leave service room and disconnect
-        socketRef.current.emit('leave-service', { serviceId: selectedService.id });
+        if (selectedService?.id) {
+          socketRef.current.emit('leave-service', { serviceId: selectedService.id });
+        }
         socketRef.current.disconnect();
         socketRef.current = null;
       }
@@ -522,13 +486,6 @@ const Service = () => {
     if (currentSong?.segment_type !== 'prayer') return null;
     return parsePrayerContent(currentSong.segment_content);
   }, [currentSong]);
-
-  // Handle service selection
-  const handleSelectService = (service) => {
-    setSelectedService(service);
-    setSelectedSongIndex(0); // Reset to first song when changing service
-    // Don't reset transposition - it will be loaded from saved state
-  };
 
   const zoomIn = () => {
     const newFontSize = Math.min(fontSize + 2, 24);
@@ -600,79 +557,32 @@ const Service = () => {
     }
   };
 
-  const handleNewService = () => {
-    setModalService(null);
+  const handleEditService = () => {
+    setModalService(selectedService);
     setIsModalOpen(true);
   };
 
-  const handleEditService = (service) => {
-    setModalService(service);
-    setIsModalOpen(true);
-  };
-
-  const handleSaveService = async (formData, setlist = null) => {
+  const handleSaveService = async (formData) => {
     try {
-      const serviceData = {
-        ...formData,
-        workspace_id: activeWorkspace?.id,
-        leader_id: user.id,
-        created_by: user.id
-      };
+      // Edit mode only — don't overwrite leader_id or created_by
+      const serviceData = { ...formData, workspace_id: activeWorkspace?.id };
+      const updated = await serviceService.updateService(modalService.id, serviceData);
 
-      if (modalService) {
-        // Edit mode - update existing service
-        const updatedService = enrichService(await serviceService.updateService(modalService.id, serviceData));
+      // Merge updated fields while preserving enriched flags
+      setSelectedService(prev => {
+        const today = new Date().toISOString().split('T')[0];
+        const merged = { ...prev, ...updated };
+        return {
+          ...merged,
+          isCreator: (merged.created_by) === user?.id,
+          canEdit: (merged.created_by) === user?.id || (merged.leader_id) === user?.id || user?.role === 'admin',
+          isToday: (merged.date) === today,
+          isPast: merged.date ? merged.date < today : false,
+          isShared: merged.isShared || prev.isShared || false,
+        };
+      });
 
-        // Update the services list
-        setServices(prev => prev.map(s =>
-          s.id === updatedService.id ? updatedService : s
-        ));
-
-        // Update selected service if it's the one being edited
-        if (selectedService?.id === updatedService.id) {
-          setSelectedService(updatedService);
-        }
-
-        setToastMessage('Service updated successfully!');
-        setShowToast(true);
-      } else {
-        // Create mode - add new service
-        const newService = enrichService(await serviceService.createService(serviceData));
-
-        // Add songs/prayers to setlist if provided
-        if (setlist && setlist.length > 0) {
-          for (let i = 0; i < setlist.length; i++) {
-            const item = setlist[i];
-            if (item.segment_type === 'prayer') {
-              await serviceService.addSongToService(newService.id, {
-                song_id: null,
-                position: i,
-                segment_type: 'prayer',
-                segment_title: item.segment_title || item.title,
-                segment_content: item.segment_content
-              });
-            } else {
-              await serviceService.addSongToService(newService.id, {
-                song_id: item.id,
-                position: i,
-                segment_type: 'song'
-              });
-            }
-          }
-        }
-
-        // Add to services list
-        setServices(prev => [...prev, newService]);
-
-        // Select the new service
-        setSelectedService(newService);
-
-        setToastMessage('Service created successfully!');
-        setShowToast(true);
-      }
-
-      setIsModalOpen(false);
-      setModalService(null);
+      showToastMsg('Service updated successfully!');
     } catch (err) {
       console.error('Error saving service:', err);
       throw new Error(err.error || 'Failed to save service');
@@ -684,6 +594,12 @@ const Service = () => {
     setModalService(null);
   };
 
+  const showToastMsg = (msg, type = 'success') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setShowToast(true);
+  };
+
   const handleCloseToast = () => {
     setShowToast(false);
   };
@@ -692,27 +608,25 @@ const Service = () => {
     setIsSetlistBuilderOpen(true);
   };
 
-  const handleEditSetlistFromModal = () => {
-    // Close the service edit modal
-    setIsModalOpen(false);
-    // Open the setlist builder
-    setIsSetlistBuilderOpen(true);
-  };
-
   const handleUpdateSetlist = async (newSetlist) => {
     try {
       // Get current items in the service
       const currentItems = serviceDetails?.songs || [];
-      const currentItemIds = currentItems.map(s => s.id);
-      const newItemIds = newSetlist.map(s => s.id);
+      const currentServiceSongIds = new Set(currentItems.map(s => s.id));
 
-      console.log('Current items:', currentItems);
-      console.log('New setlist:', newSetlist);
+      // Determine which current items are retained in the new setlist.
+      // Normalized items from the DB have a 'song_id' property; raw library songs don't.
+      // This prevents ID collisions between serviceSongIds and library song IDs.
+      const retainedIds = new Set();
+      for (const item of newSetlist) {
+        if (currentServiceSongIds.has(item.id) && 'song_id' in item) {
+          retainedIds.add(item.id);
+        }
+      }
 
-      // Remove items that are no longer in the setlist
+      // Remove items that are no longer retained
       for (const item of currentItems) {
-        if (!newItemIds.includes(item.id)) {
-          console.log('Removing item:', item.id);
+        if (!retainedIds.has(item.id)) {
           await serviceService.removeSongFromService(selectedService.id, item.id);
         }
       }
@@ -720,18 +634,16 @@ const Service = () => {
       // Add new items and update positions
       for (let i = 0; i < newSetlist.length; i++) {
         const item = newSetlist[i];
-        if (currentItemIds.includes(item.id)) {
-          // Update position of existing item (and content for prayer items)
+        if (retainedIds.has(item.id)) {
+          // Existing item — update position
           const updateData = { position: i };
           if (item.segment_type === 'prayer') {
             updateData.segment_title = item.segment_title || item.title;
             updateData.segment_content = item.segment_content;
           }
-          console.log('Updating item:', item.id, 'to position:', i);
           await serviceService.updateServiceSong(selectedService.id, item.id, updateData);
         } else if (item.segment_type === 'prayer') {
-          // Add new prayer item
-          console.log('Adding new prayer:', item.segment_title, 'at position:', i);
+          // New prayer item
           await serviceService.addSongToService(selectedService.id, {
             song_id: null,
             position: i,
@@ -740,10 +652,9 @@ const Service = () => {
             segment_content: item.segment_content
           });
         } else {
-          // Add new song
-          console.log('Adding new song:', item.id, 'at position:', i);
+          // New song from library — item.id is the library song ID
           await serviceService.addSongToService(selectedService.id, {
-            song_id: item.id,
+            song_id: item.song_id || item.id,
             position: i,
             segment_type: 'song'
           });
@@ -754,52 +665,12 @@ const Service = () => {
       const updatedDetails = await serviceService.getServiceById(selectedService.id);
       setServiceDetails(updatedDetails);
 
-      setToastMessage('Setlist updated successfully!');
-      setShowToast(true);
+      showToastMsg('Setlist updated successfully!');
     } catch (err) {
       console.error('Error updating setlist:', err);
       console.error('Error details:', err.response?.data || err.message);
-      setToastMessage(`Failed to update setlist: ${err.response?.data?.error || err.message}`);
-      setShowToast(true);
+      showToastMsg(`Failed to update setlist: ${err.response?.data?.error || err.message}`, 'error');
     }
-  };
-
-  const handleDeleteService = (service) => {
-    setServiceToDelete(service);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!serviceToDelete) return;
-
-    try {
-      await serviceService.deleteService(serviceToDelete.id);
-
-      // Remove from services list
-      setServices(prev => prev.filter(s => s.id !== serviceToDelete.id));
-
-      // If we deleted the selected service, select the first remaining service
-      if (selectedService?.id === serviceToDelete.id) {
-        const remainingServices = services.filter(s => s.id !== serviceToDelete.id);
-        setSelectedService(remainingServices.length > 0 ? remainingServices[0] : null);
-      }
-
-      setToastMessage('Service deleted successfully!');
-      setShowToast(true);
-      setShowDeleteConfirm(false);
-      setServiceToDelete(null);
-    } catch (err) {
-      console.error('Error deleting service:', err);
-      setToastMessage('Failed to delete service');
-      setShowToast(true);
-      setShowDeleteConfirm(false);
-      setServiceToDelete(null);
-    }
-  };
-
-  const cancelDelete = () => {
-    setShowDeleteConfirm(false);
-    setServiceToDelete(null);
   };
 
   const handleShareService = (service) => {
@@ -825,25 +696,21 @@ const Service = () => {
         document.body.removeChild(textarea);
         if (!successful) throw new Error('Copy command failed');
       }
-      setToastMessage('SoluCast link copied!');
-      setShowToast(true);
+      showToastMsg('SoluCast link copied!');
     } catch (err) {
       console.error('Failed to copy SoluCast link:', err);
-      setToastMessage('Failed to copy link');
-      setShowToast(true);
+      showToastMsg('Failed to copy link', 'error');
     }
   };
 
   const handleDownloadPDF = async () => {
     if (!selectedService || !serviceDetails || !serviceDetails.songs) {
-      setToastMessage('No songs to download');
-      setShowToast(true);
+      showToastMsg('No songs to download', 'error');
       return;
     }
 
     if (serviceDetails.songs.length === 0) {
-      setToastMessage('No songs in setlist');
-      setShowToast(true);
+      showToastMsg('No songs in setlist', 'error');
       return;
     }
 
@@ -853,12 +720,10 @@ const Service = () => {
       // Generate PDF for all songs in the setlist using A4PDFView format
       await generateMultiSongPDF(selectedService, serviceDetails.songs, { fontSize });
 
-      setToastMessage('PDF downloaded successfully!');
-      setShowToast(true);
+      showToastMsg('PDF downloaded successfully!');
     } catch (err) {
       console.error('Error generating PDF:', err);
-      setToastMessage('Failed to generate PDF');
-      setShowToast(true);
+      showToastMsg('Failed to generate PDF', 'error');
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -869,8 +734,7 @@ const Service = () => {
     const service = serviceToShare || selectedService;
 
     if (!service) {
-      setToastMessage('No service selected');
-      setShowToast(true);
+      showToastMsg('No service selected', 'error');
       return;
     }
 
@@ -881,8 +745,7 @@ const Service = () => {
       const details = await serviceService.getServiceById(service.id);
 
       if (!details || !details.songs || details.songs.length === 0) {
-        setToastMessage('No songs in setlist');
-        setShowToast(true);
+        showToastMsg('No songs in setlist', 'error');
         setIsGeneratingPDF(false);
         return;
       }
@@ -902,91 +765,19 @@ const Service = () => {
 
       // Open WhatsApp with a message
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${service.venue || service.title || 'Setlist'}\n\nGenerated with SoluFlow`)}`;
-      window.open(whatsappUrl, '_blank');
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
 
-      setToastMessage('PDF downloaded. Attach it in WhatsApp!');
-      setShowToast(true);
+      showToastMsg('PDF downloaded. Attach it in WhatsApp!');
     } catch (err) {
       console.error('Error sharing PDF:', err);
       console.error('Error stack:', err.stack);
       if (err.name === 'AbortError') {
-        // User cancelled the share
-        setToastMessage('Share cancelled');
+        showToastMsg('Share cancelled');
       } else {
-        setToastMessage(`Failed to share PDF: ${err.message}`);
+        showToastMsg(`Failed to share PDF: ${err.message}`, 'error');
       }
-      setShowToast(true);
     } finally {
       setIsGeneratingPDF(false);
-    }
-  };
-
-  const handleMoveService = (service) => {
-    setServiceToMove(service);
-    setShowMoveDialog(true);
-  };
-
-  const confirmMove = async (targetWorkspaceId) => {
-    if (!serviceToMove) return;
-
-    try {
-      const targetWorkspace = workspaces?.find(ws => ws.id === targetWorkspaceId);
-      const serviceName = serviceToMove.title;
-
-      await serviceService.moveToWorkspace(serviceToMove.id, targetWorkspaceId);
-
-      // Close dialog first
-      setShowMoveDialog(false);
-
-      // Remove from current services list
-      setServices(prev => prev.filter(s => s.id !== serviceToMove.id));
-
-      // If we moved the selected service, clear selection
-      if (selectedService?.id === serviceToMove.id) {
-        const remainingServices = services.filter(s => s.id !== serviceToMove.id);
-        setSelectedService(remainingServices.length > 0 ? remainingServices[0] : null);
-      }
-
-      // Show success message with workspace name
-      const message = targetWorkspace
-        ? `"${serviceName}" moved to "${targetWorkspace.name}" successfully!`
-        : 'Service moved successfully!';
-      setToastMessage(message);
-      setShowToast(true);
-      setServiceToMove(null);
-    } catch (err) {
-      console.error('Error moving service:', err);
-      setShowMoveDialog(false);
-      setToastMessage('Failed to move service');
-      setShowToast(true);
-      setServiceToMove(null);
-    }
-  };
-
-  const cancelMove = () => {
-    setShowMoveDialog(false);
-    setServiceToMove(null);
-  };
-
-  const handleUnshareService = async (service) => {
-    try {
-      await serviceService.unshareService(service.id);
-
-      // Remove from services list
-      setServices(prev => prev.filter(s => s.id !== service.id));
-
-      // If we removed the selected service, select the first remaining service
-      if (selectedService?.id === service.id) {
-        const remainingServices = services.filter(s => s.id !== service.id);
-        setSelectedService(remainingServices.length > 0 ? remainingServices[0] : null);
-      }
-
-      setToastMessage('Shared service removed successfully!');
-      setShowToast(true);
-    } catch (err) {
-      console.error('Error removing shared service:', err);
-      setToastMessage('Failed to remove shared service');
-      setShowToast(true);
     }
   };
 
@@ -1001,16 +792,9 @@ const Service = () => {
     try {
       await serviceService.changeLeader(serviceToPassLeadership.id, newLeaderId);
 
-      // Update the service in the services list
-      setServices(prev => prev.map(s =>
-        s.id === serviceToPassLeadership.id
-          ? { ...s, leader_id: newLeaderId }
-          : s
-      ));
-
-      // Update selected service if it's the one being changed
+      // Update selected service
+      setSelectedService(prev => prev ? { ...prev, leader_id: newLeaderId } : null);
       if (selectedService?.id === serviceToPassLeadership.id) {
-        setSelectedService(prev => ({ ...prev, leader_id: newLeaderId }));
 
         // Update leader status for current user
         setIsLeader(newLeaderId === user.id);
@@ -1024,10 +808,8 @@ const Service = () => {
         }
       }
 
-      setToastMessage('Service leader changed successfully!');
-      setShowToast(true);
-      setIsPassLeadershipModalOpen(false);
-      setServiceToPassLeadership(null);
+      showToastMsg('Service leader changed successfully!');
+      // PassLeadershipModal calls onClose() itself after this resolves — don't double-close
     } catch (err) {
       console.error('Error changing leader:', err);
       // Error will be shown by the modal
@@ -1055,6 +837,100 @@ const Service = () => {
     setIsDragging(false);
   };
 
+  // --- Drag-to-reorder handlers ---
+  const canReorder = selectedService?.canEdit && currentSetList.length > 1;
+
+  const handleReorderDragStart = (index, e) => {
+    if (!reorderMode) return;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+    setReorderDragIndex(index);
+    setReorderOverIndex(index);
+  };
+
+  const handleReorderDragOver = (index) => {
+    if (reorderDragIndex === null) return;
+    setReorderOverIndex(index);
+  };
+
+  const handleReorderDrop = async () => {
+    if (reorderDragIndex === null || reorderOverIndex === null || reorderDragIndex === reorderOverIndex) {
+      setReorderDragIndex(null);
+      setReorderOverIndex(null);
+      return;
+    }
+
+    const fromIndex = reorderDragIndex;
+    const toIndex = reorderOverIndex;
+
+    // Compute reordered list before clearing state (for server persist)
+    const songs = serviceDetails?.songs || [];
+    const reordered = [...songs];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+
+    // Reorder locally first for instant feedback
+    setServiceDetails(prev => {
+      if (!prev?.songs) return prev;
+      return { ...prev, songs: reordered };
+    });
+
+    // Adjust selected song index to follow the moved item
+    if (selectedSongIndex === fromIndex) {
+      setSelectedSongIndex(toIndex);
+    } else if (fromIndex < selectedSongIndex && toIndex >= selectedSongIndex) {
+      setSelectedSongIndex(selectedSongIndex - 1);
+    } else if (fromIndex > selectedSongIndex && toIndex <= selectedSongIndex) {
+      setSelectedSongIndex(selectedSongIndex + 1);
+    }
+
+    setReorderDragIndex(null);
+    setReorderOverIndex(null);
+
+    // Persist new positions to server
+    try {
+      for (let i = 0; i < reordered.length; i++) {
+        await serviceService.updateServiceSong(selectedService.id, reordered[i].id, { position: i });
+      }
+    } catch (err) {
+      console.error('Error persisting reorder:', err);
+      showToastMsg('Failed to save new order', 'error');
+      // Refresh to restore correct order
+      try {
+        const details = await serviceService.getServiceById(selectedService.id);
+        setServiceDetails(details);
+      } catch { /* ignore */ }
+    }
+  };
+
+  // Touch-based reorder (for mobile in reorder mode)
+  const handlePillTouchStart = (index, e) => {
+    if (!reorderMode) return;
+    e.preventDefault(); // Prevent scroll in reorder mode
+    touchReorderRef.current.active = true;
+    setReorderDragIndex(index);
+    setReorderOverIndex(index);
+    if (navigator.vibrate) navigator.vibrate(20);
+  };
+
+  const handlePillTouchMove = (e) => {
+    if (!touchReorderRef.current.active) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+    const pill = elements.find(el => el.dataset.pillIndex !== undefined);
+    if (pill) {
+      setReorderOverIndex(parseInt(pill.dataset.pillIndex, 10));
+    }
+  };
+
+  const handlePillTouchEnd = () => {
+    if (touchReorderRef.current.active) {
+      touchReorderRef.current.active = false;
+      handleReorderDrop();
+    }
+  };
+
   // Handle song selection (with leader broadcasting)
   const handleSelectSong = (index) => {
     setSelectedSongIndex(index);
@@ -1073,243 +949,46 @@ const Service = () => {
   // Toggle follow/free mode
   const toggleFollowMode = () => {
     setIsFollowMode(prev => !prev);
-    setToastMessage(isFollowMode ? 'Free mode enabled' : 'Follow mode enabled');
-    setShowToast(true);
+    showToastMsg(isFollowMode ? 'Free mode enabled' : 'Follow mode enabled');
   };
 
-  // Toggle service menu
-  const toggleServiceMenu = (serviceId, e) => {
-    e.stopPropagation();
-    // Toggle this service menu
-    setOpenMenuId(openMenuId === serviceId ? null : serviceId);
-  };
-
-  // Close menu when clicking outside
+  // Close header menu on outside click
   useEffect(() => {
-    const handleClickOutside = () => {
-      if (openMenuId !== null) {
-        setOpenMenuId(null);
-      }
-    };
+    if (!headerMenuOpen) return;
+    const handler = () => setHeaderMenuOpen(false);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [headerMenuOpen]);
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [openMenuId]);
+  // Format date for banner display
+  const formatBannerDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    } catch { return dateStr; }
+  };
 
   return (
     <div className="service-page">
-      {/* Service Selector */}
-      <div className="service-selector">
-        <div className="selector-header">
-          <h3>{t('service.chooseService')}</h3>
-          <button className="btn-new" onClick={handleNewService}>{t('service.new')}</button>
-        </div>
+      {/* Loading */}
+      {loading && (
+        <div className="empty-service">Loading...</div>
+      )}
 
-        {loading && (
-          <div className="loading-state">Loading services...</div>
-        )}
+      {/* Error */}
+      {error && (
+        <div className="empty-service">{error}</div>
+      )}
 
-        {error && (
-          <div className="error-state">{error}</div>
-        )}
-
-        {!loading && !error && (
-          <div className="service-list">
-            {services
-              .filter(service => showPastEvents || !service.isPast)
-              .map(service => (
-              <div
-                key={service.id}
-                className={`service-option ${selectedService?.id === service.id ? 'selected' : ''} ${service.isShared ? 'shared' : ''}`}
-                onClick={() => handleSelectService(service)}
-              >
-                <div className="service-option-info">
-                  <div className="service-title-row">
-                    <span className="service-option-title">{service.title}</span>
-                  </div>
-                  <div className="service-badges-row">
-                    {service.isToday && <span className="today-label">{t('service.todayBadge')}</span>}
-                    {service.isShared && <span className="shared-label">{t('service.sharedBadge')}</span>}
-                  </div>
-                </div>
-                {service.isFromSharedLink && (
-                  <div className="service-option-menu">
-                    <button
-                      className="btn-menu-toggle"
-                      onClick={(e) => toggleServiceMenu(service.id, e)}
-                    >
-                      ⋮
-                    </button>
-                    {openMenuId === service.id && (
-                      <div className="service-dropdown-menu">
-                        <button
-                          className="menu-item menu-item-delete"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            handleUnshareService(service);
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {!service.isFromSharedLink && (
-                  <div className="service-option-menu">
-                    <button
-                      className="btn-menu-toggle"
-                      onClick={(e) => toggleServiceMenu(service.id, e)}
-                    >
-                      ⋮
-                    </button>
-                    {openMenuId === service.id && (
-                      <div className="service-dropdown-menu">
-                        {service.canEdit && (
-                          <button
-                            className="menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(null);
-                              handleEditService(service);
-                            }}
-                          >
-                            {t('service.edit')}
-                          </button>
-                        )}
-                        {service.isCreator && (
-                          <button
-                            className="menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(null);
-                              handleMoveService(service);
-                            }}
-                          >
-                            {t('service.move')}
-                          </button>
-                        )}
-                        {service.canEdit && (
-                          <button
-                            className="menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(null);
-                              handlePassLeadership(service);
-                            }}
-                          >
-                            Pass Leadership
-                          </button>
-                        )}
-                        {service.isCreator && (
-                          <button
-                            className="menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(null);
-                              // Select service first if not selected
-                              if (selectedService?.id !== service.id) {
-                                handleSelectService(service);
-                              }
-                              handleShareService(service);
-                            }}
-                          >
-                            {t('service.share')}
-                          </button>
-                        )}
-                        {service.isCreator && (
-                          <button
-                            className="menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(null);
-                              handleCopySolucastLink(service);
-                            }}
-                          >
-                            SoluCast Link
-                          </button>
-                        )}
-                        <button
-                          className="menu-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            // Select service first if not selected, then download
-                            if (selectedService?.id !== service.id) {
-                              handleSelectService(service);
-                              // Wait for service to be selected before downloading
-                              setTimeout(() => handleDownloadPDF(), 100);
-                            } else {
-                              handleDownloadPDF();
-                            }
-                          }}
-                        >
-                          PDF
-                        </button>
-                        <button
-                          className="menu-item menu-item-whatsapp"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(null);
-                            // Pass the service directly to avoid race conditions
-                            handleSharePDFWhatsApp(service);
-                          }}
-                        >
-                          WhatsApp
-                        </button>
-                        {service.canEdit && (
-                          <button
-                            className="menu-item menu-item-delete"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(null);
-                              handleDeleteService(service);
-                            }}
-                          >
-                            {t('service.delete')}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-            {!showPastEvents && services.some(service => service.isPast) && (
-              <div className="see-all-container">
-                <button
-                  className="btn-see-all"
-                  onClick={() => setShowPastEvents(true)}
-                >
-                  {t('service.seeAllPastEvents')}
-                </button>
-              </div>
-            )}
-            {showPastEvents && services.some(service => service.isPast) && (
-              <div className="see-all-container">
-                <button
-                  className="btn-see-all"
-                  onClick={() => setShowPastEvents(false)}
-                >
-                  {t('service.hidePastEvents')}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Current Service Display */}
-      {selectedService && currentSetList.length > 0 ? (
-        <div className="current-service">
-          <div className="service-header-bar">
-            <h3>
-              {selectedService.title}
-              {selectedService.isShared && <span className="shared-label-header">Shared with me</span>}
-              {isLeader && <span className="leader-badge">{t('service.leaderBadge')}</span>}
-            </h3>
-            <div className="header-buttons">
+      {/* Detail Banner */}
+      {selectedService && !loading && (
+        <div className="service-detail-banner">
+          <div className="banner-top-row">
+            <button className="btn-back-to-services" onClick={() => navigate('/services')}>
+              ← {t('service.backToServices')}
+            </button>
+            <div className="banner-actions">
               {!isLeader && (
                 <button
                   className={`btn-follow-mode ${isFollowMode ? 'active' : ''}`}
@@ -1320,32 +999,115 @@ const Service = () => {
                 </button>
               )}
               {!socketConnected && (
-                <div className="connection-status disconnected" title="Connection lost - attempting to reconnect">
+                <div className="connection-status disconnected" title="Connection lost">
                   ⚠️ Disconnected
                 </div>
               )}
+              <div className="header-menu-container">
+                <button
+                  className="btn-header-menu-toggle"
+                  onClick={(e) => { e.stopPropagation(); setHeaderMenuOpen(!headerMenuOpen); }}
+                >
+                  ⋮
+                </button>
+                {headerMenuOpen && (
+                  <div className="header-dropdown-menu">
+                    {selectedService.canEdit && (
+                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleEditService(); }}>
+                        {t('service.edit')}
+                      </button>
+                    )}
+                    {currentSetList.length > 0 && selectedService.canEdit && (
+                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleEditSetlist(); }}>
+                        {t('service.editSetlist')}
+                      </button>
+                    )}
+                    {selectedService.isCreator && (
+                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleShareService(selectedService); }}>
+                        {t('service.share')}
+                      </button>
+                    )}
+                    {selectedService.isCreator && (
+                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleCopySolucastLink(selectedService); }}>
+                        SoluCast Link
+                      </button>
+                    )}
+                    {currentSetList.length > 0 && (
+                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleDownloadPDF(); }}>
+                        PDF
+                      </button>
+                    )}
+                    {currentSetList.length > 0 && (
+                      <button className="menu-item menu-item-whatsapp" onClick={() => { setHeaderMenuOpen(false); handleSharePDFWhatsApp(); }}>
+                        WhatsApp
+                      </button>
+                    )}
+                    {selectedService.canEdit && (
+                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handlePassLeadership(selectedService); }}>
+                        {t('service.passLeadership')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+          <h2 className="service-banner-title">
+            {selectedService.title}
+            {isLeader && <span className="leader-badge">{t('service.leaderBadge')}</span>}
+          </h2>
+          <div className="service-banner-meta">
+            {selectedService.date && <span>📅 {formatBannerDate(selectedService.date)}{selectedService.time ? ` · ${selectedService.time}` : ''}</span>}
+            {selectedService.location && <span>📍 {selectedService.location}</span>}
+            {selectedService.isToday && <span className="today-label">{t('service.todayBadge')}</span>}
+            {selectedService.isShared && <span className="shared-label">{t('service.sharedBadge')}</span>}
+          </div>
+        </div>
+      )}
 
-          {/* Song Pills */}
-          <div
-            ref={songPillsRef}
-            className={`song-pills ${isDragging ? 'dragging' : ''}`}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          >
-            {currentSetList.map((item, index) => (
+      {/* Current Service Display */}
+      {selectedService && !loading && currentSetList.length > 0 ? (
+        <div className="current-service">
+          {/* Song Pills with reorder toggle */}
+          <div className="song-pills-wrapper">
+            {canReorder && (
               <button
-                key={`${item.segment_type || 'song'}-${item.id}`}
-                className={`song-pill ${index === selectedSongIndex ? 'active' : ''} ${item.segment_type === 'prayer' ? 'prayer-pill' : ''}`}
-                onClick={() => handleSelectSong(index)}
+                className={`btn-reorder-toggle ${reorderMode ? 'active' : ''}`}
+                onClick={() => { setReorderMode(!reorderMode); setReorderDragIndex(null); setReorderOverIndex(null); }}
+                title={reorderMode ? 'Done reordering' : 'Reorder setlist'}
               >
-                {item.segment_type === 'prayer' && '🙏 '}
-                {item.title || item.segment_title}
+                {reorderMode ? '✓' : '↕'}
               </button>
-            ))}
+            )}
+            <div
+              ref={songPillsRef}
+              className={`song-pills ${isDragging ? 'dragging' : ''} ${reorderMode ? 'reorder-mode' : ''}`}
+              onMouseDown={!reorderMode ? handleMouseDown : undefined}
+              onMouseMove={!reorderMode ? handleMouseMove : undefined}
+              onMouseUp={!reorderMode ? handleMouseUp : undefined}
+              onMouseLeave={!reorderMode ? handleMouseUp : undefined}
+              onTouchMove={reorderMode ? handlePillTouchMove : undefined}
+              onTouchEnd={reorderMode ? handlePillTouchEnd : undefined}
+            >
+              {currentSetList.map((item, index) => (
+                <button
+                  key={`${item.segment_type || 'song'}-${item.id}`}
+                  data-pill-index={index}
+                  className={`song-pill ${index === selectedSongIndex ? 'active' : ''} ${item.segment_type === 'prayer' ? 'prayer-pill' : ''} ${reorderDragIndex === index ? 'pill-dragging' : ''} ${reorderDragIndex !== null && reorderOverIndex === index && reorderDragIndex !== index ? 'pill-drop-target' : ''}`}
+                  draggable={reorderMode}
+                  onClick={() => { if (!reorderMode) handleSelectSong(index); }}
+                  onDragStart={reorderMode ? (e) => handleReorderDragStart(index, e) : undefined}
+                  onDragOver={reorderMode ? (e) => { e.preventDefault(); handleReorderDragOver(index); } : undefined}
+                  onDrop={reorderMode ? (e) => { e.preventDefault(); handleReorderDrop(); } : undefined}
+                  onDragEnd={reorderMode ? () => handleReorderDrop() : undefined}
+                  onTouchStart={reorderMode ? (e) => handlePillTouchStart(index, e) : undefined}
+                >
+                  {reorderMode && <span className="pill-drag-handle">⠿</span>}
+                  {item.segment_type === 'prayer' && '🙏 '}
+                  {item.title || item.segment_title}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Song/Prayer Display */}
@@ -1465,13 +1227,13 @@ const Service = () => {
             </div>
           )}
         </div>
-      ) : (
+      ) : selectedService && !loading ? (
         <div className="current-service">
           <div className="empty-service">
-            {selectedService ? 'No set list for this service yet.' : 'Please select a service.'}
+            No set list for this service yet.
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Service Modal (Create/Edit) */}
       <ServiceEditModal
@@ -1495,48 +1257,10 @@ const Service = () => {
       {/* Success Toast */}
       <Toast
         message={toastMessage}
-        type="success"
+        type={toastType}
         isVisible={showToast}
         onClose={handleCloseToast}
       />
-
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        title="Delete Service"
-        message={`Are you sure you want to delete "${serviceToDelete?.title}"? This action cannot be undone.`}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-      />
-
-      {/* Move to Workspace Dialog */}
-      {showMoveDialog && (
-        <div className="modal-overlay" onClick={cancelMove}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Move "{serviceToMove?.title}" to Workspace</h2>
-            <p>Select a workspace to move this service to:</p>
-            <div className="workspace-list">
-              {workspaces
-                ?.filter(ws => ws.id !== activeWorkspace?.id)
-                .map(workspace => (
-                  <button
-                    key={workspace.id}
-                    className="workspace-option"
-                    onClick={() => confirmMove(workspace.id)}
-                  >
-                    {workspace.name}
-                  </button>
-                ))}
-              {(!workspaces || workspaces.filter(ws => ws.id !== activeWorkspace?.id).length === 0) && (
-                <p className="no-workspaces">No other workspaces available</p>
-              )}
-            </div>
-            <div className="modal-actions">
-              <button onClick={cancelMove} className="btn-cancel">Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Share Modal */}
       <ShareModal

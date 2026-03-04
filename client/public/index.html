@@ -5,7 +5,7 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.png" />
     <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#d4a560" />
+    <meta name="theme-color" content="#BC556F" />
     <meta
       name="description"
       content="SoluFlow - Worship Service Planning & Chord Sheets"
@@ -28,6 +28,9 @@
     <meta property="twitter:image" content="https://soluflow.app/og-image.png" />
 
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SoluFlow" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
@@ -73,7 +76,7 @@
     <!-- Force cache clear for old users - runs BEFORE React loads -->
     <script>
       (function() {
-        var APP_VERSION = '5';
+        var APP_VERSION = '6';
         var storedVersion = localStorage.getItem('soluflow_app_version');
 
         if (storedVersion !== APP_VERSION) {

@@ -137,7 +137,7 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
           }
           .song-header {
             margin-bottom: 20px;
-            border-bottom: 2px solid #4ECDC4;
+            border-bottom: 2px solid #BC556F;
             padding-bottom: 10px;
           }
           .song-title {
@@ -162,7 +162,7 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
           }
           .chord {
             position: absolute;
-            color: #4ECDC4;
+            color: #BC556F;
             font-weight: bold;
             white-space: nowrap;
             font-family: 'Heebo', Arial, sans-serif;
@@ -179,7 +179,7 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
           .section-header {
             font-weight: bold;
             font-size: ${fontSize + 2}px;
-            color: #4ECDC4;
+            color: #BC556F;
             margin-top: 12px;
             margin-bottom: 6px;
             text-transform: uppercase;
@@ -464,8 +464,8 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
           האסיפה מתחילה ב ${displayTime}
         </div>
       ` : '<div style="margin-bottom: 40px;"></div>'}
-      <hr style="border: none; border-top: 2px solid #4ECDC4; margin: 0 0 30px 0;">
-      <h2 style="font-size: 24px; font-weight: 600; margin: 0 0 30px 0; color: #4ECDC4;">
+      <hr style="border: none; border-top: 2px solid #BC556F; margin: 0 0 30px 0;">
+      <h2 style="font-size: 24px; font-weight: 600; margin: 0 0 30px 0; color: #BC556F;">
         רשימת שירים
       </h2>
     </div>
@@ -929,8 +929,8 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
           האסיפה מתחילה ב ${displayTime}
         </div>
       ` : '<div style="margin-bottom: 40px;"></div>'}
-      <hr style="border: none; border-top: 2px solid #4ECDC4; margin: 0 0 30px 0;">
-      <h2 style="font-size: 24px; font-weight: 600; margin: 0 0 30px 0; color: #4ECDC4;">
+      <hr style="border: none; border-top: 2px solid #BC556F; margin: 0 0 30px 0;">
+      <h2 style="font-size: 24px; font-weight: 600; margin: 0 0 30px 0; color: #BC556F;">
         רשימת שירים
       </h2>
     </div>

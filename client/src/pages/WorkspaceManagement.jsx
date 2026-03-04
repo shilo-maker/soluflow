@@ -1,620 +1,764 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Settings, Shield, Users, Link, Trash2, Loader2, Save, AlertTriangle, UserPlus, Search, Mail, Clock, LogOut } from 'lucide-react';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getInitials, getAvatarColor } from '../utils/imageUtils';
 import workspaceService from '../services/workspaceService';
-import './WorkspaceManagement.css';
+
+const ROLE_OPTIONS = ['admin', 'planner', 'leader', 'member'];
+
+// ─── Inline style objects ────────────────────────────────────────────────────
+
+const s = {
+  page: { display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '768px' },
+  center: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' },
+  heading: { fontSize: '30px', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 },
+  subtitle: { color: '#4b5563', marginTop: '4px', fontSize: '14px' },
+
+  card: {
+    background: 'rgba(255,255,255,0.8)',
+    backdropFilter: 'blur(4px)',
+    borderRadius: '16px',
+    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    padding: '24px',
+    transition: 'box-shadow 0.3s',
+  },
+  cardDanger: {
+    border: '2px solid #fecaca',
+  },
+
+  sectionHeader: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' },
+  sectionTitle: { fontSize: '18px', fontWeight: 600, color: '#111827', margin: 0 },
+  sectionCount: { fontSize: '14px', color: '#6b7280' },
+
+  flexRow: { display: 'flex', gap: '12px' },
+  input: {
+    display: 'block',
+    width: '100%',
+    padding: '12px 16px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '12px',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+    outline: 'none',
+    transition: 'all 0.2s',
+    background: '#ffffff',
+    fontSize: '14px',
+    boxSizing: 'border-box',
+  },
+  inputFocused: {
+    borderColor: '#BC556F',
+    boxShadow: '0 0 0 4px rgba(188,85,111,0.2)',
+  },
+
+  btnPrimary: {
+    display: 'inline-flex', alignItems: 'center', gap: '8px',
+    padding: '10px 20px', borderRadius: '12px',
+    fontWeight: 600, fontSize: '14px',
+    background: 'linear-gradient(to right, #a3485e, #BC556F)',
+    color: '#ffffff', border: 'none', cursor: 'pointer',
+    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+    transition: 'all 0.3s', transform: 'translateY(0)',
+  },
+  btnPrimaryHover: {
+    background: 'linear-gradient(to right, #7a3345, #8f3d50)',
+    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+    transform: 'translateY(-2px)',
+  },
+  btnDanger: {
+    display: 'inline-flex', alignItems: 'center', gap: '8px',
+    padding: '8px 16px', borderRadius: '8px',
+    fontWeight: 600, fontSize: '14px',
+    background: '#dc2626', color: '#ffffff',
+    border: 'none', cursor: 'pointer',
+    transition: 'background 0.2s',
+  },
+  btnDangerHover: { background: '#b91c1c' },
+  btnWarning: {
+    display: 'inline-flex', alignItems: 'center', gap: '8px',
+    padding: '8px 16px', borderRadius: '8px',
+    fontWeight: 600, fontSize: '14px',
+    background: '#f59e0b', color: '#ffffff',
+    border: 'none', cursor: 'pointer',
+    transition: 'background 0.2s',
+  },
+
+  memberRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '12px', borderRadius: '8px', background: '#f9fafb',
+    transition: 'background 0.15s',
+  },
+  memberRowHover: { background: '#f3f4f6' },
+  memberLeft: { display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 },
+  avatar: {
+    width: '32px', height: '32px', borderRadius: '50%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#ffffff', fontWeight: 700, fontSize: '12px', flexShrink: 0,
+  },
+  memberName: { fontSize: '14px', fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  memberEmail: { fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  memberRight: { display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 },
+
+  roleSelect: {
+    fontSize: '12px', padding: '4px 8px',
+    border: '1px solid #e5e7eb', borderRadius: '8px',
+    background: '#ffffff', cursor: 'pointer',
+  },
+  roleBadge: {
+    fontSize: '12px', padding: '4px 8px',
+    border: '1px solid #e5e7eb', borderRadius: '8px',
+    background: '#ffffff', color: '#4b5563',
+    textTransform: 'capitalize',
+  },
+
+  iconBtn: {
+    padding: '6px', color: '#9ca3af', background: 'transparent',
+    border: 'none', borderRadius: '4px', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'color 0.15s',
+  },
+  iconBtnDangerHover: { color: '#dc2626' },
+  iconBtnTealHover: { color: '#a3485e' },
+
+  searchContainer: { position: 'relative', flex: 1 },
+  searchIcon: { position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' },
+
+  resultCard: { borderRadius: '8px', border: '1px solid #e5e7eb', padding: '12px' },
+  badge: (bg, color) => ({
+    fontSize: '12px', padding: '4px 10px', borderRadius: '9999px',
+    background: bg, color, fontWeight: 500,
+  }),
+
+  pendingRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '12px', borderRadius: '8px', background: 'rgba(249,250,251,0.6)', opacity: 0.7,
+  },
+  pendingBadge: {
+    fontSize: '12px', padding: '2px 8px', borderRadius: '9999px',
+    background: '#fffbeb', color: '#b45309', fontWeight: 500,
+  },
+
+  msgError: { fontSize: '14px', color: '#ef4444', marginBottom: '12px' },
+  msgSuccess: { fontSize: '14px', color: '#16a34a', marginBottom: '12px' },
+
+  disabled: { opacity: 0.5, cursor: 'not-allowed' },
+};
+
+// ─── Avatar helper ───────────────────────────────────────────────────────────
+
+function MemberAvatar({ src, name, size = 32 }) {
+  if (src) {
+    return <img src={src} alt={name} style={{ ...s.avatar, width: size, height: size, objectFit: 'cover' }} />;
+  }
+  return (
+    <div style={{ ...s.avatar, width: size, height: size, backgroundColor: getAvatarColor(name || '') }}>
+      {getInitials(name || '?')}
+    </div>
+  );
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 const WorkspaceManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { activeWorkspace, leaveWorkspace, deleteWorkspace } = useWorkspace();
-  const [inviteLink, setInviteLink] = useState(null);
-  const [expiresInDays, setExpiresInDays] = useState(7);
+  const { t } = useLanguage();
+  const { activeWorkspace, leaveWorkspace, deleteWorkspace: deleteWs, loadWorkspaces } = useWorkspace();
+
+  // State
+  const [workspaceDetails, setWorkspaceDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [workspaceDetails, setWorkspaceDetails] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const successTimerRef = useRef(null);
-  const redirectTimerRef = useRef(null);
-
-  // Email invite state
+  const [name, setName] = useState('');
+  const [nameInitialized, setNameInitialized] = useState(false);
+  const [renamePending, setRenamePending] = useState(false);
+  const [renameSuccess, setRenameSuccess] = useState('');
+  const [renameError, setRenameError] = useState('');
+  // Add Member
   const [searchEmail, setSearchEmail] = useState('');
+  const [debouncedEmail, setDebouncedEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
+  const [searchResult, setSearchResult] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState('');
+  const [inviteError, setInviteError] = useState('');
+
+  // Member invites
   const [memberInvites, setMemberInvites] = useState([]);
-  const [emailInvite, setEmailInvite] = useState({
-    searchResult: null,
-    isSearching: false,
-    sendingInvite: false,
-    revokingId: null,
-    successMsg: '',
-    errorMsg: '',
-  });
+  const [revokingMemberInviteId, setRevokingMemberInviteId] = useState(null);
 
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current);
-      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
-    };
-  }, []);
+  // Invite link generation
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [inviteGenSuccess, setInviteGenSuccess] = useState('');
+  const [inviteGenError, setInviteGenError] = useState('');
 
-  const loadWorkspaceDetails = useCallback(async () => {
-    if (!activeWorkspace) return;
+  // Mutations loading
+  const [roleUpdatePending, setRoleUpdatePending] = useState(false);
+  const [removePending, setRemovePending] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [leavePending, setLeavePending] = useState(false);
+  const [mutationError, setMutationError] = useState('');
 
+  // Hover states
+  const [hoveredMember, setHoveredMember] = useState(null);
+
+  const debounceRef = useRef(null);
+
+  const wsId = activeWorkspace?.id;
+  const isOrg = activeWorkspace?.workspace_type === 'organization';
+  const isOrgAdmin = isOrg && workspaceDetails?.role === 'admin';
+  const canManage = isOrg && (workspaceDetails?.role === 'admin' || workspaceDetails?.role === 'planner');
+
+  // ── Data loading ──
+
+  const loadDetails = useCallback(async () => {
+    if (!wsId || !isOrg) return;
     try {
       setLoading(true);
       setError(null);
-      const data = await workspaceService.getWorkspaceById(activeWorkspace.id);
+      const data = await workspaceService.getWorkspaceById(wsId);
       setWorkspaceDetails(data);
     } catch (err) {
-      console.error('Failed to load workspace details:', err);
       setError(err.error || err.message || 'Failed to load workspace details');
     } finally {
       setLoading(false);
     }
-  }, [activeWorkspace]);
+  }, [wsId, isOrg]);
 
   const loadMemberInvites = useCallback(async () => {
-    if (!activeWorkspace || activeWorkspace.workspace_type === 'personal') return;
+    if (!wsId || !isOrg) return;
     try {
-      const data = await workspaceService.getMemberInvites(activeWorkspace.id);
+      const data = await workspaceService.getMemberInvites(wsId);
       setMemberInvites(data);
-    } catch (err) {
-      console.error('Failed to load member invites:', err);
-    }
-  }, [activeWorkspace]);
+    } catch { /* non-critical */ }
+  }, [wsId, isOrg]);
 
   useEffect(() => {
-    loadWorkspaceDetails();
+    loadDetails();
     loadMemberInvites();
-  }, [loadWorkspaceDetails, loadMemberInvites]);
+  }, [loadDetails, loadMemberInvites]);
+
+  // Initialize name from loaded data
+  useEffect(() => {
+    if (workspaceDetails && !nameInitialized) {
+      setName(workspaceDetails.name || activeWorkspace?.name || '');
+      setNameInitialized(true);
+    }
+  }, [workspaceDetails, nameInitialized, activeWorkspace]);
 
   // Debounced email search
   useEffect(() => {
-    if (!searchEmail || !searchEmail.trim() || !activeWorkspace) {
-      setEmailInvite(prev => ({ ...prev, searchResult: null }));
-      return;
-    }
-    let isCancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        setEmailInvite(prev => ({ ...prev, isSearching: true, errorMsg: '' }));
-        const result = await workspaceService.searchUserByEmail(activeWorkspace.id, searchEmail.trim());
-        if (!isCancelled) {
-          setEmailInvite(prev => ({ ...prev, searchResult: result, isSearching: false }));
-        }
-      } catch (err) {
-        console.error('Search failed:', err);
-        if (!isCancelled) {
-          setEmailInvite(prev => ({ ...prev, searchResult: null, isSearching: false }));
-        }
-      }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedEmail(searchEmail.trim().toLowerCase());
     }, 400);
-    return () => {
-      isCancelled = true;
-      clearTimeout(timer);
-    };
-  }, [searchEmail, activeWorkspace]);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchEmail]);
 
-  const handleSendMemberInvite = async () => {
-    if (emailInvite.sendingInvite) return;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(searchEmail.trim())) {
-      setEmailInvite(prev => ({ ...prev, errorMsg: 'Please enter a valid email address' }));
-      return;
-    }
-    try {
-      setEmailInvite(prev => ({ ...prev, errorMsg: '', successMsg: '', sendingInvite: true }));
-      await workspaceService.sendMemberInvite(activeWorkspace.id, searchEmail.trim(), inviteRole);
-      setEmailInvite(prev => ({
-        ...prev,
-        successMsg: `Invitation sent to ${searchEmail.trim()}`,
-        searchResult: null,
-        sendingInvite: false,
-      }));
-      setSearchEmail('');
-      setInviteRole('member');
-      loadMemberInvites();
-      successTimerRef.current = setTimeout(() => setEmailInvite(prev => ({ ...prev, successMsg: '' })), 4000);
-    } catch (err) {
-      console.error('Failed to send invite:', err);
-      setEmailInvite(prev => ({
-        ...prev,
-        errorMsg: err.error || err.message || 'Failed to send invite',
-        sendingInvite: false,
-      }));
-    }
-  };
-
-  const handleRevokeMemberInvite = async (inviteId) => {
-    if (emailInvite.revokingId) return;
-    try {
-      setEmailInvite(prev => ({ ...prev, revokingId: inviteId, errorMsg: '' }));
-      await workspaceService.revokeMemberInvite(activeWorkspace.id, inviteId);
-      loadMemberInvites();
-    } catch (err) {
-      console.error('Failed to revoke invite:', err);
-      setEmailInvite(prev => ({ ...prev, errorMsg: err.error || err.message || 'Failed to revoke invite' }));
-    } finally {
-      setEmailInvite(prev => ({ ...prev, revokingId: null }));
-    }
-  };
-
-  // Redirect if user is not admin or planner
   useEffect(() => {
-    if (workspaceDetails && workspaceDetails.role) {
-      const userRole = workspaceDetails.role;
-      if (userRole !== 'admin' && userRole !== 'planner') {
-        setError('Access denied. Only admins and planners can access workspace settings.');
-        redirectTimerRef.current = setTimeout(() => {
-          navigate('/home');
-        }, 2000);
-      }
-    }
-  }, [workspaceDetails, navigate]);
-
-  const handleGenerateInvite = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await workspaceService.generateInvite(activeWorkspace.id, expiresInDays);
-      setInviteLink(data.inviteLink);
-    } catch (err) {
-      console.error('Failed to generate invite:', err);
-      setError(err.message || 'Failed to generate invite link');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCopyInviteLink = () => {
-    if (inviteLink) {
-      navigator.clipboard.writeText(inviteLink);
-      alert('Invite link copied to clipboard!');
-    }
-  };
-
-  const handleLeaveWorkspace = async () => {
-    if (!activeWorkspace) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-      await leaveWorkspace(activeWorkspace.id);
-      navigate('/home');
-      window.location.reload();
-    } catch (err) {
-      console.error('Failed to leave workspace:', err);
-      setError(err.message || 'Failed to leave workspace');
-    } finally {
-      setLoading(false);
-      setShowLeaveConfirm(false);
-    }
-  };
-
-  const handleDeleteWorkspace = async () => {
-    if (!activeWorkspace) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-      await deleteWorkspace(activeWorkspace.id);
-      navigate('/home');
-      window.location.reload();
-    } catch (err) {
-      console.error('Failed to delete workspace:', err);
-      setError(err.message || 'Failed to delete workspace');
-    } finally {
-      setLoading(false);
-      setShowDeleteConfirm(false);
-    }
-  };
-
-  const handleRoleChange = async (userId, newRole) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await workspaceService.updateMemberRole(activeWorkspace.id, userId, newRole);
-      // Reload workspace details to reflect the change
-      await loadWorkspaceDetails();
-    } catch (err) {
-      console.error('Failed to update role:', err);
-      setError(err.message || 'Failed to update member role');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRemoveMember = async (userId, username) => {
-    if (!window.confirm(`Are you sure you want to remove ${username} from this workspace?`)) {
+    if (!debouncedEmail || !wsId) {
+      setSearchResult(null);
       return;
     }
+    let cancelled = false;
+    const doSearch = async () => {
+      try {
+        setIsSearching(true);
+        const result = await workspaceService.searchUserByEmail(wsId, debouncedEmail);
+        if (!cancelled) setSearchResult(result);
+      } catch {
+        if (!cancelled) setSearchResult(null);
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
+    };
+    doSearch();
+    return () => { cancelled = true; };
+  }, [debouncedEmail, wsId]);
 
-    try {
-      setLoading(true);
-      setError(null);
-      await workspaceService.removeMember(activeWorkspace.id, userId);
-      // Reload workspace details to reflect the change
-      await loadWorkspaceDetails();
-    } catch (err) {
-      console.error('Failed to remove member:', err);
-      setError(err.message || 'Failed to remove member');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ── Guards ──
 
   if (!activeWorkspace) {
     return (
-      <div className="workspace-management">
-        <div className="error-message">No active workspace found</div>
+      <div style={s.center}>
+        <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: '#9ca3af' }} />
       </div>
     );
   }
 
-  const isPersonalWorkspace = activeWorkspace.workspace_type === 'personal';
-  const canGenerateInvite = !isPersonalWorkspace && (workspaceDetails?.role === 'admin' || workspaceDetails?.role === 'planner');
-  const canLeave = !isPersonalWorkspace;
-  const canDelete = workspaceDetails?.role === 'admin' || workspaceDetails?.created_by_id === user?.id;
-
-  return (
-    <div className="workspace-management">
-      <div className="workspace-management-header">
-        <button className="btn-back" onClick={() => navigate('/home')}>
-          ← Back to Home
-        </button>
-        <h1>Workspace Settings</h1>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="workspace-info-card">
-        <h2>Workspace Information</h2>
-        <div className="workspace-info-grid">
-          <div className="info-item">
-            <span className="info-label">Name:</span>
-            <span className="info-value">{activeWorkspace.name}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Type:</span>
-            <span className={`workspace-type-badge ${activeWorkspace.workspace_type}`}>
-              {activeWorkspace.workspace_type === 'personal' ? 'Personal' : 'Team'}
-            </span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Your Role:</span>
-            <span className="info-value role">{workspaceDetails?.role || 'member'}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Members:</span>
-            <span className="info-value">{workspaceDetails?.members?.length || 0}</span>
-          </div>
+  if (!isOrg) {
+    return (
+      <div style={s.center}>
+        <div style={{ textAlign: 'center' }}>
+          <Shield size={64} style={{ color: '#9ca3af', margin: '0 auto 16px' }} />
+          <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>{t('workspace.notAvailable')}</h2>
+          <p style={{ color: '#4b5563' }}>{t('workspace.notAvailableDesc')}</p>
         </div>
       </div>
+    );
+  }
 
-      {workspaceDetails?.members && workspaceDetails.members.length > 0 && (
-        <div className="members-card">
-          <h2>Members</h2>
-          <div className="members-list">
-            {workspaceDetails.members.map((member) => (
-              <div key={member.id} className="member-item">
-                {member.avatar_url ? (
-                  <img src={member.avatar_url} alt={member.username} className="member-avatar" />
-                ) : (
-                  <div
-                    className="member-avatar member-avatar-initials"
-                    style={{ backgroundColor: getAvatarColor(member.username || member.email || '') }}
-                  >
-                    {getInitials(member.username || member.email || '?')}
-                  </div>
-                )}
-                <div className="member-info">
-                  <span className="member-username">{member.username}</span>
-                  <span className="member-email">{member.email}</span>
-                </div>
-                <div className="member-actions">
-                  {workspaceDetails.role === 'admin' && !isPersonalWorkspace && member.id !== user?.id ? (
-                    <>
-                      <select
-                        className="member-role-select"
-                        value={member.role || 'member'}
-                        onChange={(e) => handleRoleChange(member.id, e.target.value)}
-                        disabled={loading}
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="planner">Planner</option>
-                        <option value="leader">Leader</option>
-                        <option value="member">Member</option>
-                      </select>
-                      <button
-                        className="btn-remove-member"
-                        onClick={() => handleRemoveMember(member.id, member.username)}
-                        disabled={loading}
-                        title="Remove member"
-                      >
-                        ✕
-                      </button>
-                    </>
-                  ) : (
-                    <span className={`member-role ${member.role}`}>
-                      {member.role || 'member'}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+  if (loading && !workspaceDetails) {
+    return (
+      <div style={s.center}>
+        <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: '#9ca3af' }} />
+      </div>
+    );
+  }
+
+  // ── Handlers ──
+
+  const handleRename = async () => {
+    if (!name.trim() || name.trim() === (workspaceDetails?.name || activeWorkspace?.name)) return;
+    try {
+      setRenamePending(true); setRenameError(''); setRenameSuccess('');
+      await workspaceService.renameWorkspace(wsId, name.trim());
+      setRenameSuccess(t('workspace.renameSaved'));
+      await loadWorkspaces();
+      await loadDetails();
+      setTimeout(() => setRenameSuccess(''), 4000);
+    } catch (err) {
+      setRenameError(err.error || err.message || 'Error');
+    } finally {
+      setRenamePending(false);
+    }
+  };
+
+  const handleRoleChange = async (userId, role) => {
+    try {
+      setRoleUpdatePending(true); setMutationError('');
+      await workspaceService.updateMemberRole(wsId, userId, role);
+      await loadDetails();
+    } catch (err) {
+      setMutationError(err.error || err.message || 'Error');
+    } finally {
+      setRoleUpdatePending(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId, memberName) => {
+    if (!window.confirm(t('workspace.removeConfirm'))) return;
+    try {
+      setRemovePending(true); setMutationError('');
+      await workspaceService.removeMember(wsId, userId);
+      await loadDetails();
+    } catch (err) {
+      setMutationError(err.error || err.message || 'Error');
+    } finally {
+      setRemovePending(false);
+    }
+  };
+
+  const handleSendMemberInvite = async () => {
+    if (!debouncedEmail || sendingInvite) return;
+    try {
+      setSendingInvite(true); setInviteError(''); setInviteSuccess('');
+      await workspaceService.sendMemberInvite(wsId, debouncedEmail, inviteRole);
+      setInviteSuccess(t('workspace.inviteSent'));
+      setSearchEmail(''); setDebouncedEmail(''); setInviteRole('member'); setSearchResult(null);
+      loadMemberInvites();
+      setTimeout(() => setInviteSuccess(''), 4000);
+    } catch (err) {
+      setInviteError(err.error || err.message || 'Error');
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
+  const handleRevokeMemberInvite = async (inviteId) => {
+    try {
+      setRevokingMemberInviteId(inviteId);
+      await workspaceService.revokeMemberInvite(wsId, inviteId);
+      loadMemberInvites();
+    } catch (err) {
+      setMutationError(err.error || err.message || 'Error');
+    } finally {
+      setRevokingMemberInviteId(null);
+    }
+  };
+
+  const handleGenerateInvite = async () => {
+    if (!wsId) return;
+    try {
+      setGeneratingInvite(true); setInviteGenError(''); setInviteGenSuccess('');
+      const result = await workspaceService.generateInvite(wsId);
+      const url = result.inviteLink || `${window.location.origin}/workspace/invite/${result.token}`;
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        window.prompt(t('workspace.copyLink'), url);
+      }
+      setInviteGenSuccess(t('workspace.inviteGenerated'));
+      setTimeout(() => setInviteGenSuccess(''), 4000);
+    } catch (err) {
+      setInviteGenError(err.error || err.message || 'Error');
+    } finally {
+      setGeneratingInvite(false);
+    }
+  };
+
+  const handleLeave = async () => {
+    if (!window.confirm(t('workspace.leaveConfirm'))) return;
+    try {
+      setLeavePending(true);
+      await leaveWorkspace(wsId);
+      navigate('/library');
+      window.location.reload();
+    } catch (err) {
+      setMutationError(err.error || err.message || 'Error');
+    } finally {
+      setLeavePending(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(t('workspace.deleteConfirm'))) return;
+    try {
+      setDeletePending(true);
+      await deleteWs(wsId);
+      await loadWorkspaces();
+      navigate('/library');
+    } catch (err) {
+      setMutationError(err.error || err.message || 'Error');
+    } finally {
+      setDeletePending(false);
+    }
+  };
+
+  return (
+    <div style={s.page}>
+      {/* Page title */}
+      <div>
+        <h1 style={s.heading}>
+          {isOrgAdmin ? <Settings size={32} /> : <Users size={32} />}
+          {isOrgAdmin ? t('workspace.title') : t('workspace.membersTitle')}
+        </h1>
+        <p style={s.subtitle}>
+          {isOrgAdmin ? t('workspace.subtitle') : t('workspace.membersSubtitle')}
+        </p>
+      </div>
+
+      {error && <p style={s.msgError}>{error}</p>}
+
+      {/* General — admin only */}
+      {isOrgAdmin && (
+        <div style={s.card}>
+          <h2 style={{ ...s.sectionTitle, marginBottom: '16px' }}>{t('workspace.general')}</h2>
+          <div style={s.flexRow}>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              style={{ ...s.input, flex: 1 }}
+              placeholder={t('workspace.workspaceName')}
+              onFocus={(e) => Object.assign(e.currentTarget.style, s.inputFocused)}
+              onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; }}
+            />
+            <HoverButton
+              base={s.btnPrimary}
+              hover={s.btnPrimaryHover}
+              onClick={handleRename}
+              disabled={!name.trim() || name.trim() === (workspaceDetails?.name || activeWorkspace?.name || '') || renamePending}
+            >
+              {renamePending ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
+              {t('common.save')}
+            </HoverButton>
           </div>
+          {renameError && <p style={{ ...s.msgError, marginTop: '8px', marginBottom: 0, fontSize: '14px' }}>{renameError}</p>}
+          {renameSuccess && <p style={{ ...s.msgSuccess, marginTop: '8px', marginBottom: 0, fontSize: '14px' }}>{renameSuccess}</p>}
         </div>
       )}
 
-      {canGenerateInvite && (
-        <div className="invite-email-section">
-          <h2>Invite by Email</h2>
-          <p className="invite-description">
-            Search for a user by email address and send them a direct invitation to join this workspace.
-          </p>
+      {/* Add Member — admin only */}
+      {isOrgAdmin && (
+        <div style={s.card}>
+          <div style={s.sectionHeader}>
+            <UserPlus size={20} style={{ color: '#a3485e' }} />
+            <h2 style={s.sectionTitle}>{t('workspace.addMember')}</h2>
+          </div>
 
-          {emailInvite.successMsg && <div className="success-message">{emailInvite.successMsg}</div>}
-          {emailInvite.errorMsg && <div className="error-message">{emailInvite.errorMsg}</div>}
-
-          <div className="invite-email-form">
-            <div className="form-group" style={{ maxWidth: '300px' }}>
-              <label htmlFor="searchEmail">Email address:</label>
+          <div style={{ ...s.flexRow, marginBottom: '12px' }}>
+            <div style={s.searchContainer}>
+              <Search size={16} style={s.searchIcon} />
               <input
-                id="searchEmail"
                 type="email"
                 value={searchEmail}
                 onChange={(e) => setSearchEmail(e.target.value)}
-                placeholder="user@example.com"
-                className="invite-email-input"
+                placeholder={t('workspace.searchByEmail')}
+                style={{ ...s.input, paddingLeft: '36px' }}
+                onFocus={(e) => Object.assign(e.currentTarget.style, s.inputFocused)}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; }}
               />
             </div>
-            <div className="form-group" style={{ maxWidth: '150px' }}>
-              <label htmlFor="inviteRole">Role:</label>
-              <select
-                id="inviteRole"
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value)}
-              >
-                <option value="member">Member</option>
-                <option value="leader">Leader</option>
-                <option value="planner">Planner</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value)}
+              style={{ ...s.roleSelect, fontSize: '14px', padding: '8px 12px' }}
+            >
+              {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
           </div>
 
-          {emailInvite.isSearching && <p className="search-status">Searching...</p>}
+          {isSearching && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6b7280', padding: '8px 0' }}>
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('workspace.searching')}
+            </div>
+          )}
 
-          {emailInvite.searchResult && (
-            <div className="search-result">
-              {emailInvite.searchResult.found ? (
-                <div className="search-result-user">
-                  {emailInvite.searchResult.user.avatar_url ? (
-                    <img src={emailInvite.searchResult.user.avatar_url} alt={emailInvite.searchResult.user.username} className="member-avatar" />
-                  ) : (
-                    <div
-                      className="member-avatar member-avatar-initials"
-                      style={{ backgroundColor: getAvatarColor(emailInvite.searchResult.user.username || emailInvite.searchResult.user.email || '') }}
-                    >
-                      {getInitials(emailInvite.searchResult.user.username || emailInvite.searchResult.user.email || '?')}
+          {searchResult && !isSearching && debouncedEmail && (
+            <div style={s.resultCard}>
+              {searchResult.found ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={s.memberLeft}>
+                    <MemberAvatar src={searchResult.user?.avatar_url} name={searchResult.user?.name || searchResult.user?.email || '?'} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={s.memberName}>{searchResult.user?.name || searchResult.user?.username || searchResult.user?.email}</div>
+                      <div style={s.memberEmail}>{searchResult.user?.email}</div>
                     </div>
-                  )}
-                  <div className="member-info">
-                    <span className="member-username">{emailInvite.searchResult.user.username}</span>
-                    <span className="member-email">{emailInvite.searchResult.user.email}</span>
                   </div>
-                  {emailInvite.searchResult.alreadyMember ? (
-                    <span className="badge-already-member">Already a member</span>
-                  ) : emailInvite.searchResult.alreadyInvited ? (
-                    <span className="badge-already-invited">Already invited</span>
-                  ) : (
-                    <button className="btn-send-invite" onClick={handleSendMemberInvite} disabled={emailInvite.sendingInvite}>
-                      {emailInvite.sendingInvite ? 'Sending...' : 'Send Invite'}
-                    </button>
-                  )}
+                  <div style={{ flexShrink: 0 }}>
+                    {searchResult.alreadyMember ? (
+                      <span style={s.badge('#f3f4f6', '#4b5563')}>{t('workspace.alreadyMember')}</span>
+                    ) : searchResult.alreadyInvited ? (
+                      <span style={s.badge('#fffbeb', '#b45309')}>{t('workspace.alreadyInvited')}</span>
+                    ) : (
+                      <HoverButton base={s.btnPrimary} hover={s.btnPrimaryHover} onClick={handleSendMemberInvite} disabled={sendingInvite}>
+                        {sendingInvite ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Mail size={16} />}
+                        {t('workspace.invite')}
+                      </HoverButton>
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div className="search-result-not-found">
-                  <p>No user found with this email.</p>
-                  <button className="btn-send-invite" onClick={handleSendMemberInvite} disabled={emailInvite.sendingInvite}>
-                    {emailInvite.sendingInvite ? 'Sending...' : 'Send Invite Anyway'}
-                  </button>
-                </div>
+                <p style={{ fontSize: '14px', color: '#6b7280', textAlign: 'center', padding: '4px 0', margin: 0 }}>
+                  {t('workspace.noUserFound')}
+                </p>
               )}
             </div>
           )}
 
-          {memberInvites.length > 0 && (
-            <div className="pending-invites">
-              <h3>Pending Invitations</h3>
-              {memberInvites.map((invite) => (
-                <div key={invite.id} className="pending-invite-item">
-                  <div className="member-info">
-                    <span className="member-email">{invite.invited_email}</span>
-                    <span className="member-role-label">Role: {invite.role} &middot; Invited by {invite.invitedBy?.username || 'unknown'}</span>
-                  </div>
-                  <button
-                    className="btn-revoke"
-                    onClick={() => handleRevokeMemberInvite(invite.id)}
-                    disabled={!!emailInvite.revokingId}
-                    title="Revoke invite"
-                  >
-                    {emailInvite.revokingId === invite.id ? 'Revoking...' : 'Revoke'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          {inviteError && <p style={{ ...s.msgError, marginTop: '8px', marginBottom: 0, fontSize: '14px' }}>{inviteError}</p>}
+          {inviteSuccess && <p style={{ ...s.msgSuccess, marginTop: '8px', marginBottom: 0, fontSize: '14px' }}>{inviteSuccess}</p>}
         </div>
       )}
 
-      {canGenerateInvite && (
-        <div className="invite-card">
-          <h2>Invite by Link</h2>
-          <p className="invite-description">
-            Generate an invite link to add new members to this team workspace.
-            Invite links are temporary and expire after the specified number of days.
-          </p>
+      {/* Members */}
+      <div style={s.card}>
+        <div style={s.sectionHeader}>
+          <Users size={20} style={{ color: '#a3485e' }} />
+          <h2 style={s.sectionTitle}>{t('workspace.members')}</h2>
+          <span style={s.sectionCount}>({workspaceDetails?.members?.length || 0})</span>
+        </div>
 
-          <div className="invite-form">
-            <div className="form-group">
-              <label htmlFor="expiresInDays">Link expires in:</label>
-              <select
-                id="expiresInDays"
-                value={expiresInDays}
-                onChange={(e) => setExpiresInDays(parseInt(e.target.value))}
-                disabled={loading}
+        {(mutationError) && <p style={{ ...s.msgError, fontSize: '14px' }}>{mutationError}</p>}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {workspaceDetails?.members?.map((member) => {
+            const isCurrentUser = member.id === user?.id;
+            const displayName = member.username || member.name || member.email;
+
+            return (
+              <div
+                key={member.id}
+                style={{
+                  ...s.memberRow,
+                  ...(hoveredMember === member.id ? s.memberRowHover : {}),
+                }}
+                onMouseEnter={() => setHoveredMember(member.id)}
+                onMouseLeave={() => setHoveredMember(null)}
               >
-                <option value={1}>1 day</option>
-                <option value={3}>3 days</option>
-                <option value={7}>7 days</option>
-                <option value={14}>14 days</option>
-                <option value={30}>30 days</option>
-              </select>
-            </div>
+                <div style={s.memberLeft}>
+                  <MemberAvatar src={member.avatar_url} name={displayName} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={s.memberName}>
+                      {displayName}
+                      {isCurrentUser && (
+                        <span style={{ marginLeft: '8px', fontSize: '12px', color: '#a3485e', fontWeight: 600 }}>{t('workspace.you')}</span>
+                      )}
+                    </div>
+                    <div style={s.memberEmail}>{member.email}</div>
+                  </div>
+                </div>
 
-            <button
-              className="btn-generate"
-              onClick={handleGenerateInvite}
-              disabled={loading}
-            >
-              Generate Invite Link
-            </button>
-          </div>
-
-          {inviteLink && (
-            <div className="invite-link-container">
-              <div className="invite-link-box">
-                <input
-                  type="text"
-                  value={inviteLink}
-                  readOnly
-                  className="invite-link-input"
-                />
-                <button
-                  className="btn-copy"
-                  onClick={handleCopyInviteLink}
-                  disabled={loading}
-                >
-                  Copy
-                </button>
+                <div style={s.memberRight}>
+                  {isOrgAdmin ? (
+                    <>
+                      <select
+                        value={member.role || 'member'}
+                        onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                        disabled={isCurrentUser || roleUpdatePending}
+                        style={{ ...s.roleSelect, ...(isCurrentUser || roleUpdatePending ? s.disabled : {}) }}
+                      >
+                        {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      {!isCurrentUser && (
+                        <button
+                          onClick={() => handleRemoveMember(member.id, displayName)}
+                          disabled={removePending}
+                          style={{ ...s.iconBtn, ...(removePending ? s.disabled : {}) }}
+                          title={t('workspace.removeMember')}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#dc2626'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af'; }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <span style={s.roleBadge}>{member.role || 'member'}</span>
+                  )}
+                </div>
               </div>
-              <p className="invite-link-note">
-                Share this link with people you want to invite. The link will expire in {expiresInDays} day(s).
-              </p>
-            </div>
-          )}
+            );
+          })}
         </div>
-      )}
 
-      {isPersonalWorkspace && (
-        <div className="personal-workspace-note">
-          <strong>Note:</strong> Personal workspaces cannot be shared with other users.
-          Create a team workspace to collaborate with others.
-        </div>
-      )}
-
-      <div className="workspace-actions">
-        <h2>Workspace Actions</h2>
-
-        {canLeave && (
-          <div className="action-item">
-            <div className="action-info">
-              <h3>Leave Workspace</h3>
-              <p>Remove yourself from this workspace. You can rejoin later with an invite link.</p>
+        {/* Pending Member Invites */}
+        {memberInvites && memberInvites.length > 0 && (
+          <>
+            <div style={{ ...s.sectionHeader, marginTop: '24px', marginBottom: '12px' }}>
+              <Clock size={16} style={{ color: '#f59e0b' }} />
+              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#374151', margin: 0 }}>{t('workspace.pendingInvites')}</h3>
+              <span style={s.sectionCount}>({memberInvites.length})</span>
             </div>
-            <button
-              className="btn-leave"
-              onClick={() => setShowLeaveConfirm(true)}
-              disabled={loading}
-            >
-              Leave Workspace
-            </button>
-          </div>
-        )}
 
-        {canDelete && (
-          <div className="action-item">
-            <div className="action-info">
-              <h3>Delete Workspace</h3>
-              <p>
-                Permanently delete this workspace and all its data. All members will be removed.
-                This action cannot be undone.
-              </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {memberInvites.map((inv) => {
+                const displayName = inv.invitedUser?.name || inv.invited_email?.split('@')[0] || inv.invited_email;
+                return (
+                  <div key={inv.id} style={s.pendingRow}>
+                    <div style={s.memberLeft}>
+                      <MemberAvatar src={inv.invitedUser?.avatar_url} name={displayName} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ ...s.memberName, color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {displayName}
+                          <span style={s.pendingBadge}>{t('workspace.pending')}</span>
+                        </div>
+                        <div style={s.memberEmail}>{inv.invited_email}</div>
+                      </div>
+                    </div>
+                    <div style={s.memberRight}>
+                      <span style={s.roleBadge}>{inv.role}</span>
+                      {isOrgAdmin && (
+                        <button
+                          onClick={() => handleRevokeMemberInvite(inv.id)}
+                          disabled={!!revokingMemberInviteId}
+                          style={{ ...s.iconBtn, ...(revokingMemberInviteId ? s.disabled : {}) }}
+                          title={t('workspace.revokeInvite')}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#dc2626'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af'; }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <button
-              className="btn-delete"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={loading}
-            >
-              Delete Workspace
-            </button>
-          </div>
+          </>
         )}
       </div>
 
-      {/* Leave Confirmation Modal */}
-      {showLeaveConfirm && (
-        <div className="modal-overlay" onClick={() => setShowLeaveConfirm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Leave Workspace?</h3>
-            <p>Are you sure you want to leave "{activeWorkspace.name}"?</p>
-            <p>You will need an invite link to rejoin.</p>
-            <div className="modal-actions">
-              <button
-                className="btn-cancel"
-                onClick={() => setShowLeaveConfirm(false)}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn-confirm-leave"
-                onClick={handleLeaveWorkspace}
-                disabled={loading}
-              >
-                {loading ? 'Leaving...' : 'Leave Workspace'}
-              </button>
+      {/* Invite Link — admin/planner: generate + copy */}
+      {canManage && (
+        <div style={s.card}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ ...s.sectionHeader, marginBottom: 0 }}>
+              <Link size={20} style={{ color: '#a3485e' }} />
+              <h2 style={s.sectionTitle}>{t('workspace.inviteLinks')}</h2>
             </div>
+            <HoverButton base={{ ...s.btnPrimary, fontSize: '14px' }} hover={s.btnPrimaryHover} onClick={handleGenerateInvite} disabled={generatingInvite}>
+              {generatingInvite ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Link size={16} />}
+              {t('workspace.generateInvite')}
+            </HoverButton>
           </div>
+          {inviteGenError && <p style={{ ...s.msgError, fontSize: '14px' }}>{inviteGenError}</p>}
+          {inviteGenSuccess && <p style={{ ...s.msgSuccess, fontSize: '14px' }}>{inviteGenSuccess}</p>}
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Delete Workspace?</h3>
-            <p>Are you sure you want to delete "{activeWorkspace.name}"?</p>
-            <p className="warning-text">
-              This will permanently delete all workspace data and remove all members.
-              This action cannot be undone!
-            </p>
-            <div className="modal-actions">
-              <button
-                className="btn-cancel"
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn-confirm-delete"
-                onClick={handleDeleteWorkspace}
-                disabled={loading}
-              >
-                {loading ? 'Deleting...' : 'Delete Workspace'}
-              </button>
-            </div>
+      {/* Leave Workspace — non-admin org members */}
+      {isOrg && !isOrgAdmin && (
+        <div style={{ ...s.card, ...s.cardDanger }}>
+          <div style={s.sectionHeader}>
+            <LogOut size={20} style={{ color: '#f59e0b' }} />
+            <h2 style={{ ...s.sectionTitle, color: '#b45309' }}>{t('workspace.leaveWorkspace')}</h2>
           </div>
+          <p style={{ fontSize: '14px', color: '#4b5563', marginBottom: '16px' }}>{t('workspace.leaveDesc')}</p>
+          <HoverButton
+            base={s.btnWarning}
+            hover={{ background: '#d97706' }}
+            onClick={handleLeave}
+            disabled={leavePending}
+          >
+            {leavePending ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <LogOut size={16} />}
+            {t('workspace.leaveWorkspace')}
+          </HoverButton>
+        </div>
+      )}
+
+      {/* Danger Zone — admin only */}
+      {isOrgAdmin && (
+        <div style={{ ...s.card, ...s.cardDanger }}>
+          <div style={s.sectionHeader}>
+            <AlertTriangle size={20} style={{ color: '#dc2626' }} />
+            <h2 style={{ ...s.sectionTitle, color: '#b91c1c' }}>{t('workspace.dangerZone')}</h2>
+          </div>
+          <p style={{ fontSize: '14px', color: '#4b5563', marginBottom: '16px' }}>{t('workspace.deleteDesc')}</p>
+
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <HoverButton
+              base={s.btnWarning}
+              hover={{ background: '#d97706' }}
+              onClick={handleLeave}
+              disabled={leavePending}
+            >
+              {leavePending ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <LogOut size={16} />}
+              {t('workspace.leaveWorkspace')}
+            </HoverButton>
+
+            <HoverButton
+              base={s.btnDanger}
+              hover={s.btnDangerHover}
+              onClick={handleDelete}
+              disabled={deletePending}
+            >
+              {deletePending ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Trash2 size={16} />}
+              {t('workspace.deleteWorkspace')}
+            </HoverButton>
+          </div>
+
+          {mutationError && <p style={{ ...s.msgError, marginTop: '12px', marginBottom: 0, fontSize: '14px' }}>{mutationError}</p>}
         </div>
       )}
     </div>
   );
 };
+
+// ─── HoverButton helper ──────────────────────────────────────────────────────
+
+function HoverButton({ base, hover, onClick, disabled, children }) {
+  const [isHovered, setIsHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        ...base,
+        ...(isHovered && !disabled ? hover : {}),
+        ...(disabled ? s.disabled : {}),
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default WorkspaceManagement;

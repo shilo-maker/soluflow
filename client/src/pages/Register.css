@@ -42,7 +42,7 @@
   height: 160px;
   width: auto;
   margin-bottom: var(--spacing-md);
-  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+  border-radius: 24px;
 }
 
 .register-header h1 {
@@ -184,7 +184,7 @@
 .registration-success .success-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
   color: white;
   font-size: 48px;
   line-height: 80px;
@@ -195,7 +195,7 @@
 
 .registration-success h2 {
   margin: 0 0 15px;
-  color: var(--color-text);
+  color: var(--color-text-dark);
   font-size: 28px;
 }
 
@@ -216,7 +216,7 @@
   border-radius: var(--border-radius-md);
   margin: 20px 0;
   font-size: 14px !important;
-  color: var(--color-text-secondary) !important;
+  color: var(--color-text-medium) !important;
 }
 
 .btn-go-to-login {
@@ -246,7 +246,7 @@
 
 .resend-info p {
   font-size: 14px !important;
-  color: var(--color-text-secondary) !important;
+  color: var(--color-text-medium) !important;
 }
 
 .resend-info a {

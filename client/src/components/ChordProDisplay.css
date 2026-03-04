@@ -250,7 +250,7 @@
 }
 
 .line-with-notes .btn-save-note:hover {
-  background: rgba(40, 167, 69, 0.2);
+  background: rgba(var(--color-success-rgb), 0.2);
 }
 
 .line-with-notes .btn-cancel-note:hover {
@@ -302,7 +302,7 @@
   }
 
   .line-with-notes .btn-save-note {
-    background: #28a745;
+    background: var(--color-success);
     color: white;
   }
 

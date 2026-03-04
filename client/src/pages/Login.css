@@ -36,21 +36,37 @@
 .login-header {
   text-align: center;
   margin-bottom: var(--spacing-2xl);
-  color: white;
 }
 
 .login-logo {
   height: 160px;
   width: auto;
   margin-bottom: var(--spacing-md);
-  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+  border-radius: 24px;
 }
 
-.login-header h1 {
-  font-size: var(--font-3xl);
-  font-weight: var(--font-bold);
-  margin: 0 0 var(--spacing-sm) 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+.login-app-name {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin: 0 0 var(--spacing-xs) 0;
+  background: linear-gradient(
+    135deg,
+    var(--logo-gradient-1, #a3485e),
+    var(--logo-gradient-2, #BC556F),
+    var(--logo-gradient-3, #F9A470),
+    var(--logo-gradient-4, #fcd5b8)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.login-subtitle {
+  font-size: var(--font-lg);
+  margin: 0;
+  font-weight: var(--font-medium);
+  color: var(--color-text-medium, #666);
 }
 
 .login-header p {
@@ -248,13 +264,13 @@
 }
 
 .forgot-password-link a {
-  color: #667eea;
+  color: var(--color-primary);
   font-size: 13px;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .forgot-password-link a:hover {
-  color: #764ba2;
+  color: var(--color-primary-dark);
   text-decoration: underline;
 }

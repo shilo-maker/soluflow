@@ -307,7 +307,7 @@ exports.createServiceFromIntegration = async (req, res) => {
           position: song.ServiceSong?.position,
           transposition: song.ServiceSong?.transposition
         })) || [],
-        shareUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/service/${createdService.code}`
+        shareUrl: `${process.env.CLIENT_URL || 'http://localhost:3001'}/services/code/${createdService.code}`
       },
       message: 'Service created successfully from SoluEvents'
     });

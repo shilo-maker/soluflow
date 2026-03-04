@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Settings, User, Globe, Palette, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme, GRADIENT_PRESETS } from '../contexts/ThemeContext';
@@ -9,93 +9,105 @@ import AvatarCropModal from '../components/AvatarCropModal';
 import './UserSettings.css';
 
 const UserSettings = () => {
-  const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const { theme, updateTheme, resetTheme, defaultTheme } = useTheme();
 
-  const [selectedLanguage, setSelectedLanguage] = useState(user?.language || 'en');
+  const [nameHe, setNameHe] = useState('');
+  const [nameEn, setNameEn] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameMsg, setNameMsg] = useState(null);
+
+  const [selectedLanguage, setSelectedLanguage] = useState(user?.language || language || 'en');
   const [themeSettings, setThemeSettings] = useState({
-    gradientPreset: theme.gradientPreset || 'sunset',
+    gradientPreset: theme.gradientPreset || 'warm',
     textColor: theme.textColor,
     chordColor: theme.chordColor,
     chordSize: theme.chordSize
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [profileMsg, setProfileMsg] = useState(null);
+  const [themeMsg, setThemeMsg] = useState(null);
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState(null);
   const [cropFile, setCropFile] = useState(null);
   const [cropImageUrl, setCropImageUrl] = useState(null);
   const avatarInputRef = useRef(null);
 
+  // Initialize name fields from user data
+  useEffect(() => {
+    if (user) {
+      setNameHe(user.name_he || '');
+      setNameEn(user.name_en || '');
+    }
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSaveName = async () => {
+    setNameSaving(true);
+    setNameMsg(null);
+    try {
+      const response = await api.put('/auth/preferences', { name_he: nameHe, name_en: nameEn });
+      if (updateUser) updateUser({ name_he: nameHe, name_en: nameEn });
+      setNameMsg({ type: 'success', text: t('userSettings.nameSaved') });
+    } catch (error) {
+      setNameMsg({ type: 'error', text: error.response?.data?.error || t('userSettings.errorMessage') });
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
   // Update theme settings when theme context changes
   useEffect(() => {
     setThemeSettings({
-      gradientPreset: theme.gradientPreset || 'sunset',
+      gradientPreset: theme.gradientPreset || 'warm',
       textColor: theme.textColor,
       chordColor: theme.chordColor,
       chordSize: theme.chordSize
     });
   }, [theme]);
 
-  const handleLanguageChange = (e) => {
-    setSelectedLanguage(e.target.value);
-    setMessage({ type: '', text: '' });
+  const handleLanguageSwitch = async (lang) => {
+    setSelectedLanguage(lang);
+    setProfileMsg(null);
+    try {
+      const response = await api.put('/auth/preferences', { language: lang });
+      await setLanguage(lang);
+      if (updateUser) {
+        updateUser({ language: lang, ...response.data.preferences });
+      }
+      setProfileMsg({ type: 'success', text: t('userSettings.successMessage') });
+    } catch (error) {
+      setProfileMsg({ type: 'error', text: error.response?.data?.error || t('userSettings.errorMessage') });
+    }
   };
-
 
   const handleThemeChange = (field, value) => {
-    setThemeSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setMessage({ type: '', text: '' });
+    setThemeSettings(prev => ({ ...prev, [field]: value }));
+    setThemeMsg(null);
   };
 
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
+  const handleSaveTheme = async () => {
     setLoading(true);
-    setMessage({ type: '', text: '' });
-
+    setThemeMsg(null);
     try {
-      // Update profile on server
-      const response = await api.put('/auth/preferences', {
-        language: selectedLanguage
-      });
-
-      // Update language in context (this will also update the UI direction)
-      await setLanguage(selectedLanguage);
-
-      // Update user in auth context
-      if (updateUser) {
-        updateUser({ language: selectedLanguage, ...response.data.preferences });
-      }
-
-      setMessage({ type: 'success', text: t('userSettings.successMessage') });
+      await updateTheme(themeSettings);
+      setThemeMsg({ type: 'success', text: t('userSettings.themeSuccessMessage') });
     } catch (error) {
-      console.error('Failed to update settings:', error);
-      setMessage({
-        type: 'error',
-        text: error.response?.data?.error || t('userSettings.errorMessage')
-      });
+      setThemeMsg({ type: 'error', text: error.response?.data?.error || t('userSettings.themeErrorMessage') });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveTheme = async () => {
+  const handleResetTheme = async () => {
     setLoading(true);
-    setMessage({ type: '', text: '' });
-
+    setThemeMsg(null);
     try {
-      await updateTheme(themeSettings);
-      setMessage({ type: 'success', text: t('userSettings.themeSuccessMessage') });
+      await resetTheme();
+      setThemeSettings(defaultTheme);
+      setThemeMsg({ type: 'success', text: t('userSettings.themeResetMessage') });
     } catch (error) {
-      console.error('Failed to update theme:', error);
-      setMessage({
-        type: 'error',
-        text: error.response?.data?.error || t('userSettings.themeErrorMessage')
-      });
+      setThemeMsg({ type: 'error', text: t('userSettings.themeErrorMessage') });
     } finally {
       setLoading(false);
     }
@@ -113,16 +125,15 @@ const UserSettings = () => {
     if (!cropFile) return;
     if (cropImageUrl) URL.revokeObjectURL(cropImageUrl);
     setCropImageUrl(null);
-
     setAvatarLoading(true);
-    setMessage({ type: '', text: '' });
+    setAvatarMsg(null);
     try {
       const base64 = await compressAvatar(cropFile, 128, 0.6, croppedAreaPixels);
       const response = await api.put('/auth/preferences', { avatar_url: base64 });
       if (updateUser) updateUser({ avatar_url: response.data.avatar_url });
-      setMessage({ type: 'success', text: t('userSettings.avatarUpdated') || 'Profile photo updated' });
+      setAvatarMsg({ type: 'success', text: t('userSettings.avatarUpdated') || 'Profile photo updated' });
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to update photo' });
+      setAvatarMsg({ type: 'error', text: error.response?.data?.error || 'Failed to update photo' });
     } finally {
       setAvatarLoading(false);
       setCropFile(null);
@@ -137,62 +148,41 @@ const UserSettings = () => {
 
   const handleAvatarRemove = async () => {
     setAvatarLoading(true);
-    setMessage({ type: '', text: '' });
+    setAvatarMsg(null);
     try {
       const response = await api.put('/auth/preferences', { avatar_url: null });
       if (updateUser) updateUser({ avatar_url: response.data.avatar_url });
-      setMessage({ type: 'success', text: t('userSettings.avatarRemoved') || 'Profile photo removed' });
+      setAvatarMsg({ type: 'success', text: t('userSettings.avatarRemoved') || 'Profile photo removed' });
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to remove photo' });
+      setAvatarMsg({ type: 'error', text: error.response?.data?.error || 'Failed to remove photo' });
     } finally {
       setAvatarLoading(false);
-    }
-  };
-
-  const handleResetTheme = async () => {
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      await resetTheme();
-      setThemeSettings(defaultTheme);
-      setMessage({ type: 'success', text: t('userSettings.themeResetMessage') });
-    } catch (error) {
-      console.error('Failed to reset theme:', error);
-      setMessage({
-        type: 'error',
-        text: t('userSettings.themeErrorMessage')
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <div className="user-settings-page">
       <div className="user-settings-container">
-        <button className="btn-back" onClick={() => navigate(-1)}>
-          ← {t('common.back')}
-        </button>
-        <h1 className="user-settings-title">{t('userSettings.title')}</h1>
+        {/* Page Header */}
+        <div className="settings-page-header">
+          <h1 className="settings-page-title">
+            <Settings size={28} />
+            {t('userSettings.title')}
+          </h1>
+          <p className="settings-page-subtitle">{t('userSettings.subtitle') || 'Manage your profile and preferences'}</p>
+        </div>
 
-        <div className="user-settings-card">
-          {message.text && (
-            <div className={`settings-message ${message.type}`}>
-              {message.text}
-            </div>
-          )}
+        {/* Profile Card */}
+        <div className="settings-card">
+          <div className="settings-card-header">
+            <User size={20} className="settings-card-icon" />
+            <h2 className="settings-card-title">{t('userSettings.profile')}</h2>
+          </div>
 
-          {/* Avatar Section */}
-          <div className="settings-section">
-            <h2 className="section-title">{t('userSettings.profilePhoto') || 'Profile Photo'}</h2>
-            <div className="avatar-upload-row">
+          <div className="profile-row">
+            <div className="avatar-upload-area">
               {user?.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt={user.username}
-                  className="avatar-preview"
-                />
+                <img src={user.avatar_url} alt={user.username} className="avatar-preview" />
               ) : (
                 <div
                   className="avatar-preview avatar-initials"
@@ -229,220 +219,253 @@ const UserSettings = () => {
                 )}
               </div>
             </div>
+            <div className="profile-info">
+              <p className="profile-email">{user?.email}</p>
+              <p className="profile-role">{user?.role}</p>
+            </div>
           </div>
 
-          {/* Profile Settings Section */}
-          <form onSubmit={handleSaveProfile}>
-            <div className="settings-section">
-              <h2 className="section-title">{t('userSettings.profile')}</h2>
+          {avatarMsg && (
+            <p className={`settings-feedback ${avatarMsg.type}`}>{avatarMsg.text}</p>
+          )}
 
-              <div className="form-group">
-                <label htmlFor="username">{t('userSettings.username')}</label>
+          {/* Name Fields */}
+          <div className="name-fields-section">
+            <div className="name-fields-grid">
+              <div className="name-field">
+                <label className="name-field-label">{t('userSettings.nameHebrew') || 'Hebrew Name'}</label>
                 <input
                   type="text"
-                  id="username"
-                  value={user?.username || ''}
-                  disabled
-                  className="readonly-input"
+                  value={nameHe}
+                  onChange={(e) => setNameHe(e.target.value)}
+                  dir="rtl"
+                  className="name-field-input"
                 />
               </div>
-
-              <div className="form-group">
-                <label htmlFor="email">{t('userSettings.email')}</label>
+              <div className="name-field">
+                <label className="name-field-label">{t('userSettings.nameEnglish') || 'English Name'}</label>
                 <input
-                  type="email"
-                  id="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="readonly-input"
+                  type="text"
+                  value={nameEn}
+                  onChange={(e) => setNameEn(e.target.value)}
+                  dir="ltr"
+                  className="name-field-input"
                 />
               </div>
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="language">{t('userSettings.language')}</label>
-                <select
-                  id="language"
-                  name="language"
-                  value={selectedLanguage}
-                  onChange={handleLanguageChange}
-                  disabled={loading}
-                  className="language-select"
-                >
-                  <option value="en">{t('userSettings.languageEnglish')}</option>
-                  <option value="he">{t('userSettings.languageHebrew')}</option>
-                </select>
+            {nameMsg && (
+              <p className={`settings-feedback ${nameMsg.type}`}>{nameMsg.text}</p>
+            )}
+
+            <button
+              type="button"
+              className="btn-save-name"
+              onClick={handleSaveName}
+              disabled={nameSaving}
+            >
+              {nameSaving ? (
+                <Loader2 size={16} className="spin-icon" />
+              ) : (
+                <Save size={16} />
+              )}
+              {t('userSettings.saveName') || 'Save Name'}
+            </button>
+          </div>
+        </div>
+
+        {/* Language Card */}
+        <div className="settings-card">
+          <div className="settings-card-header">
+            <Globe size={20} className="settings-card-icon" />
+            <h2 className="settings-card-title">{t('userSettings.language') || 'Language'}</h2>
+          </div>
+          <p className="settings-card-desc">{t('userSettings.languageDesc') || 'Choose your preferred interface language'}</p>
+          <div className="language-toggle-group">
+            <button
+              type="button"
+              className={`language-toggle-btn ${selectedLanguage === 'he' ? 'active' : ''}`}
+              onClick={() => handleLanguageSwitch('he')}
+            >
+              עברית
+            </button>
+            <button
+              type="button"
+              className={`language-toggle-btn ${selectedLanguage === 'en' ? 'active' : ''}`}
+              onClick={() => handleLanguageSwitch('en')}
+            >
+              English
+            </button>
+          </div>
+          {profileMsg && (
+            <p className={`settings-feedback ${profileMsg.type}`}>{profileMsg.text}</p>
+          )}
+        </div>
+
+        {/* Theme Customization Card */}
+        <div className="settings-card">
+          <div className="settings-card-header">
+            <Palette size={20} className="settings-card-icon" />
+            <h2 className="settings-card-title">{t('userSettings.themeCustomization')}</h2>
+          </div>
+
+          <div className="theme-controls">
+            <div className="form-group">
+              <label>{t('userSettings.gradientPreset')}</label>
+              <div className="gradient-preset-grid">
+                {Object.entries(GRADIENT_PRESETS).map(([key, preset]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`gradient-preset-button ${themeSettings.gradientPreset === key ? 'selected' : ''}`}
+                    onClick={() => handleThemeChange('gradientPreset', key)}
+                    disabled={loading}
+                    style={{
+                      background: `linear-gradient(-45deg, ${preset.colors.join(', ')})`,
+                      backgroundSize: '200% 200%'
+                    }}
+                  >
+                    <span className="preset-name">{preset.name}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="settings-actions">
-              <button
-                type="submit"
-                className="btn-save"
-                disabled={loading}
-              >
-                {loading ? t('userSettings.saving') : t('userSettings.saveChanges')}
-              </button>
-            </div>
-          </form>
-
-          {/* Theme Customization Section */}
-          <div className="settings-section theme-section">
-            <h2 className="section-title">{t('userSettings.themeCustomization')}</h2>
-
-            <div className="theme-controls">
-              <div className="form-group">
-                <label>{t('userSettings.gradientPreset')}</label>
-                <div className="gradient-preset-grid">
-                  {Object.entries(GRADIENT_PRESETS).map(([key, preset]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      className={`gradient-preset-button ${themeSettings.gradientPreset === key ? 'selected' : ''}`}
-                      onClick={() => handleThemeChange('gradientPreset', key)}
-                      disabled={loading}
-                      style={{
-                        background: `linear-gradient(-45deg, ${preset.colors.join(', ')})`,
-                        backgroundSize: '200% 200%'
-                      }}
-                    >
-                      <span className="preset-name">{preset.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="textColor">{t('userSettings.textColor')}</label>
-                <div className="color-input-group">
-                  <input
-                    type="color"
-                    id="textColor"
-                    value={themeSettings.textColor}
-                    onChange={(e) => handleThemeChange('textColor', e.target.value)}
-                    disabled={loading}
-                  />
-                  <input
-                    type="text"
-                    value={themeSettings.textColor}
-                    onChange={(e) => handleThemeChange('textColor', e.target.value)}
-                    disabled={loading}
-                    className="color-text-input"
-                    maxLength="7"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="chordColor">{t('userSettings.chordColor')}</label>
-                <div className="color-input-group">
-                  <input
-                    type="color"
-                    id="chordColor"
-                    value={themeSettings.chordColor}
-                    onChange={(e) => handleThemeChange('chordColor', e.target.value)}
-                    disabled={loading}
-                  />
-                  <input
-                    type="text"
-                    value={themeSettings.chordColor}
-                    onChange={(e) => handleThemeChange('chordColor', e.target.value)}
-                    disabled={loading}
-                    className="color-text-input"
-                    maxLength="7"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="chordSize">
-                  {t('userSettings.chordSize')} ({themeSettings.chordSize}x)
-                </label>
+            <div className="form-group">
+              <label htmlFor="textColor">{t('userSettings.textColor')}</label>
+              <div className="color-input-group">
                 <input
-                  type="range"
-                  id="chordSize"
-                  min="0.5"
-                  max="3.0"
-                  step="0.1"
-                  value={themeSettings.chordSize}
-                  onChange={(e) => handleThemeChange('chordSize', parseFloat(e.target.value))}
+                  type="color"
+                  id="textColor"
+                  value={themeSettings.textColor}
+                  onChange={(e) => handleThemeChange('textColor', e.target.value)}
                   disabled={loading}
-                  className="size-slider"
                 />
-                <div className="slider-labels">
-                  <span>0.5x</span>
-                  <span>1.0x</span>
-                  <span>2.0x</span>
-                  <span>3.0x</span>
-                </div>
+                <input
+                  type="text"
+                  value={themeSettings.textColor}
+                  onChange={(e) => handleThemeChange('textColor', e.target.value)}
+                  disabled={loading}
+                  className="color-text-input"
+                  maxLength="7"
+                />
               </div>
             </div>
 
-            {/* Live Preview */}
-            <div className="theme-preview">
-              <h3 className="preview-title">{t('userSettings.preview')}</h3>
-              <div
-                className="preview-content"
-                style={{
-                  backgroundColor: '#ffffff',
-                  color: themeSettings.textColor,
-                  padding: '20px',
-                  borderRadius: '8px',
-                  border: '1px solid #ddd'
-                }}
-              >
-                <div className="preview-verse">
-                  <div className="preview-line">
-                    <span
-                      className="preview-chord"
-                      style={{
-                        color: themeSettings.chordColor,
-                        fontSize: `${themeSettings.chordSize}em`,
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      C
-                    </span>
-                    <span style={{ color: themeSettings.textColor }}>
-                      {t('userSettings.previewLyrics1')}
-                    </span>
-                  </div>
-                  <div className="preview-line">
-                    <span
-                      className="preview-chord"
-                      style={{
-                        color: themeSettings.chordColor,
-                        fontSize: `${themeSettings.chordSize}em`,
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      Am
-                    </span>
-                    <span style={{ color: themeSettings.textColor }}>
-                      {t('userSettings.previewLyrics2')}
-                    </span>
-                  </div>
-                </div>
+            <div className="form-group">
+              <label htmlFor="chordColor">{t('userSettings.chordColor')}</label>
+              <div className="color-input-group">
+                <input
+                  type="color"
+                  id="chordColor"
+                  value={themeSettings.chordColor}
+                  onChange={(e) => handleThemeChange('chordColor', e.target.value)}
+                  disabled={loading}
+                />
+                <input
+                  type="text"
+                  value={themeSettings.chordColor}
+                  onChange={(e) => handleThemeChange('chordColor', e.target.value)}
+                  disabled={loading}
+                  className="color-text-input"
+                  maxLength="7"
+                />
               </div>
             </div>
 
-            <div className="theme-actions">
-              <button
-                type="button"
-                className="btn-reset"
-                onClick={handleResetTheme}
+            <div className="form-group">
+              <label htmlFor="chordSize">
+                {t('userSettings.chordSize')} ({themeSettings.chordSize}x)
+              </label>
+              <input
+                type="range"
+                id="chordSize"
+                min="0.5"
+                max="3.0"
+                step="0.1"
+                value={themeSettings.chordSize}
+                onChange={(e) => handleThemeChange('chordSize', parseFloat(e.target.value))}
                 disabled={loading}
-              >
-                {t('userSettings.resetTheme')}
-              </button>
-              <button
-                type="button"
-                className="btn-save"
-                onClick={handleSaveTheme}
-                disabled={loading}
-              >
-                {loading ? t('userSettings.saving') : t('userSettings.saveTheme')}
-              </button>
+                className="size-slider"
+              />
+              <div className="slider-labels">
+                <span>0.5x</span>
+                <span>1.0x</span>
+                <span>2.0x</span>
+                <span>3.0x</span>
+              </div>
             </div>
+          </div>
+
+          {/* Live Preview */}
+          <div className="theme-preview">
+            <h3 className="preview-title">{t('userSettings.preview')}</h3>
+            <div
+              className="preview-content"
+              style={{
+                backgroundColor: '#ffffff',
+                color: themeSettings.textColor,
+                padding: '20px',
+                borderRadius: '8px',
+                border: '1px solid #ddd'
+              }}
+            >
+              <div className="preview-verse">
+                <div className="preview-line">
+                  <span
+                    className="preview-chord"
+                    style={{
+                      color: themeSettings.chordColor,
+                      fontSize: `${themeSettings.chordSize}em`,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    C
+                  </span>
+                  <span style={{ color: themeSettings.textColor }}>
+                    {t('userSettings.previewLyrics1')}
+                  </span>
+                </div>
+                <div className="preview-line">
+                  <span
+                    className="preview-chord"
+                    style={{
+                      color: themeSettings.chordColor,
+                      fontSize: `${themeSettings.chordSize}em`,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Am
+                  </span>
+                  <span style={{ color: themeSettings.textColor }}>
+                    {t('userSettings.previewLyrics2')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {themeMsg && (
+            <p className={`settings-feedback ${themeMsg.type}`}>{themeMsg.text}</p>
+          )}
+
+          <div className="theme-actions">
+            <button
+              type="button"
+              className="btn-reset"
+              onClick={handleResetTheme}
+              disabled={loading}
+            >
+              {t('userSettings.resetTheme')}
+            </button>
+            <button
+              type="button"
+              className="btn-save"
+              onClick={handleSaveTheme}
+              disabled={loading}
+            >
+              {loading ? t('userSettings.saving') : t('userSettings.saveTheme')}
+            </button>
           </div>
         </div>
       </div>

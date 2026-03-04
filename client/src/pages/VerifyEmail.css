@@ -23,7 +23,7 @@
   width: 60px;
   height: 60px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border-top: 4px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
@@ -37,13 +37,13 @@
 .success-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
   color: white;
   font-size: 48px;
   line-height: 80px;
   border-radius: 50%;
   margin: 0 auto 20px;
-  animation: scaleIn 0.3s ease-out;
+  animation: scaleInBounce 0.3s ease-out;
 }
 
 .error-icon {
@@ -55,10 +55,10 @@
   line-height: 80px;
   border-radius: 50%;
   margin: 0 auto 20px;
-  animation: scaleIn 0.3s ease-out;
+  animation: scaleInBounce 0.3s ease-out;
 }
 
-@keyframes scaleIn {
+@keyframes scaleInBounce {
   0% {
     transform: scale(0);
   }
@@ -84,7 +84,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: white;
   border: none;
   padding: 12px 30px;
@@ -99,13 +99,13 @@
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(var(--color-primary-rgb), 0.4);
 }
 
 .btn-secondary {
   background: transparent;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
   padding: 12px 30px;
   border-radius: 5px;
   font-size: 16px;
@@ -118,7 +118,7 @@
 }
 
 .btn-secondary:hover {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
 }
 
@@ -157,11 +157,11 @@
 }
 
 .resend-input:focus {
-  border-color: #667eea;
+  border-color: var(--color-primary);
 }
 
 .btn-resend {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -173,7 +173,7 @@
 }
 
 .btn-resend:hover:not(:disabled) {
-  background: #764ba2;
+  background: var(--color-primary-dark);
 }
 
 .btn-resend:disabled {

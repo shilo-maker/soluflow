@@ -82,9 +82,17 @@ const getAllServices = async (req, res) => {
         {
           model: ServiceSong,
           as: 'serviceSongs',
-          attributes: ['id', 'song_id', 'segment_type']
+          attributes: ['id', 'song_id', 'segment_type', 'segment_title', 'position', 'transposition'],
+          include: [
+            {
+              model: Song,
+              as: 'song',
+              attributes: ['title', 'key']
+            }
+          ]
         }
-      ]
+      ],
+      order: [[{ model: ServiceSong, as: 'serviceSongs' }, 'position', 'ASC']]
     });
 
     workspaceServices = services.map(s => {
@@ -95,6 +103,14 @@ const getAllServices = async (req, res) => {
       service.isCreator = service.created_by === req.user.id;
       service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
       service.song_ids = service.serviceSongs ? service.serviceSongs.map(ss => ss.song_id).filter(id => id != null) : [];
+      service.setlist_summary = service.serviceSongs ? service.serviceSongs
+        .filter(ss => ss.segment_type === 'prayer' || ss.song != null)
+        .map(ss => ({
+          segment_type: ss.segment_type || 'song',
+          title: ss.segment_type === 'prayer' ? ss.segment_title : ss.song.title,
+          key: ss.song?.key || null,
+          transposition: ss.transposition || 0
+        })) : [];
       delete service.serviceSongs;
       return service;
     });
@@ -130,7 +146,16 @@ const getAllServices = async (req, res) => {
               {
                 model: ServiceSong,
                 as: 'serviceSongs',
-                attributes: ['id', 'song_id', 'segment_type']
+                separate: true,
+                order: [['position', 'ASC']],
+                attributes: ['id', 'song_id', 'segment_type', 'segment_title', 'position', 'transposition'],
+                include: [
+                  {
+                    model: Song,
+                    as: 'song',
+                    attributes: ['title', 'key']
+                  }
+                ]
               }
             ]
           }
@@ -144,6 +169,14 @@ const getAllServices = async (req, res) => {
         service.isFromSharedLink = true; // Mark as added via share link
         service.song_count = service.serviceSongs ? service.serviceSongs.length : 0;
         service.song_ids = service.serviceSongs ? service.serviceSongs.map(s => s.song_id).filter(id => id != null) : [];
+        service.setlist_summary = service.serviceSongs ? service.serviceSongs
+          .filter(ss => ss.segment_type === 'prayer' || ss.song != null)
+          .map(ss => ({
+            segment_type: ss.segment_type || 'song',
+            title: ss.segment_type === 'prayer' ? ss.segment_title : ss.song.title,
+            key: ss.song?.key || null,
+            transposition: ss.transposition || 0
+          })) : [];
         delete service.serviceSongs;
         return service;
       });
