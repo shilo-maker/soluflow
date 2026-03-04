@@ -1309,6 +1309,34 @@ const respondToMemberInvite = async (req, res) => {
   }
 };
 
+// GET /api/workspaces/my-invites - Get all pending invites for the logged-in user
+const getMyInvites = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    if (!userEmail) {
+      return res.json([]);
+    }
+
+    const invites = await WorkspaceMemberInvite.findAll({
+      where: {
+        invited_email: userEmail.toLowerCase(),
+        status: 'pending',
+        expires_at: { [Op.gt]: new Date() }
+      },
+      include: [
+        { model: Workspace, as: 'workspace', attributes: ['id', 'name'] },
+        { model: User, as: 'invitedBy', attributes: ['id', 'username'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    res.json(invites);
+  } catch (error) {
+    console.error('Get my invites error:', error);
+    res.status(500).json({ error: 'Failed to get invites' });
+  }
+};
+
 module.exports = {
   getAllWorkspaces,
   getWorkspaceById,
@@ -1326,5 +1354,6 @@ module.exports = {
   listMemberInvites,
   revokeMemberInvite,
   getMemberInviteByToken,
-  respondToMemberInvite
+  respondToMemberInvite,
+  getMyInvites
 };

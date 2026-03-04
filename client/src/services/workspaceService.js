@@ -106,6 +106,12 @@ const workspaceService = {
     return response.data;
   },
 
+  // Get all pending invites for the logged-in user
+  getMyInvites: async () => {
+    const response = await api.get('/workspaces/my-invites');
+    return response.data;
+  },
+
   // Get member invite by token
   getMemberInviteByToken: async (token) => {
     const response = await api.get(`/workspaces/member-invite/${token}`);

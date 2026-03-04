@@ -18,7 +18,8 @@ const {
   listMemberInvites,
   revokeMemberInvite,
   getMemberInviteByToken,
-  respondToMemberInvite
+  respondToMemberInvite,
+  getMyInvites
 } = require('../controllers/workspaceController');
 
 // All routes require authentication
@@ -29,6 +30,9 @@ router.get('/', getAllWorkspaces);
 
 // Accept invite (must be before /:id routes to avoid conflicts)
 router.post('/join/:token', acceptInvite);
+
+// Get pending invites for the logged-in user (must be before /:id routes)
+router.get('/my-invites', getMyInvites);
 
 // Member invite by token routes (must be before /:id routes)
 router.get('/member-invite/:token', getMemberInviteByToken);

@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { GRADIENT_PRESETS } from '../../contexts/ThemeContext';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 import authService from '../../services/authService';
+import workspaceService from '../../services/workspaceService';
 import { getInitials, getAvatarColor } from '../../utils/imageUtils';
 import './Header.css';
 
@@ -18,6 +19,8 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [appMenuOpen, setAppMenuOpen] = useState(false);
   const [ssoLoading, setSsoLoading] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState([]);
+  const [respondingToken, setRespondingToken] = useState(null);
   const [appMenuPos, setAppMenuPos] = useState({});
   const [userMenuPos, setUserMenuPos] = useState({});
   const appMenuRef = useRef(null);
@@ -93,6 +96,36 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
       setTimeout(() => setSsoError(null), 3000);
     } finally {
       setSsoLoading(false);
+    }
+  };
+
+  // Fetch pending invites for the logged-in user
+  useEffect(() => {
+    if (!user || user.isGuest) return;
+    const fetchInvites = async () => {
+      try {
+        const invites = await workspaceService.getMyInvites();
+        setPendingInvites(invites);
+      } catch (err) {
+        // Silently ignore — non-critical
+      }
+    };
+    fetchInvites();
+  }, [user, workspaces]); // re-fetch when workspaces change (after accept)
+
+  const handleRespondInvite = async (token, action) => {
+    setRespondingToken(token);
+    try {
+      await workspaceService.respondToMemberInvite(token, action);
+      setPendingInvites(prev => prev.filter(i => i.token !== token));
+      if (action === 'accept') {
+        // Reload workspaces to include the new one
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Failed to respond to invite:', err);
+    } finally {
+      setRespondingToken(null);
     }
   };
 
@@ -221,9 +254,45 @@ const Header = ({ title, user, showLogout = false, onLogout }) => {
                     {getInitials(user.username || user.email || '?')}
                   </span>
                 )}
+                {pendingInvites.length > 0 && (
+                  <span className="invite-badge">{pendingInvites.length}</span>
+                )}
               </button>
               {userMenuOpen && (
                 <div className="user-dropdown-menu" style={userMenuPos}>
+                  {/* Pending Invitations */}
+                  {pendingInvites.length > 0 && (
+                    <>
+                      <div className="menu-section-label">{language === 'he' ? 'הזמנות ממתינות' : 'Pending Invitations'}</div>
+                      <div className="pending-invites-list">
+                        {pendingInvites.map(invite => (
+                          <div key={invite.id} className="pending-invite-dropdown-item">
+                            <div className="pending-invite-info">
+                              <span className="pending-invite-workspace">{invite.workspace?.name}</span>
+                              <span className="pending-invite-role">{invite.role}</span>
+                            </div>
+                            <div className="pending-invite-actions">
+                              <button
+                                className="btn-invite-accept"
+                                onClick={() => handleRespondInvite(invite.token, 'accept')}
+                                disabled={respondingToken === invite.token}
+                              >
+                                {respondingToken === invite.token ? '...' : '✓'}
+                              </button>
+                              <button
+                                className="btn-invite-decline"
+                                onClick={() => handleRespondInvite(invite.token, 'decline')}
+                                disabled={respondingToken === invite.token}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="menu-divider" />
+                    </>
+                  )}
                   {/* Workspace Section */}
                   {!user.isGuest && workspaces.length > 0 && (
                     <>
