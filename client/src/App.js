@@ -48,6 +48,52 @@ const SSOCallback = retryLazy(() => import('./pages/SSOCallback'));
 const SolucastRedirect = retryLazy(() => import('./pages/SolucastRedirect'));
 const CreateForSoluPlan = retryLazy(() => import('./pages/CreateForSoluPlan'));
 
+// Prefetch all page chunks in the background after initial load
+// so the entire app works offline after visiting any single page
+const prefetchChunks = () => {
+  const chunks = [
+    () => import('./pages/ServicesList'),
+    () => import('./pages/Service'),
+    () => import('./pages/ServiceEdit'),
+    () => import('./pages/GuestServiceView'),
+    () => import('./pages/GuestEditView'),
+    () => import('./pages/SharedSongView'),
+    () => import('./pages/GuestLanding'),
+    () => import('./pages/Library'),
+    () => import('./pages/SongView'),
+    () => import('./pages/UserManagement'),
+    () => import('./pages/UserSettings'),
+    () => import('./pages/WorkspaceManagement'),
+    () => import('./pages/AcceptInvite'),
+    () => import('./pages/MemberInviteResponse'),
+    () => import('./pages/Login'),
+    () => import('./pages/Register'),
+    () => import('./pages/VerifyEmail'),
+    () => import('./pages/ForgotPassword'),
+    () => import('./pages/ResetPassword'),
+    () => import('./pages/SongReports'),
+    () => import('./pages/SSOCallback'),
+    () => import('./pages/SolucastRedirect'),
+    () => import('./pages/CreateForSoluPlan'),
+  ];
+  // Load chunks sequentially with small delays to avoid blocking the main thread
+  let i = 0;
+  const next = () => {
+    if (i < chunks.length) {
+      chunks[i]().catch(() => {}).finally(() => { i++; setTimeout(next, 100); });
+    }
+  };
+  next();
+};
+// Start prefetching after initial page is interactive
+if (typeof window !== 'undefined') {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(prefetchChunks, { timeout: 5000 });
+  } else {
+    setTimeout(prefetchChunks, 3000);
+  }
+}
+
 // Loading component for Suspense fallback
 const LoadingFallback = () => (
   <div style={{
