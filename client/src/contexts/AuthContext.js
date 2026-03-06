@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const checkingRef = React.useRef(false);
 
   // On mount: pick up cross-app token from URL (SoluPlan → SoluFlow SSO),
   // then run the normal auth check.
@@ -30,30 +31,44 @@ export const AuthProvider = ({ children }) => {
       window.history.replaceState({}, '', clean);
     }
     checkAuth();
+
+    // Re-validate token when coming back online (replaces stub user with real data)
+    const handleOnline = () => {
+      const token = authService.getToken();
+      if (token) checkAuth();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [checkAuth]);
+
+  // Helper: load cached user from localStorage or return a stub
+  const loadCachedUser = useCallback(() => {
+    const cachedUser = localStorage.getItem('user');
+    if (cachedUser) {
+      try {
+        const parsed = JSON.parse(cachedUser);
+        setUser(parsed);
+        setIsAuthenticated(true);
+        return true;
+      } catch { /* fall through */ }
+    }
+    // Stub with minimal fields — downstream should guard against missing fields
+    setUser({ id: 'offline', username: 'Offline User', _isStub: true });
+    setIsAuthenticated(true);
+    return true;
   }, []);
 
   const checkAuth = useCallback(async () => {
+    // Concurrency guard — prevent parallel checkAuth calls from racing
+    if (checkingRef.current) return;
+    checkingRef.current = true;
+
     try {
       const token = authService.getToken();
       if (token) {
         // Check if we're offline
         if (!navigator.onLine) {
-          // Offline: Try to load cached user data from localStorage
-          const cachedUser = localStorage.getItem('user');
-          if (cachedUser) {
-            try {
-              const parsedUser = JSON.parse(cachedUser);
-              setUser(parsedUser);
-              setIsAuthenticated(true);
-              setLoading(false);
-              return;
-            } catch (e) {
-              // Continue if parsing fails
-            }
-          }
-          // If no cached data, still allow access with token
-          setUser({ id: 'offline', username: 'Offline User' });
-          setIsAuthenticated(true);
+          loadCachedUser();
           setLoading(false);
           return;
         }
@@ -79,20 +94,7 @@ export const AuthProvider = ({ children }) => {
         error?.code === 'ECONNABORTED';
 
       if (isNetworkFailure && authService.getToken()) {
-        const cachedUser = localStorage.getItem('user');
-        if (cachedUser) {
-          try {
-            setUser(JSON.parse(cachedUser));
-            setIsAuthenticated(true);
-            setLoading(false);
-            return;
-          } catch (e) {
-            // Continue to logout if parsing fails
-          }
-        }
-        // Even without cached user data, keep them "logged in" with a stub
-        setUser({ id: 'offline', username: 'Offline User' });
-        setIsAuthenticated(true);
+        loadCachedUser();
         setLoading(false);
         return;
       }
@@ -102,9 +104,10 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setIsAuthenticated(false);
     } finally {
+      checkingRef.current = false;
       setLoading(false);
     }
-  }, []);
+  }, [loadCachedUser]);
 
   const login = useCallback(async (email, password) => {
     try {

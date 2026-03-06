@@ -222,6 +222,13 @@ const serviceService = {
       return response.data;
     } catch (error) {
       if (isNetworkError(error)) {
+        // Update IndexedDB optimistically
+        const existing = await offlineStorage.getService(serviceId).catch(() => null);
+        if (existing) {
+          const songs = existing.songs || [];
+          songs.push({ ...songData, id: `temp_${Date.now()}`, _offline: true });
+          await offlineStorage.saveService({ ...existing, songs }).catch(() => {});
+        }
         await offlineQueue.enqueue({
           method: 'POST',
           url: `/services/${serviceId}/songs`,
@@ -242,6 +249,14 @@ const serviceService = {
       return response.data;
     } catch (error) {
       if (isNetworkError(error)) {
+        // Update IndexedDB optimistically
+        const existing = await offlineStorage.getService(serviceId).catch(() => null);
+        if (existing && existing.songs) {
+          existing.songs = existing.songs.map(s =>
+            (s.id === songId || s.serviceSongId === songId) ? { ...s, ...updates } : s
+          );
+          await offlineStorage.saveService(existing).catch(() => {});
+        }
         await offlineQueue.enqueue({
           method: 'PUT',
           url: `/services/${serviceId}/songs/${songId}`,
@@ -262,6 +277,14 @@ const serviceService = {
       return response.data;
     } catch (error) {
       if (isNetworkError(error)) {
+        // Update IndexedDB optimistically
+        const existing = await offlineStorage.getService(serviceId).catch(() => null);
+        if (existing && existing.songs) {
+          existing.songs = existing.songs.filter(s =>
+            s.id !== songId && s.serviceSongId !== songId
+          );
+          await offlineStorage.saveService(existing).catch(() => {});
+        }
         await offlineQueue.enqueue({
           method: 'DELETE',
           url: `/services/${serviceId}/songs/${songId}`
@@ -283,6 +306,14 @@ const serviceService = {
       return response.data;
     } catch (error) {
       if (isNetworkError(error)) {
+        // Update IndexedDB optimistically
+        const existing = await offlineStorage.getService(serviceId).catch(() => null);
+        if (existing && existing.songs) {
+          existing.songs = existing.songs.map(s =>
+            (s.id === songId || s.serviceSongId === songId) ? { ...s, transposition } : s
+          );
+          await offlineStorage.saveService(existing).catch(() => {});
+        }
         await offlineQueue.enqueue({
           method: 'PUT',
           url: `/services/${serviceId}/songs/${songId}`,

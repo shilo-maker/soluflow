@@ -323,7 +323,7 @@ const updateProfile = async (req, res) => {
       return res.status(403).json({ error: 'Guests cannot update profile' });
     }
 
-    const { language, avatar_url } = req.body;
+    const { language, avatar_url, name_he, name_en } = req.body;
 
     // Get current user
     const user = await User.findByPk(req.user.id);
@@ -352,6 +352,20 @@ const updateProfile = async (req, res) => {
         }
       }
       updates.avatar_url = avatar_url;
+    }
+
+    if (name_he !== undefined) {
+      if (typeof name_he !== 'string' || name_he.length > 100) {
+        return res.status(400).json({ error: 'Name (Hebrew) must be a string up to 100 characters' });
+      }
+      updates.name_he = name_he.trim();
+    }
+
+    if (name_en !== undefined) {
+      if (typeof name_en !== 'string' || name_en.length > 100) {
+        return res.status(400).json({ error: 'Name (English) must be a string up to 100 characters' });
+      }
+      updates.name_en = name_en.trim();
     }
 
     // Apply all validated updates in a single call

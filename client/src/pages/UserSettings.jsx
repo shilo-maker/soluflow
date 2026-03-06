@@ -47,14 +47,14 @@ const UserSettings = () => {
     setNameSaving(true);
     setNameMsg(null);
     try {
-      await api.put('/auth/preferences', { name_he: nameHe, name_en: nameEn });
+      await api.put('/auth/profile', { name_he: nameHe, name_en: nameEn });
       if (updateUser) updateUser({ name_he: nameHe, name_en: nameEn });
       setNameMsg({ type: 'success', text: t('userSettings.nameSaved') });
     } catch (error) {
       const isOffline = !navigator.onLine || error?.error === 'No response from server';
       if (isOffline) {
         if (updateUser) updateUser({ name_he: nameHe, name_en: nameEn });
-        offlineQueue.enqueue({ method: 'PUT', url: '/auth/preferences', data: { name_he: nameHe, name_en: nameEn } }).catch(() => {});
+        offlineQueue.enqueue({ method: 'PUT', url: '/auth/profile', data: { name_he: nameHe, name_en: nameEn } }).catch(() => {});
         setNameMsg({ type: 'success', text: t('userSettings.nameSaved') + ' (offline)' });
       } else {
         setNameMsg({ type: 'error', text: error.response?.data?.error || t('userSettings.errorMessage') });
@@ -134,7 +134,7 @@ const UserSettings = () => {
     setAvatarMsg(null);
     try {
       const base64 = await compressAvatar(cropFile, 128, 0.6, croppedAreaPixels);
-      const response = await api.put('/auth/preferences', { avatar_url: base64 });
+      const response = await api.put('/auth/profile', { avatar_url: base64 });
       if (updateUser) updateUser({ avatar_url: response.data.avatar_url });
       setAvatarMsg({ type: 'success', text: t('userSettings.avatarUpdated') || 'Profile photo updated' });
     } catch (error) {
@@ -155,7 +155,7 @@ const UserSettings = () => {
     setAvatarLoading(true);
     setAvatarMsg(null);
     try {
-      const response = await api.put('/auth/preferences', { avatar_url: null });
+      const response = await api.put('/auth/profile', { avatar_url: null });
       if (updateUser) updateUser({ avatar_url: response.data.avatar_url });
       setAvatarMsg({ type: 'success', text: t('userSettings.avatarRemoved') || 'Profile photo removed' });
     } catch (error) {

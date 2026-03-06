@@ -39,7 +39,7 @@ api.interceptors.response.use(
         // Unauthorized - clear token and redirect to login
         // But NOT if we're offline, during queue processing, on a guest page, or doing auth
         if (!navigator.onLine || suppressAuthRedirect) {
-          return Promise.reject(error.response.data);
+          return Promise.reject({ ...error.response.data, _httpStatus: 401 });
         }
 
         const guestPages = ['/', '/open', '/services/code', '/services/edit', '/service/code', '/service/edit', '/song'];
@@ -75,7 +75,7 @@ api.interceptors.response.use(
 
           // Don't attempt auto-switch when offline
           if (!navigator.onLine) {
-            return Promise.reject(error.response.data);
+            return Promise.reject({ ...error.response.data, _httpStatus: 403 });
           }
 
           // Try to switch to personal workspace automatically
@@ -103,7 +103,11 @@ api.interceptors.response.use(
           }
         }
       }
-      return Promise.reject(error.response.data);
+      // Include HTTP status so offlineQueue can distinguish 4xx from network errors
+      const rejection = error.response.data && typeof error.response.data === 'object'
+        ? { ...error.response.data, _httpStatus: error.response.status }
+        : { error: error.response.data, _httpStatus: error.response.status };
+      return Promise.reject(rejection);
     } else if (error.request) {
       // Request made but no response
       return Promise.reject({ error: 'No response from server' });

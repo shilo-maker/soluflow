@@ -275,7 +275,7 @@ const updateThemePreferences = async (req, res) => {
 
     // Validation
     const hexColorRegex = /^#[0-9A-F]{6}$/i;
-    const validPresets = ['professional', 'warm', 'nature', 'elegant'];
+    const validPresets = ['professional', 'warm', 'flow', 'nature', 'elegant'];
 
     if (gradientPreset && !validPresets.includes(gradientPreset)) {
       return res.status(400).json({ error: 'Invalid gradient preset. Must be one of: ' + validPresets.join(', ') });

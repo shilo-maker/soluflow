@@ -143,7 +143,7 @@ const songService = {
     } catch (error) {
       if (isNetworkError(error)) {
         const existing = await offlineStorage.getSong(id).catch(() => null);
-        const updated = { ...existing, ...songData, id, _pendingSync: true };
+        const updated = { ...(existing || { id }), ...songData, id, _pendingSync: true };
         await offlineStorage.saveSong(updated);
         await offlineQueue.enqueue({ method: 'PUT', url: `/songs/${id}`, data: songData });
         dataCache.invalidate('songs:');

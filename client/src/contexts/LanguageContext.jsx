@@ -68,22 +68,22 @@ export const LanguageProvider = ({ children }) => {
       document.documentElement.dir = newLanguage === 'he' ? 'rtl' : 'ltr';
       document.documentElement.lang = newLanguage;
 
+      // Always persist to localStorage so cold-start offline picks it up
+      localStorage.setItem('guestLanguage', newLanguage);
+
       // Update on server if user is logged in
       if (user && !user.isGuest) {
         try {
-          await api.put('/auth/preferences', { language: newLanguage });
+          await api.put('/auth/profile', { language: newLanguage });
         } catch (err) {
           // If offline, queue the update but keep the local change
           const isOffline = !navigator.onLine || err?.error === 'No response from server';
           if (isOffline) {
-            offlineQueue.enqueue({ method: 'PUT', url: '/auth/preferences', data: { language: newLanguage } }).catch(() => {});
+            offlineQueue.enqueue({ method: 'PUT', url: '/auth/profile', data: { language: newLanguage } }).catch(() => {});
           } else {
             throw err; // Real server error — will be caught below
           }
         }
-      } else {
-        // For guests, save to localStorage
-        localStorage.setItem('guestLanguage', newLanguage);
       }
     } catch (error) {
       console.error('Failed to update language:', error);
