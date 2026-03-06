@@ -9,6 +9,7 @@ function normalizeServiceSongs(service) {
     const song = item.song || {};
     return {
       id: item.serviceSongId || item.id,
+      serviceSongId: item.serviceSongId || item.id,
       song_id: song.id || item.song_id || item.songId || null,
       position: item.position,
       transposition: item.transposition || 0,
