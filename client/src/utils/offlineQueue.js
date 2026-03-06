@@ -108,18 +108,33 @@ class OfflineQueue {
       ops.sort((a, b) => a.timestamp - b.timestamp);
 
       // Dynamic import to avoid circular dependency
-      const { default: api } = await import('../services/api');
+      const { default: api, setSuppressAuthRedirect } = await import('../services/api');
+      // Suppress 401 redirect during queue processing to prevent kick-out
+      setSuppressAuthRedirect(true);
+
+      // Map temp IDs to real IDs as we process creates
+      const idMap = new Map();
 
       for (const op of ops) {
+        // Rewrite URLs that contain temp IDs with real IDs from prior creates
+        let url = op.url;
+        let data = op.data;
+        for (const [tempId, realId] of idMap) {
+          if (url.includes(tempId)) {
+            url = url.replace(tempId, realId);
+          }
+        }
+
         try {
           let response;
           switch (op.method) {
             case 'POST':
-              response = await api.post(op.url, op.data);
+              response = await api.post(url, data);
               // Handle offline-created services with embedded setlist
               if (op.url === '/services' && response?.data) {
                 const newService = response.data.service || response.data;
-                if (newService?.id) {
+                if (newService?.id && op.tempId) {
+                  idMap.set(op.tempId, newService.id);
                   // Process embedded setlist if present
                   if (op.data?.setlist?.length > 0) {
                     for (const item of op.data.setlist) {
@@ -131,26 +146,25 @@ class OfflineQueue {
                     }
                   }
                   // Clean up the offline temp service from IndexedDB
-                  if (op.tempId) {
-                    offlineStorage.deleteService(op.tempId).catch(() => {});
-                    offlineStorage.saveService(newService).catch(() => {});
-                  }
+                  offlineStorage.deleteService(op.tempId).catch(() => {});
+                  offlineStorage.saveService(newService).catch(() => {});
                 }
               }
               // Handle offline-created songs — clean up temp ID
               if (op.url === '/songs' && op.tempId && response?.data) {
                 const newSong = response.data.song || response.data;
                 if (newSong?.id) {
+                  idMap.set(op.tempId, newSong.id);
                   offlineStorage.deleteSong(op.tempId).catch(() => {});
                   offlineStorage.saveSong(newSong).catch(() => {});
                 }
               }
               break;
             case 'PUT':
-              await api.put(op.url, op.data);
+              await api.put(url, data);
               break;
             case 'DELETE':
-              await api.delete(op.url);
+              await api.delete(url);
               break;
             default:
               console.warn('Unknown queued operation method:', op.method);
@@ -159,8 +173,6 @@ class OfflineQueue {
         } catch (err) {
           console.error('Failed to sync operation:', op, err);
           // Check if this is a server rejection (4xx) vs network error
-          // api.js interceptor rejects with response.data for server errors,
-          // or { error: '...' } for network errors. Check multiple shapes.
           const status = err?.response?.status || err?.status;
           const isClientError = (status >= 400 && status < 500) ||
             err?.error === 'Not Found' || err?.error === 'Access denied';
@@ -179,6 +191,10 @@ class OfflineQueue {
     } catch (err) {
       console.error('Queue processing error:', err);
     } finally {
+      // Re-enable auth redirect
+      import('../services/api').then(({ setSuppressAuthRedirect }) => {
+        setSuppressAuthRedirect(false);
+      }).catch(() => {});
       this.syncing = false;
       this._notify();
     }

@@ -197,6 +197,18 @@ const Library = () => {
     };
   }, []); // Empty dependency array - fetch once on mount
 
+  // Refresh songs after offline sync completes
+  useEffect(() => {
+    const handleSyncComplete = async () => {
+      try {
+        const data = await songService.getAllSongs();
+        setSongs(data);
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('offline-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('offline-sync-complete', handleSyncComplete);
+  }, []);
+
   // Parse search query for #tagname patterns
   // Supports: #מהיר (single word) or #"שירי ילדים" (multi-word with quotes)
   const parseSearchQuery = (query) => {

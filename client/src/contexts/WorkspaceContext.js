@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback, use
 import workspaceService from '../services/workspaceService';
 import { useAuth } from './AuthContext';
 import dataCache from '../utils/dataCache';
+import offlineQueue from '../utils/offlineQueue';
 
 const WorkspaceContext = createContext(null);
 
@@ -122,6 +123,10 @@ export const WorkspaceProvider = ({ children }) => {
         // If offline, apply optimistically — queue the server call
         const isOffline = !navigator.onLine || err?.error === 'No response from server';
         if (!isOffline) throw err;
+        offlineQueue.enqueue({
+          method: 'PUT',
+          url: `/workspaces/${workspaceId}/switch`
+        }).catch(() => {});
       }
 
       // Update workspaces list to reflect new active workspace

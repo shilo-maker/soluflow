@@ -80,6 +80,8 @@ const serviceService = {
         console.debug('Returning services from offline storage');
         return offlineServices;
       }
+      // If offline with no cached data, return empty array instead of error
+      if (isNetworkError(error)) return [];
       throw error;
     }
   },

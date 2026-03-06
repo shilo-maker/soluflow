@@ -46,7 +46,9 @@ const songService = {
         return offlineSongs;
       }
 
-      // If no offline data, throw the original error
+      // If offline with no cached data, return empty array instead of error
+      if (isNetworkError(error)) return [];
+
       throw error;
     }
   },

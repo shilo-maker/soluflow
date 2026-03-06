@@ -1,5 +1,9 @@
 import axios from 'axios';
 
+// Flag to suppress 401 redirect during background queue processing
+let suppressAuthRedirect = false;
+export const setSuppressAuthRedirect = (value) => { suppressAuthRedirect = value; };
+
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5002/api',
@@ -33,8 +37,8 @@ api.interceptors.response.use(
       // Server responded with error
       if (error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
-        // But NOT if we're offline (stale cached response), on a guest page, or doing auth
-        if (!navigator.onLine) {
+        // But NOT if we're offline, during queue processing, on a guest page, or doing auth
+        if (!navigator.onLine || suppressAuthRedirect) {
           return Promise.reject(error.response.data);
         }
 
