@@ -46,6 +46,7 @@ const ResetPassword = retryLazy(() => import('./pages/ResetPassword'));
 const SongReports = retryLazy(() => import('./pages/SongReports'));
 const SSOCallback = retryLazy(() => import('./pages/SSOCallback'));
 const SolucastRedirect = retryLazy(() => import('./pages/SolucastRedirect'));
+const ServiceNew = retryLazy(() => import('./pages/ServiceNew'));
 const CreateForSoluPlan = retryLazy(() => import('./pages/CreateForSoluPlan'));
 
 // Prefetch all page chunks in the background after initial load
@@ -74,6 +75,7 @@ const prefetchChunks = () => {
     () => import('./pages/SongReports'),
     () => import('./pages/SSOCallback'),
     () => import('./pages/SolucastRedirect'),
+    () => import('./pages/ServiceNew'),
     () => import('./pages/CreateForSoluPlan'),
   ];
   // Load chunks sequentially with small delays to avoid blocking the main thread
@@ -170,6 +172,7 @@ function AppContent() {
               {/* Protected routes */}
               <Route path="/home" element={<Navigate to="/library" replace />} />
               <Route path="/services" element={<PrivateRoute><ServicesList /></PrivateRoute>} />
+              <Route path="/services/new" element={<PrivateRoute><ServiceNew /></PrivateRoute>} />
               <Route path="/services/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
               <Route path="/services/:id/edit" element={<PrivateRoute><ServiceEdit /></PrivateRoute>} />
               {/* Legacy /service redirects */}

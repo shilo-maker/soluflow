@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import serviceService from '../services/serviceService';
-import ServiceEditModal from '../components/ServiceEditModal';
 import ShareModal from '../components/ShareModal';
 import PassLeadershipModal from '../components/PassLeadershipModal';
 import Toast from '../components/Toast';
@@ -33,8 +32,6 @@ const ServicesList = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
 
   // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalService, setModalService] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -50,8 +47,6 @@ const ServicesList = () => {
   const [toastType, setToastType] = useState('success');
   const [showToast, setShowToast] = useState(false);
 
-  // Track fetched setlist for edit modal
-  const [editSetlist, setEditSetlist] = useState([]);
 
   // Enrich service with computed flags
   const enrichService = useCallback((s) => {
@@ -166,131 +161,10 @@ const ServicesList = () => {
 
   // --- Action handlers ---
 
-  const handleNewService = () => { setModalService(null); setIsModalOpen(true); };
+  const handleNewService = () => { navigate('/services/new'); };
 
   const handleEditService = (service) => {
     navigate(`/services/${service.id}/edit`);
-  };
-
-  const handleSaveService = async (formData, setlist = null) => {
-    try {
-      if (modalService) {
-        // Edit mode — don't overwrite leader_id or created_by
-        const serviceData = { ...formData, workspace_id: activeWorkspace?.id };
-        const updated = enrichService(await serviceService.updateService(modalService.id, serviceData));
-        setServices(prev => prev.map(s => s.id === updated.id ? updated : s));
-        showToastMsg('Service updated successfully!');
-      } else {
-        // Create mode
-        const serviceData = {
-          ...formData,
-          workspace_id: activeWorkspace?.id,
-          leader_id: user.id,
-          created_by: user.id
-        };
-        // Include setlist in serviceData so offline create captures it in one queued operation
-        if (setlist && setlist.length > 0) {
-          serviceData.setlist = setlist.map((item, i) => {
-            if (item.segment_type === 'prayer') {
-              return {
-                song_id: null, position: i, segment_type: 'prayer',
-                segment_title: item.segment_title || item.title,
-                segment_content: item.segment_content
-              };
-            }
-            return { song_id: item.id, position: i, segment_type: 'song' };
-          });
-        }
-
-        const newService = enrichService(await serviceService.createService(serviceData));
-
-        // For offline-created services, skip setlist API calls (setlist is in the queued create data)
-        if (newService._offline) {
-          setServices(prev => [...prev, enrichService(newService)]);
-          showToastMsg('Service saved offline — will sync when online');
-        } else {
-          // Online: add setlist items individually
-          if (setlist && setlist.length > 0) {
-            for (let i = 0; i < setlist.length; i++) {
-              const item = setlist[i];
-              if (item.segment_type === 'prayer') {
-                await serviceService.addSongToService(newService.id, {
-                  song_id: null, position: i, segment_type: 'prayer',
-                  segment_title: item.segment_title || item.title,
-                  segment_content: item.segment_content
-                });
-              } else {
-                await serviceService.addSongToService(newService.id, {
-                  song_id: item.id, position: i, segment_type: 'song'
-                });
-              }
-            }
-          }
-          navigate(`/services/${newService.id}`);
-        }
-      }
-      // Modal closes itself via onClose after onSave completes
-    } catch (err) {
-      console.error('Error saving service:', err);
-      throw new Error(err.error || 'Failed to save service');
-    }
-  };
-
-  // Handle setlist update from ServiceEditModal (edit mode)
-  const handleUpdateSetlist = async (newSetlist) => {
-    if (!modalService) return;
-    try {
-      const currentItems = editSetlist;
-      const currentServiceSongIds = new Set(currentItems.map(s => s.id));
-
-      // Determine which current items are retained in the new setlist.
-      // Normalized items from the DB have a 'song_id' property; raw library songs don't.
-      const retainedIds = new Set();
-      for (const item of newSetlist) {
-        if (currentServiceSongIds.has(item.id) && 'song_id' in item) {
-          retainedIds.add(item.id);
-        }
-      }
-
-      // Remove items no longer retained
-      for (const item of currentItems) {
-        if (!retainedIds.has(item.id)) {
-          await serviceService.removeSongFromService(modalService.id, item.id);
-        }
-      }
-
-      // Add/update items
-      for (let i = 0; i < newSetlist.length; i++) {
-        const item = newSetlist[i];
-        if (retainedIds.has(item.id)) {
-          // Existing item — update position
-          const updateData = { position: i };
-          if (item.segment_type === 'prayer') {
-            updateData.segment_title = item.segment_title || item.title;
-            updateData.segment_content = item.segment_content;
-          }
-          await serviceService.updateServiceSong(modalService.id, item.id, updateData);
-        } else if (item.segment_type === 'prayer') {
-          await serviceService.addSongToService(modalService.id, {
-            song_id: null, position: i, segment_type: 'prayer',
-            segment_title: item.segment_title || item.title,
-            segment_content: item.segment_content
-          });
-        } else {
-          // New song from library — item.id is the library song ID
-          await serviceService.addSongToService(modalService.id, {
-            song_id: item.song_id || item.id, position: i, segment_type: 'song'
-          });
-        }
-      }
-
-      // Refresh the services list to get updated setlist_summary
-      const data = await serviceService.getAllServices(activeWorkspace?.id);
-      setServices(data.map(enrichService));
-    } catch (err) {
-      console.error('Error updating setlist:', err);
-      showToastMsg('Failed to update setlist', 'error');
-    }
   };
 
   const handleDeleteService = (service) => { setServiceToDelete(service); setShowDeleteConfirm(true); };
@@ -658,16 +532,6 @@ const ServicesList = () => {
           )}
         </>
       )}
-
-      {/* Modals */}
-      <ServiceEditModal
-        service={modalService}
-        currentSetlist={modalService ? editSetlist : []}
-        isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setModalService(null); setEditSetlist([]); }}
-        onSave={handleSaveService}
-        onUpdate={handleUpdateSetlist}
-      />
 
       <Toast
         message={toastMessage}
