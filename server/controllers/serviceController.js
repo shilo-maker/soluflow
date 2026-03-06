@@ -41,12 +41,12 @@ const mapServiceSongsToSongs = (serviceSongs) => {
 const findServiceSong = async (serviceId, songId) => {
   // Try by ServiceSong.id first (preferred — avoids cross-table ID collisions)
   let record = await ServiceSong.findOne({
-    where: { service_id: parseInt(serviceId), id: parseInt(songId) }
+    where: { service_id: serviceId, id: songId }
   });
   if (record) return record;
   // Fall back to song_id for backwards compatibility
   return await ServiceSong.findOne({
-    where: { service_id: parseInt(serviceId), song_id: parseInt(songId) }
+    where: { service_id: serviceId, song_id: songId }
   });
 };
 
@@ -644,7 +644,8 @@ const addSongToService = async (req, res) => {
       segment_type,
       segment_title,
       segment_content,
-      notes
+      notes,
+      transposition
     } = req.body;
 
     const service = await Service.findByPk(id);
@@ -672,7 +673,8 @@ const addSongToService = async (req, res) => {
       segment_type: segment_type || 'song',
       segment_title,
       segment_content,
-      notes
+      notes,
+      transposition: transposition || 0
     });
 
     res.status(201).json(serviceSong);
@@ -695,7 +697,7 @@ const updateServiceSong = async (req, res) => {
     }
 
     // Check permissions
-    const service = await Service.findByPk(parseInt(id));
+    const service = await Service.findByPk(id);
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }
@@ -746,7 +748,7 @@ const removeSongFromService = async (req, res) => {
     }
 
     // Check permissions
-    const service = await Service.findByPk(parseInt(id));
+    const service = await Service.findByPk(id);
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }
@@ -786,8 +788,8 @@ const updateSongTransposition = async (req, res) => {
     // Find the ServiceSong by service_id and song_id combination
     const serviceSong = await ServiceSong.findOne({
       where: {
-        service_id: parseInt(id),
-        song_id: parseInt(songId)
+        service_id: id,
+        song_id: songId
       }
     });
 
@@ -796,7 +798,7 @@ const updateSongTransposition = async (req, res) => {
     }
 
     // Check permissions - only leader or admin/planner can update transposition
-    const service = await Service.findByPk(parseInt(id));
+    const service = await Service.findByPk(id);
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }

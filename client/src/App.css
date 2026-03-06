@@ -103,6 +103,13 @@ body {
   max-width: 1400px;
 }
 
+@media (max-width: 768px) and (orientation: portrait) {
+  .app-main-content:has(.service-page) {
+    padding: 0;
+  }
+}
+
+
 @media (min-width: 768px) {
   .app-main-content {
     margin-left: 256px;

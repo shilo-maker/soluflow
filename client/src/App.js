@@ -14,6 +14,7 @@ import './App.css';
 // Lazy load pages for code splitting
 const ServicesList = lazy(() => import('./pages/ServicesList'));
 const Service = lazy(() => import('./pages/Service'));
+const ServiceEdit = lazy(() => import('./pages/ServiceEdit'));
 const GuestServiceView = lazy(() => import('./pages/GuestServiceView'));
 const GuestEditView = lazy(() => import('./pages/GuestEditView'));
 const SharedSongView = lazy(() => import('./pages/SharedSongView'));
@@ -112,6 +113,7 @@ function AppContent() {
               <Route path="/home" element={<Navigate to="/library" replace />} />
               <Route path="/services" element={<PrivateRoute><ServicesList /></PrivateRoute>} />
               <Route path="/services/:id" element={<PrivateRoute><Service /></PrivateRoute>} />
+              <Route path="/services/:id/edit" element={<PrivateRoute><ServiceEdit /></PrivateRoute>} />
               {/* Legacy /service redirects */}
               <Route path="/service" element={<Navigate to="/services" replace />} />
               <Route path="/service/:id" element={<PrivateRoute><Service /></PrivateRoute>} />

@@ -1,6 +1,6 @@
 .user-management-page {
   min-height: calc(100vh - 140px);
-  padding: 80px var(--spacing-lg) var(--spacing-xl) var(--spacing-lg);
+  padding: 20px var(--spacing-lg) var(--spacing-xl) var(--spacing-lg);
 }
 
 .um-container {

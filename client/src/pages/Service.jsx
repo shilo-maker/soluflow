@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useTheme, GRADIENT_PRESETS } from '../contexts/ThemeContext';
 import useWakeLock from '../hooks/useWakeLock';
 import serviceService from '../services/serviceService';
 import workspaceService from '../services/workspaceService';
@@ -15,6 +16,7 @@ import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import { transposeChord, convertKeyToFlat } from '../utils/transpose';
 import { generateMultiSongPDF, generateMultiSongPDFBlob } from '../utils/pdfGenerator';
+import { ArrowLeft, MoreVertical, Calendar, MapPin } from 'lucide-react';
 import io from 'socket.io-client';
 import './Service.css';
 
@@ -47,11 +49,15 @@ const Service = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { activeWorkspace } = useWorkspace();
+  const { theme } = useTheme();
+  const currentPreset = GRADIENT_PRESETS[theme.gradientPreset] || GRADIENT_PRESETS.warm;
 
   // Keep screen awake while in service view
   useWakeLock(true);
 
   const songPillsRef = useRef(null);
+  const tabsScrollRef = useRef(null);
+  const tabsFadeRef = useRef(null);
   const socketRef = useRef(null);
   const previousServiceIdRef = useRef(null);
   const isFollowModeRef = useRef(false); // Ref to access current follow mode in socket handlers
@@ -78,6 +84,10 @@ const Service = () => {
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [showControlsDrawer, setShowControlsDrawer] = useState(false);
+  const [isLyricsOnly, setIsLyricsOnly] = useState(false);
+  const [columnMode, setColumnMode] = useState(null); // null = auto, 1 = single, 2 = two columns
+  const drawerTouchStartY = useRef(null);
 
   // Real-time sync state
   const [isFollowMode, setIsFollowMode] = useState(false); // Default to free mode
@@ -95,11 +105,6 @@ const Service = () => {
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
-  // Drag-to-reorder state
-  const [reorderMode, setReorderMode] = useState(false);
-  const [reorderDragIndex, setReorderDragIndex] = useState(null);
-  const [reorderOverIndex, setReorderOverIndex] = useState(null);
-  const touchReorderRef = useRef({ active: false, startY: 0 });
 
   // If no :id param, redirect to /services list
   useEffect(() => {
@@ -558,8 +563,7 @@ const Service = () => {
   };
 
   const handleEditService = () => {
-    setModalService(selectedService);
-    setIsModalOpen(true);
+    navigate(`/services/${id}/edit`);
   };
 
   const handleSaveService = async (formData) => {
@@ -612,36 +616,38 @@ const Service = () => {
     try {
       // Get current items in the service
       const currentItems = serviceDetails?.songs || [];
-      const currentServiceSongIds = new Set(currentItems.map(s => s.id));
+      // Map original songs by serviceSongId for lookup
+      const originalByServiceSongId = new Map();
+      for (const s of currentItems) {
+        if (s.serviceSongId) originalByServiceSongId.set(s.serviceSongId, s);
+      }
 
-      // Determine which current items are retained in the new setlist.
-      // Normalized items from the DB have a 'song_id' property; raw library songs don't.
-      // This prevents ID collisions between serviceSongIds and library song IDs.
-      const retainedIds = new Set();
+      // Determine which original service songs are retained in the new setlist
+      const retainedServiceSongIds = new Set();
       for (const item of newSetlist) {
-        if (currentServiceSongIds.has(item.id) && 'song_id' in item) {
-          retainedIds.add(item.id);
+        if (item.serviceSongId && originalByServiceSongId.has(item.serviceSongId)) {
+          retainedServiceSongIds.add(item.serviceSongId);
         }
       }
 
       // Remove items that are no longer retained
       for (const item of currentItems) {
-        if (!retainedIds.has(item.id)) {
-          await serviceService.removeSongFromService(selectedService.id, item.id);
+        if (item.serviceSongId && !retainedServiceSongIds.has(item.serviceSongId)) {
+          await serviceService.removeSongFromService(selectedService.id, item.serviceSongId);
         }
       }
 
       // Add new items and update positions
       for (let i = 0; i < newSetlist.length; i++) {
         const item = newSetlist[i];
-        if (retainedIds.has(item.id)) {
+        if (item.serviceSongId && retainedServiceSongIds.has(item.serviceSongId)) {
           // Existing item — update position
           const updateData = { position: i };
           if (item.segment_type === 'prayer') {
             updateData.segment_title = item.segment_title || item.title;
             updateData.segment_content = item.segment_content;
           }
-          await serviceService.updateServiceSong(selectedService.id, item.id, updateData);
+          await serviceService.updateServiceSong(selectedService.id, item.serviceSongId, updateData);
         } else if (item.segment_type === 'prayer') {
           // New prayer item
           await serviceService.addSongToService(selectedService.id, {
@@ -817,123 +823,114 @@ const Service = () => {
     }
   };
 
-  // Drag-to-scroll handlers for song pills
+  // Drag-to-scroll handlers for song tabs
+  const didDragRef = useRef(false);
+
   const handleMouseDown = (e) => {
-    if (!songPillsRef.current) return;
+    if (!tabsScrollRef.current) return;
     setIsDragging(true);
-    setStartX(e.pageX - songPillsRef.current.offsetLeft);
-    setScrollLeft(songPillsRef.current.scrollLeft);
+    didDragRef.current = false;
+    setStartX(e.pageX - tabsScrollRef.current.offsetLeft);
+    setScrollLeft(tabsScrollRef.current.scrollLeft);
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging || !songPillsRef.current) return;
+    if (!isDragging || !tabsScrollRef.current) return;
     e.preventDefault();
-    const x = e.pageX - songPillsRef.current.offsetLeft;
+    const x = e.pageX - tabsScrollRef.current.offsetLeft;
     const walk = (x - startX) * 2;
-    songPillsRef.current.scrollLeft = scrollLeft - walk;
+    if (Math.abs(walk) > 3) didDragRef.current = true;
+    tabsScrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
   };
 
-  // --- Drag-to-reorder handlers ---
-  const canReorder = selectedService?.canEdit && currentSetList.length > 1;
+  // Swipe between song tabs with follow-finger animation
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [swipeTransition, setSwipeTransition] = useState(false);
+  const swipeRef = useRef({ startX: 0, startY: 0, locked: null, swiping: false });
+  const songDisplayRef = useRef(null);
 
-  const handleReorderDragStart = (index, e) => {
-    if (!reorderMode) return;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', String(index));
-    setReorderDragIndex(index);
-    setReorderOverIndex(index);
+  const handleSwipeTouchStart = (e) => {
+    if (swipeTransition) return;
+    swipeRef.current = { startX: e.touches[0].clientX, startY: e.touches[0].clientY, locked: null, swiping: false };
   };
 
-  const handleReorderDragOver = (index) => {
-    if (reorderDragIndex === null) return;
-    setReorderOverIndex(index);
+  const handleSwipeTouchMove = (e) => {
+    if (swipeTransition) return;
+    const dx = e.touches[0].clientX - swipeRef.current.startX;
+    const dy = e.touches[0].clientY - swipeRef.current.startY;
+
+    // Lock direction after 10px of movement
+    if (swipeRef.current.locked === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      swipeRef.current.locked = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+    }
+
+    if (swipeRef.current.locked !== 'h') return;
+
+    e.preventDefault();
+    swipeRef.current.swiping = true;
+
+    const isRtl = document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
+    const directedDx = isRtl ? -dx : dx;
+
+    // Add resistance at boundaries
+    const atStart = selectedSongIndex === 0 && directedDx > 0;
+    const atEnd = selectedSongIndex === currentSetList.length - 1 && directedDx < 0;
+    const dampened = (atStart || atEnd) ? dx * 0.2 : dx;
+
+    setSwipeOffset(dampened);
   };
 
-  const handleReorderDrop = async () => {
-    if (reorderDragIndex === null || reorderOverIndex === null || reorderDragIndex === reorderOverIndex) {
-      setReorderDragIndex(null);
-      setReorderOverIndex(null);
+  const handleSwipeTouchEnd = (e) => {
+    if (!swipeRef.current.swiping) {
+      setSwipeOffset(0);
       return;
     }
 
-    const fromIndex = reorderDragIndex;
-    const toIndex = reorderOverIndex;
+    const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
+    const isRtl = document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
+    const threshold = 60;
+    const goNext = isRtl ? dx > threshold : dx < -threshold;
+    const goPrev = isRtl ? dx < -threshold : dx > threshold;
+    const width = songDisplayRef.current?.offsetWidth || 400;
 
-    // Compute reordered list before clearing state (for server persist)
-    const songs = serviceDetails?.songs || [];
-    const reordered = [...songs];
-    const [moved] = reordered.splice(fromIndex, 1);
-    reordered.splice(toIndex, 0, moved);
-
-    // Reorder locally first for instant feedback
-    setServiceDetails(prev => {
-      if (!prev?.songs) return prev;
-      return { ...prev, songs: reordered };
-    });
-
-    // Adjust selected song index to follow the moved item
-    if (selectedSongIndex === fromIndex) {
-      setSelectedSongIndex(toIndex);
-    } else if (fromIndex < selectedSongIndex && toIndex >= selectedSongIndex) {
-      setSelectedSongIndex(selectedSongIndex - 1);
-    } else if (fromIndex > selectedSongIndex && toIndex <= selectedSongIndex) {
-      setSelectedSongIndex(selectedSongIndex + 1);
-    }
-
-    setReorderDragIndex(null);
-    setReorderOverIndex(null);
-
-    // Persist new positions to server
-    try {
-      for (let i = 0; i < reordered.length; i++) {
-        await serviceService.updateServiceSong(selectedService.id, reordered[i].id, { position: i });
-      }
-    } catch (err) {
-      console.error('Error persisting reorder:', err);
-      showToastMsg('Failed to save new order', 'error');
-      // Refresh to restore correct order
-      try {
-        const details = await serviceService.getServiceById(selectedService.id);
-        setServiceDetails(details);
-      } catch { /* ignore */ }
-    }
-  };
-
-  // Touch-based reorder (for mobile in reorder mode)
-  const handlePillTouchStart = (index, e) => {
-    if (!reorderMode) return;
-    e.preventDefault(); // Prevent scroll in reorder mode
-    touchReorderRef.current.active = true;
-    setReorderDragIndex(index);
-    setReorderOverIndex(index);
-    if (navigator.vibrate) navigator.vibrate(20);
-  };
-
-  const handlePillTouchMove = (e) => {
-    if (!touchReorderRef.current.active) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
-    const pill = elements.find(el => el.dataset.pillIndex !== undefined);
-    if (pill) {
-      setReorderOverIndex(parseInt(pill.dataset.pillIndex, 10));
-    }
-  };
-
-  const handlePillTouchEnd = () => {
-    if (touchReorderRef.current.active) {
-      touchReorderRef.current.active = false;
-      handleReorderDrop();
+    if (goNext && selectedSongIndex < currentSetList.length - 1) {
+      // Animate out then switch
+      setSwipeTransition(true);
+      setSwipeOffset(isRtl ? width : -width);
+      setTimeout(() => {
+        setSwipeTransition(false);
+        setSwipeOffset(0);
+        handleSelectSong(selectedSongIndex + 1);
+      }, 250);
+    } else if (goPrev && selectedSongIndex > 0) {
+      setSwipeTransition(true);
+      setSwipeOffset(isRtl ? -width : width);
+      setTimeout(() => {
+        setSwipeTransition(false);
+        setSwipeOffset(0);
+        handleSelectSong(selectedSongIndex - 1);
+      }, 250);
+    } else {
+      // Snap back
+      setSwipeTransition(true);
+      setSwipeOffset(0);
+      setTimeout(() => setSwipeTransition(false), 250);
     }
   };
 
   // Handle song selection (with leader broadcasting)
   const handleSelectSong = (index) => {
     setSelectedSongIndex(index);
+
+    // Scroll the active tab into view
+    if (tabsScrollRef.current) {
+      const tab = tabsScrollRef.current.children[index];
+      if (tab) tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
 
     // Broadcast to followers if user is leader (include transposition for immediate sync)
     if (isLeader && socketRef.current?.connected && socketConnected && selectedService && currentSetList[index]) {
@@ -960,6 +957,34 @@ const Service = () => {
     return () => document.removeEventListener('click', handler);
   }, [headerMenuOpen]);
 
+  // Detect tab scroll position to show/hide fade indicators
+  useEffect(() => {
+    const scrollEl = tabsScrollRef.current;
+    const fadeEl = tabsFadeRef.current;
+    if (!scrollEl || !fadeEl) return;
+
+    const updateFades = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollEl;
+      const isRtl = getComputedStyle(scrollEl).direction === 'rtl';
+      const canScrollStart = isRtl ? scrollLeft < -1 : scrollLeft > 1;
+      const canScrollEnd = isRtl
+        ? scrollLeft > -(scrollWidth - clientWidth - 1)
+        : scrollLeft < scrollWidth - clientWidth - 1;
+
+      fadeEl.classList.toggle('can-scroll-start', canScrollStart);
+      fadeEl.classList.toggle('can-scroll-end', canScrollEnd);
+    };
+
+    updateFades();
+    scrollEl.addEventListener('scroll', updateFades, { passive: true });
+    const ro = new ResizeObserver(updateFades);
+    ro.observe(scrollEl);
+    return () => {
+      scrollEl.removeEventListener('scroll', updateFades);
+      ro.disconnect();
+    };
+  }, [currentSetList]);
+
   // Format date for banner display
   const formatBannerDate = (dateStr) => {
     if (!dateStr) return '';
@@ -981,34 +1006,73 @@ const Service = () => {
         <div className="empty-service">{error}</div>
       )}
 
-      {/* Detail Banner */}
+      {/* Detail Banner - SoluEvents-style gradient header */}
       {selectedService && !loading && (
-        <div className="service-detail-banner">
-          <div className="banner-top-row">
-            <button className="btn-back-to-services" onClick={() => navigate('/services')}>
-              ← {t('service.backToServices')}
-            </button>
-            <div className="banner-actions">
-              {!isLeader && (
-                <button
-                  className={`btn-follow-mode ${isFollowMode ? 'active' : ''}`}
-                  onClick={toggleFollowMode}
-                  title={isFollowMode ? 'Click to enable free mode' : 'Click to follow leader'}
-                >
-                  {isFollowMode ? 'FOLLOWING' : 'FREE MODE'}
-                </button>
-              )}
+        <>
+          <div className="service-header-gradient" style={{ background: `linear-gradient(135deg, ${currentPreset.colors[0]} 0%, ${currentPreset.colors[1]} 25%, ${currentPreset.colors[2]} 50%, ${currentPreset.colors[3]} 75%, ${currentPreset.colors[4]} 100%)` }}>
+            {/* Animated waves */}
+            <div className="service-header-waves">
+              <svg className="wave wave-slow" viewBox="0 0 1440 100" preserveAspectRatio="none">
+                <path d="M0,50 Q180,90 360,50 Q540,10 720,50 Q900,90 1080,50 Q1260,10 1440,50 L1440,100 L0,100Z" fill="white" />
+              </svg>
+              <svg className="wave wave-mid" viewBox="0 0 1440 100" preserveAspectRatio="none">
+                <path d="M0,50 Q120,85 240,50 Q360,15 480,50 Q600,85 720,50 Q840,15 960,50 Q1080,85 1200,50 Q1320,15 1440,50 L1440,100 L0,100Z" fill="white" />
+              </svg>
+              <svg className="wave wave-fast" viewBox="0 0 1440 100" preserveAspectRatio="none">
+                <path d="M0,50 Q90,80 180,50 Q270,20 360,50 Q450,80 540,50 Q630,20 720,50 Q810,80 900,50 Q990,20 1080,50 Q1170,80 1260,50 Q1350,20 1440,50 L1440,100 L0,100Z" fill="white" />
+              </svg>
+            </div>
+            <div className="service-header-content">
+              <button
+                className="service-header-back"
+                onClick={() => navigate('/services')}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div className="service-header-info">
+                <div className="service-header-title-row">
+                  <h1 className="service-header-title">
+                    {selectedService.title}
+                  </h1>
+                  {isLeader && <span className="service-header-badge leader">{t('service.leaderBadge')}</span>}
+                  {selectedService.isToday && <span className="service-header-badge today">{t('service.todayBadge')}</span>}
+                  {selectedService.isShared && <span className="service-header-badge shared">{t('service.sharedBadge')}</span>}
+                  {!isLeader && (
+                    <button
+                      className={`service-header-badge follow-toggle ${isFollowMode ? 'following' : ''}`}
+                      onClick={toggleFollowMode}
+                      title={isFollowMode ? 'Click to enable free mode' : 'Click to follow leader'}
+                    >
+                      {isFollowMode ? 'FOLLOWING' : 'FREE MODE'}
+                    </button>
+                  )}
+                </div>
+                <div className="service-header-meta">
+                  {selectedService.date && (
+                    <span className="service-meta-item">
+                      <Calendar size={14} className="service-meta-icon" />
+                      {formatBannerDate(selectedService.date)}{selectedService.time ? ` · ${selectedService.time}` : ''}
+                    </span>
+                  )}
+                  {selectedService.location && (
+                    <span className="service-meta-item">
+                      <MapPin size={14} className="service-meta-icon" />
+                      {selectedService.location}
+                    </span>
+                  )}
+                </div>
+              </div>
               {!socketConnected && (
                 <div className="connection-status disconnected" title="Connection lost">
-                  ⚠️ Disconnected
+                  ⚠️
                 </div>
               )}
               <div className="header-menu-container">
                 <button
-                  className="btn-header-menu-toggle"
+                  className="service-header-menu-btn"
                   onClick={(e) => { e.stopPropagation(); setHeaderMenuOpen(!headerMenuOpen); }}
                 >
-                  ⋮
+                  <MoreVertical size={20} />
                 </button>
                 {headerMenuOpen && (
                   <div className="header-dropdown-menu">
@@ -1052,67 +1116,53 @@ const Service = () => {
               </div>
             </div>
           </div>
-          <h2 className="service-banner-title">
-            {selectedService.title}
-            {isLeader && <span className="leader-badge">{t('service.leaderBadge')}</span>}
-          </h2>
-          <div className="service-banner-meta">
-            {selectedService.date && <span>📅 {formatBannerDate(selectedService.date)}{selectedService.time ? ` · ${selectedService.time}` : ''}</span>}
-            {selectedService.location && <span>📍 {selectedService.location}</span>}
-            {selectedService.isToday && <span className="today-label">{t('service.todayBadge')}</span>}
-            {selectedService.isShared && <span className="shared-label">{t('service.sharedBadge')}</span>}
-          </div>
-        </div>
+
+          {/* Song Tabs - SoluEvents-style tab bar */}
+          {currentSetList.length > 0 && (
+            <div className="service-song-tabs">
+              <div className="service-tabs-fade-wrapper" ref={tabsFadeRef}>
+                <div
+                  className={`service-tabs-scroll ${isDragging ? 'dragging' : ''}`}
+                  ref={tabsScrollRef}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                >
+                  {currentSetList.map((item, index) => (
+                    <button
+                      key={`${item.segment_type || 'song'}-${item.id}`}
+                      className={`service-tab ${index === selectedSongIndex ? 'active' : ''} ${item.segment_type === 'prayer' ? 'prayer-tab' : ''}`}
+                      onClick={() => { if (!didDragRef.current) handleSelectSong(index); }}
+                    >
+                      {item.segment_type === 'prayer' && '🙏 '}
+                      {item.title || item.segment_title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Current Service Display */}
       {selectedService && !loading && currentSetList.length > 0 ? (
-        <div className="current-service">
-          {/* Song Pills with reorder toggle */}
-          <div className="song-pills-wrapper">
-            {canReorder && (
-              <button
-                className={`btn-reorder-toggle ${reorderMode ? 'active' : ''}`}
-                onClick={() => { setReorderMode(!reorderMode); setReorderDragIndex(null); setReorderOverIndex(null); }}
-                title={reorderMode ? 'Done reordering' : 'Reorder setlist'}
-              >
-                {reorderMode ? '✓' : '↕'}
-              </button>
-            )}
-            <div
-              ref={songPillsRef}
-              className={`song-pills ${isDragging ? 'dragging' : ''} ${reorderMode ? 'reorder-mode' : ''}`}
-              onMouseDown={!reorderMode ? handleMouseDown : undefined}
-              onMouseMove={!reorderMode ? handleMouseMove : undefined}
-              onMouseUp={!reorderMode ? handleMouseUp : undefined}
-              onMouseLeave={!reorderMode ? handleMouseUp : undefined}
-              onTouchMove={reorderMode ? handlePillTouchMove : undefined}
-              onTouchEnd={reorderMode ? handlePillTouchEnd : undefined}
-            >
-              {currentSetList.map((item, index) => (
-                <button
-                  key={`${item.segment_type || 'song'}-${item.id}`}
-                  data-pill-index={index}
-                  className={`song-pill ${index === selectedSongIndex ? 'active' : ''} ${item.segment_type === 'prayer' ? 'prayer-pill' : ''} ${reorderDragIndex === index ? 'pill-dragging' : ''} ${reorderDragIndex !== null && reorderOverIndex === index && reorderDragIndex !== index ? 'pill-drop-target' : ''}`}
-                  draggable={reorderMode}
-                  onClick={() => { if (!reorderMode) handleSelectSong(index); }}
-                  onDragStart={reorderMode ? (e) => handleReorderDragStart(index, e) : undefined}
-                  onDragOver={reorderMode ? (e) => { e.preventDefault(); handleReorderDragOver(index); } : undefined}
-                  onDrop={reorderMode ? (e) => { e.preventDefault(); handleReorderDrop(); } : undefined}
-                  onDragEnd={reorderMode ? () => handleReorderDrop() : undefined}
-                  onTouchStart={reorderMode ? (e) => handlePillTouchStart(index, e) : undefined}
-                >
-                  {reorderMode && <span className="pill-drag-handle">⠿</span>}
-                  {item.segment_type === 'prayer' && '🙏 '}
-                  {item.title || item.segment_title}
-                </button>
-              ))}
-            </div>
-          </div>
-
+        <>
           {/* Song/Prayer Display */}
           {currentSong && currentSong.segment_type === 'prayer' ? (
-            <div className="song-display prayer-display">
+            <div
+              className="song-display prayer-display"
+              ref={songDisplayRef}
+              onTouchStart={handleSwipeTouchStart}
+              onTouchMove={handleSwipeTouchMove}
+              onTouchEnd={handleSwipeTouchEnd}
+              style={{
+                transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
+                transition: swipeTransition ? 'transform 0.25s ease-out' : undefined,
+                opacity: swipeTransition ? 0.6 : 1 - Math.min(Math.abs(swipeOffset) / 600, 0.3),
+              }}
+            >
               <div className="song-header">
                 <div className="song-info">
                   <div className="song-title-row">
@@ -1164,71 +1214,30 @@ const Service = () => {
           ) : currentSong && (
             <div
               className="song-display"
-              onClick={() => navigate(`/song/${currentSong.song_id || currentSong.id}`, {
-                state: {
-                  setlist: currentSetList,
-                  currentIndex: selectedSongIndex,
-                  serviceId: selectedService.id,
-                  serviceTitle: selectedService.title,
-                  isLeader: isLeader,
-                  initialTransposition: transposition
-                }
-              })}
+              ref={songDisplayRef}
+              onTouchStart={handleSwipeTouchStart}
+              onTouchMove={handleSwipeTouchMove}
+              onTouchEnd={handleSwipeTouchEnd}
+              style={{
+                transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
+                transition: swipeTransition ? 'transform 0.25s ease-out' : undefined,
+                opacity: swipeTransition ? 0.6 : 1 - Math.min(Math.abs(swipeOffset) / 600, 0.3),
+              }}
             >
-              <div className="song-header">
-                <div className="song-info">
-                  <div className="song-title-row">
-                    <h2 className="song-title">{currentSong.title}</h2>
-                    {currentSong.listen_url && (
-                      <a
-                        href={currentSong.listen_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="listen-link"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        🎵 Listen
-                      </a>
-                    )}
-                  </div>
-                  <p className="song-authors">{currentSong.authors}</p>
-                </div>
-                <div className="song-meta">
-                  <div className="transpose-controls-service">
-                    <button className="btn-transpose-service" onClick={(e) => { e.stopPropagation(); transposeDown(); }}>-</button>
-                    <span
-                      className="transpose-display-service"
-                      onClick={(e) => { e.stopPropagation(); setShowKeySelectorModal(true); }}
-                      title="Click to select key"
-                    >
-                      {convertKeyToFlat(transposeChord(currentSong.key, transposition))}
-                      {transposition !== 0 && ` (${transposition > 0 ? '+' : ''}${transposition})`}
-                    </span>
-                    <button className="btn-transpose-service" onClick={(e) => { e.stopPropagation(); transposeUp(); }}>+</button>
-                  </div>
-                  <div className="zoom-controls-service">
-                    <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
-                    <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
-                  </div>
-                  <span className="key-info">Key: {convertKeyToFlat(transposeChord(currentSong.key, transposition))}</span>
-                  {currentSong.bpm && <span className="bpm-info">BPM: {currentSong.bpm}{currentSong.time_signature && ` (${currentSong.time_signature})`}</span>}
-                </div>
-              </div>
-
-              <div className="song-content-preview">
-                <ChordProDisplay
-                  content={getPreviewContent(currentSong.content)}
-                  dir={hasHebrew(currentSong.content) ? 'rtl' : 'ltr'}
-                  fontSize={fontSize}
-                  transposition={transposition}
-                  songKey={currentSong.key}
-                />
-              </div>
+              <ChordProDisplay
+                content={currentSong.content}
+                dir={hasHebrew(currentSong.content) ? 'rtl' : 'ltr'}
+                fontSize={fontSize}
+                transposition={transposition}
+                songKey={currentSong.key}
+                isLyricsOnly={isLyricsOnly}
+                forcedColumnCount={columnMode}
+              />
             </div>
           )}
-        </div>
+        </>
       ) : selectedService && !loading ? (
-        <div className="current-service">
+        <div>
           <div className="empty-service">
             No set list for this service yet.
           </div>
@@ -1279,6 +1288,112 @@ const Service = () => {
         }}
         onLeaderChanged={handleLeaderChanged}
       />
+
+      {/* Controls Button + Drawer */}
+      {selectedService && !loading && currentSetList.length > 0 && currentSong && currentSong.segment_type !== 'prayer' && (
+        <>
+          <button
+            className="btn-controls-toggle"
+            onClick={() => setShowControlsDrawer(true)}
+            title="Song controls"
+          >
+            <span className="controls-icon">☰</span>
+          </button>
+
+          {showControlsDrawer && (
+            <div className="controls-drawer-overlay" onClick={() => setShowControlsDrawer(false)}>
+              <div
+                className="controls-drawer"
+                onClick={(e) => e.stopPropagation()}
+                onTouchStart={(e) => { drawerTouchStartY.current = e.touches[0].clientY; }}
+                onTouchEnd={(e) => {
+                  if (drawerTouchStartY.current !== null) {
+                    const swipeDistance = e.changedTouches[0].clientY - drawerTouchStartY.current;
+                    if (swipeDistance > 50) setShowControlsDrawer(false);
+                    drawerTouchStartY.current = null;
+                  }
+                }}
+              >
+                <div className="drawer-handle" onClick={() => setShowControlsDrawer(false)} />
+
+                <div className="drawer-section">
+                  <label className="drawer-label">Key / Transpose</label>
+                  <div className="transpose-controls-drawer">
+                    <button className="btn-drawer btn-transpose" onClick={transposeDown}>−</button>
+                    <span
+                      className="transpose-display-drawer"
+                      onClick={() => { setShowControlsDrawer(false); setShowKeySelectorModal(true); }}
+                    >
+                      {convertKeyToFlat(transposeChord(currentSong.key, transposition))}
+                      {transposition !== 0 && (
+                        <span className="transpose-offset">
+                          {transposition > 0 ? '+' : ''}{transposition}
+                        </span>
+                      )}
+                    </span>
+                    <button className="btn-drawer btn-transpose" onClick={transposeUp}>+</button>
+                  </div>
+                </div>
+
+                <div className="drawer-section">
+                  <label className="drawer-label">Display</label>
+                  <div className="drawer-row">
+                    <button
+                      className={`btn-drawer-toggle ${!isLyricsOnly ? 'active' : ''}`}
+                      onClick={() => setIsLyricsOnly(false)}
+                    >
+                      Chords
+                    </button>
+                    <button
+                      className={`btn-drawer-toggle ${isLyricsOnly ? 'active' : ''}`}
+                      onClick={() => setIsLyricsOnly(true)}
+                    >
+                      Lyrics Only
+                    </button>
+                  </div>
+                </div>
+
+                <div className="drawer-section">
+                  <label className="drawer-label">Layout</label>
+                  <div className="drawer-row">
+                    <button
+                      className={`btn-drawer-toggle ${columnMode === null ? 'active' : ''}`}
+                      onClick={() => setColumnMode(null)}
+                    >
+                      Auto
+                    </button>
+                    <button
+                      className={`btn-drawer-toggle ${columnMode === 1 ? 'active' : ''}`}
+                      onClick={() => setColumnMode(1)}
+                    >
+                      Single
+                    </button>
+                    <button
+                      className={`btn-drawer-toggle ${columnMode === 2 ? 'active' : ''}`}
+                      onClick={() => setColumnMode(2)}
+                    >
+                      Compact
+                    </button>
+                  </div>
+                </div>
+
+                <div className="drawer-section">
+                  <label className="drawer-label">Text Size</label>
+                  <div className="zoom-controls-drawer">
+                    <button className="btn-drawer btn-zoom" onClick={zoomOut}>
+                      <span className="zoom-a-small">A</span>
+                    </button>
+                    <span className="zoom-display">{fontSize}px</span>
+                    <button className="btn-drawer btn-zoom" onClick={zoomIn}>
+                      <span className="zoom-a-large">A</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Key Selector Modal */}
       {currentSong && currentSong.segment_type !== 'prayer' && (

@@ -1,6 +1,6 @@
 .user-settings-page {
   min-height: calc(100vh - 140px);
-  padding: 80px var(--spacing-lg) var(--spacing-xl) var(--spacing-lg);
+  padding: 20px var(--spacing-lg) var(--spacing-xl) var(--spacing-lg);
 }
 
 .user-settings-container {
@@ -564,7 +564,7 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .user-settings-page {
-    padding: 80px 16px 24px 16px;
+    padding: 20px 16px 24px 16px;
   }
 
   .settings-page-title {
@@ -601,7 +601,7 @@
 
 @media (max-width: 480px) {
   .user-settings-page {
-    padding: 80px 12px 16px 12px;
+    padding: 20px 12px 16px 12px;
   }
 
   .settings-page-title {
