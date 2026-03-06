@@ -43,7 +43,6 @@ const ServiceEdit = () => {
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [listView, setListView] = useState('setlist');
-  const [previewSongId, setPreviewSongId] = useState(null);
   const [isPrayerModalOpen, setIsPrayerModalOpen] = useState(false);
   const [editingPrayerItem, setEditingPrayerItem] = useState(null);
 
@@ -51,6 +50,10 @@ const ServiceEdit = () => {
   const [previewAvailableSong, setPreviewAvailableSong] = useState(null);
   const [previewTransposition, setPreviewTransposition] = useState(0);
   const [previewFontSize, setPreviewFontSize] = useState(14);
+
+  // Setlist song preview state (per-item transposition tracked on the item itself)
+  const [setlistPreviewIndex, setSetlistPreviewIndex] = useState(null);
+  const [setlistPreviewFontSize, setSetlistPreviewFontSize] = useState(14);
 
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
@@ -203,6 +206,22 @@ const ServiceEdit = () => {
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
+  };
+
+  const handleSetlistTranspose = (index, delta) => {
+    setSetlist(prev => {
+      const next = [...prev];
+      const item = { ...next[index] };
+      const currentTransp = item._editTransposition !== undefined ? item._editTransposition : (item.transposition || 0);
+      item._editTransposition = currentTransp + delta;
+      next[index] = item;
+      return next;
+    });
+    setSaved(false);
+  };
+
+  const getItemTransposition = (item) => {
+    return item._editTransposition !== undefined ? item._editTransposition : (item.transposition || 0);
   };
 
   const handlePreviewSong = (song) => {
@@ -601,7 +620,12 @@ const ServiceEdit = () => {
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
                     >
-                      <div className="edit-song-row" onClick={() => { handleSelectSong(index); setPreviewSongId(previewSongId === item.id ? null : item.id); }}>
+                      <div className="edit-song-row" onClick={() => {
+                        handleSelectSong(index);
+                        if (item.segment_type !== 'prayer') {
+                          setSetlistPreviewIndex(setlistPreviewIndex === index ? null : index);
+                        }
+                      }}>
                         <span className={`edit-song-number ${item.segment_type === 'prayer' ? 'prayer' : ''}`}>{index + 1}</span>
                         <div className="edit-song-info">
                           <div className="edit-song-title">
@@ -610,6 +634,11 @@ const ServiceEdit = () => {
                           </div>
                           <div className="edit-song-meta">
                             {item.segment_type === 'prayer' ? t('prayer.prayer') : item.authors}
+                            {item.segment_type !== 'prayer' && getItemTransposition(item) !== 0 && (
+                              <span className="edit-transpose-badge">
+                                {' '}({convertKeyToFlat(transposeChord(item.key, getItemTransposition(item)))})
+                              </span>
+                            )}
                           </div>
                         </div>
                         {item.segment_type === 'prayer' && (
@@ -630,9 +659,65 @@ const ServiceEdit = () => {
                           ×
                         </button>
                       </div>
-                      {item.segment_type !== 'prayer' && previewSongId === item.id && (
-                        <div className="edit-song-preview">
-                          {stripChords(item.content || '').replace(/\{[^}]*\}/g, '').replace(/^\s*\n/gm, '\n').trim()}
+                      {item.segment_type !== 'prayer' && setlistPreviewIndex === index && (
+                        <div className="edit-song-display-inline">
+                          <div className="edit-song-display-header">
+                            <h3 className="edit-song-display-title">{item.title}</h3>
+                            <p className="edit-song-display-authors">{item.authors}</p>
+                          </div>
+
+                          <div className="edit-song-display-controls">
+                            <div className="edit-transpose-controls">
+                              <button
+                                type="button"
+                                className="edit-btn-transpose"
+                                onClick={(e) => { e.stopPropagation(); handleSetlistTranspose(index, -1); }}
+                              >
+                                -
+                              </button>
+                              <span className="edit-transpose-display">
+                                {convertKeyToFlat(transposeChord(item.key, getItemTransposition(item)))}
+                                {getItemTransposition(item) !== 0 && ` (${getItemTransposition(item) > 0 ? '+' : ''}${getItemTransposition(item)})`}
+                              </span>
+                              <button
+                                type="button"
+                                className="edit-btn-transpose"
+                                onClick={(e) => { e.stopPropagation(); handleSetlistTranspose(index, 1); }}
+                              >
+                                +
+                              </button>
+                            </div>
+                            <div className="edit-zoom-controls">
+                              <button
+                                type="button"
+                                className="edit-btn-zoom"
+                                onClick={(e) => { e.stopPropagation(); setSetlistPreviewFontSize(prev => Math.max(10, prev - 1)); }}
+                              >
+                                <span className="edit-zoom-small">A</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="edit-btn-zoom"
+                                onClick={(e) => { e.stopPropagation(); setSetlistPreviewFontSize(prev => Math.min(24, prev + 1)); }}
+                              >
+                                <span className="edit-zoom-large">A</span>
+                              </button>
+                            </div>
+                            <span className="edit-key-info">
+                              Key: {convertKeyToFlat(item.key)}
+                            </span>
+                          </div>
+
+                          <div className="edit-song-display-content">
+                            <ChordProDisplay
+                              content={item.content}
+                              dir={hasHebrew(item.content) ? 'rtl' : 'ltr'}
+                              fontSize={setlistPreviewFontSize}
+                              transposition={getItemTransposition(item)}
+                              songKey={item.key}
+                              disableColumnCalculation={true}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
