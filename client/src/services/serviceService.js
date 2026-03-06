@@ -1,5 +1,6 @@
 import api from './api';
 import offlineStorage from '../utils/offlineStorage';
+import dataCache from '../utils/dataCache';
 
 // Normalize service_songs (snake_case nested objects from API) into flat song objects
 // that the frontend expects (title, content, key, etc. at top level)
@@ -42,17 +43,22 @@ const serviceService = {
           if (cached) workspaceId = JSON.parse(cached).id;
         } catch { /* ignore */ }
       }
+
+      const cacheKey = `services:all:${workspaceId || 'default'}`;
+      const cachedData = dataCache.get(cacheKey);
+      if (cachedData) return cachedData;
+
       const params = workspaceId ? { workspaceId } : {};
       const response = await api.get('/services', { params });
       const services = Array.isArray(response.data) ? response.data : response.data.services || [];
 
-      // Save to IndexedDB for offline use
+      dataCache.set(cacheKey, services);
+
+      // Save to IndexedDB for offline use (non-blocking)
       if (services && services.length > 0) {
-        for (const service of services) {
-          await offlineStorage.saveService(service).catch(err =>
-            console.warn('Failed to cache service:', err)
-          );
-        }
+        Promise.all(services.map(service =>
+          offlineStorage.saveService(service).catch(() => {})
+        )).catch(() => {});
       }
 
       return services;
@@ -71,21 +77,25 @@ const serviceService = {
   // Get single service by ID (with full set list)
   getServiceById: async (id) => {
     try {
+      const cacheKey = `services:${id}`;
+      const cachedData = dataCache.get(cacheKey);
+      if (cachedData) return cachedData;
+
       const response = await api.get(`/services/${id}`);
       const service = normalizeServiceSongs(response.data.service || response.data);
 
-      // Save to IndexedDB for offline use
+      dataCache.set(cacheKey, service, 15000); // 15s TTL for individual services
+
+      // Save to IndexedDB for offline use (non-blocking)
       if (service) {
-        await offlineStorage.saveService(service).catch(err =>
-          console.warn('Failed to cache service:', err)
-        );
+        offlineStorage.saveService(service).catch(() => {});
       }
 
       return service;
     } catch (error) {
       // Fallback to IndexedDB on network failure
       console.warn('Network error, trying offline storage:', error.message);
-      const offlineService = await offlineStorage.getService(parseInt(id, 10));
+      const offlineService = await offlineStorage.getService(id);
       if (offlineService) {
         console.debug('Returning service from offline storage');
         return offlineService;
@@ -115,36 +125,42 @@ const serviceService = {
   // Create new service
   createService: async (serviceData) => {
     const response = await api.post('/services', serviceData);
+    dataCache.invalidate('services:');
     return response.data.service || response.data;
   },
 
   // Update service
   updateService: async (id, serviceData) => {
     const response = await api.put(`/services/${id}`, serviceData);
+    dataCache.invalidate('services:');
     return response.data.service || response.data;
   },
 
   // Delete service
   deleteService: async (id) => {
     const response = await api.delete(`/services/${id}`);
+    dataCache.invalidate('services:');
     return response.data;
   },
 
   // Add song to service (set list)
   addSongToService: async (serviceId, songData) => {
     const response = await api.post(`/services/${serviceId}/songs`, songData);
+    dataCache.invalidate(`services:${serviceId}`);
     return response.data;
   },
 
   // Update song in service (position, notes, etc.)
   updateServiceSong: async (serviceId, songId, updates) => {
     const response = await api.put(`/services/${serviceId}/songs/${songId}`, updates);
+    dataCache.invalidate(`services:${serviceId}`);
     return response.data;
   },
 
   // Remove song from service
   removeSongFromService: async (serviceId, songId) => {
     const response = await api.delete(`/services/${serviceId}/songs/${songId}`);
+    dataCache.invalidate(`services:${serviceId}`);
     return response.data;
   },
 
@@ -153,6 +169,7 @@ const serviceService = {
     const response = await api.put(`/services/${serviceId}/songs/${songId}`, {
       transposition
     });
+    dataCache.invalidate(`services:${serviceId}`);
     return response.data;
   },
 

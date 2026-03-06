@@ -1,9 +1,14 @@
 import api from './api';
 import offlineStorage from '../utils/offlineStorage';
+import dataCache from '../utils/dataCache';
 
 const songService = {
-  // Get all songs
+  // Get all songs (with in-memory cache for instant revisits)
   getAllSongs: async (workspaceId = null, page = 1, limit = 500) => {
+    const cacheKey = `songs:${workspaceId || 'all'}:${page}:${limit}`;
+    const cached = dataCache.get(cacheKey);
+    if (cached) return cached;
+
     try {
       const params = { page, limit };
       if (workspaceId) params.workspace_id = workspaceId;
@@ -12,9 +17,12 @@ const songService = {
       // Handle both paginated response (new) and array response (legacy/offline)
       const songs = response.data.songs || response.data;
 
+      // Cache in memory for instant revisits
+      dataCache.set(cacheKey, songs);
+
       // Save songs to offline storage for future offline use
       if (songs && songs.length > 0) {
-        await offlineStorage.saveSongs(songs).catch(err => {
+        offlineStorage.saveSongs(songs).catch(err => {
           console.warn('Failed to save songs to offline storage:', err);
         });
       }
@@ -52,7 +60,7 @@ const songService = {
     } catch (error) {
       // If network request fails, try to get song from offline storage
       console.warn('Network request failed, attempting to load from offline storage');
-      const offlineSong = await offlineStorage.getSong(parseInt(id));
+      const offlineSong = await offlineStorage.getSong(id);
 
       if (offlineSong) {
         console.debug('Loaded song from offline storage');
@@ -78,9 +86,12 @@ const songService = {
     const response = await api.post('/songs', songData);
     const song = response.data.song || response.data;
 
+    // Invalidate songs cache so next fetch gets fresh data
+    dataCache.invalidate('songs:');
+
     // Save new song to offline storage
     if (song) {
-      await offlineStorage.saveSong(song).catch(err => {
+      offlineStorage.saveSong(song).catch(err => {
         console.warn('Failed to save new song to offline storage:', err);
       });
     }
@@ -93,9 +104,11 @@ const songService = {
     const response = await api.put(`/songs/${id}`, songData);
     const song = response.data.song || response.data;
 
+    dataCache.invalidate('songs:');
+
     // Update song in offline storage
     if (song) {
-      await offlineStorage.saveSong(song).catch(err => {
+      offlineStorage.saveSong(song).catch(err => {
         console.warn('Failed to update song in offline storage:', err);
       });
     }
@@ -107,8 +120,10 @@ const songService = {
   deleteSong: async (id) => {
     const response = await api.delete(`/songs/${id}`);
 
+    dataCache.invalidate('songs:');
+
     // Delete song from offline storage
-    await offlineStorage.deleteSong(parseInt(id)).catch(err => {
+    offlineStorage.deleteSong(id).catch(err => {
       console.warn('Failed to delete song from offline storage:', err);
     });
 

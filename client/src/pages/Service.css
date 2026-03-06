@@ -559,8 +559,6 @@
 
 .current-service {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
   padding: 20px;
@@ -940,8 +938,6 @@
 
 .modal-content {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
   padding: 30px;
@@ -1134,9 +1130,7 @@
 }
 
 .controls-drawer {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.98);
   border-radius: 20px 20px 0 0;
   padding: 20px;
   width: 100%;

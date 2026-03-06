@@ -19,8 +19,6 @@
   right: 0;
   z-index: 100;
   background-color: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   padding: var(--spacing-md) 5%;
   display: flex;
   flex-wrap: wrap;
@@ -112,7 +110,6 @@
   gap: 6px;
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(5px);
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 20px;
   transition: all 0.3s ease;
@@ -242,7 +239,6 @@
   border-radius: 30px;
   font-size: 16px;
   background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
   box-sizing: border-box;
   transition: all 0.3s ease;
 }
@@ -279,7 +275,6 @@
 
 .song-card {
   background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 24px;
   padding: 24px;
@@ -378,7 +373,6 @@
 /* Inline Song Display */
 .song-display-inline {
   background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 28px;
   padding: 32px;
@@ -453,7 +447,6 @@
   text-align: center;
   padding: 8px 16px;
   background-color: rgba(248, 249, 250, 0.95);
-  backdrop-filter: blur(5px);
   color: #333;
   font-weight: 600;
   border-radius: 20px;
@@ -538,7 +531,6 @@
 
 .song-content-inline {
   background-color: rgba(248, 249, 250, 0.6);
-  backdrop-filter: blur(5px);
   border-radius: 20px;
   padding: 20px;
   margin-bottom: 15px;
@@ -614,7 +606,6 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -623,8 +614,6 @@
 
 .modal-content {
   background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 20px;
   padding: 35px;
@@ -664,8 +653,6 @@
   height: 75px;
   padding: 0;
   background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border: 2px solid rgba(255, 255, 255, 0.6);
   border-radius: 16px;
   font-size: 36px;

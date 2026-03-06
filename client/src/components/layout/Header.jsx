@@ -83,7 +83,7 @@ const Header = ({ user, showLogout = false, onLogout, onMenuToggle }) => {
     };
     fetchInvites();
     return () => { cancelled = true; };
-  }, [user, workspaces]); // re-fetch when workspaces change (after accept)
+  }, [user]); // only re-fetch on user change, not workspace changes
 
   const handleRespondInvite = async (token, action) => {
     setRespondingToken(token);

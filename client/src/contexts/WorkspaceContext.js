@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import workspaceService from '../services/workspaceService';
 import { useAuth } from './AuthContext';
+import dataCache from '../utils/dataCache';
 
 const WorkspaceContext = createContext(null);
 
@@ -129,6 +130,10 @@ export const WorkspaceProvider = ({ children }) => {
 
       // Update cache with new active workspace
       cacheWorkspaces(updated, newActive);
+
+      // Clear data cache so songs/services reload for new workspace
+      dataCache.invalidate('songs:');
+      dataCache.invalidate('services:');
 
       return data;
     } catch (err) {

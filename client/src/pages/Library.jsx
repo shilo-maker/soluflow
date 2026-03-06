@@ -225,76 +225,51 @@ const Library = () => {
 
   const { tagNames: searchTagNames, textQuery } = parseSearchQuery(debouncedSearchQuery);
 
-  // Memoize filtered songs to prevent unnecessary recalculations
+  // Memoize filtered songs — single pass: filter + assign priority together
   const displayedSongs = useMemo(() => {
-    return songs.filter(song => {
-      // Strip niqqud from query and content for Hebrew search matching
-      const query = stripNiqqud(textQuery.toLowerCase());
+    const query = textQuery ? stripNiqqud(textQuery.toLowerCase()) : '';
+    const hasTagFilter = searchTagNames.length > 0;
+    const results = [];
 
-      // If there's no text query, don't filter by text (only by tags)
-      let textMatch = true;
-      if (query) {
-        const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
-        const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
+    for (let i = 0; i < songs.length; i++) {
+      const song = songs[i];
 
-        // Search in lyrics content (strip chords and niqqud)
-        const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
-        const contentMatch = strippedContent.includes(query);
-
-        textMatch = titleMatch || authorsMatch || contentMatch;
-      }
-
-      // Filter by tags if any #tagname patterns were found
-      let tagMatch = true;
-      if (searchTagNames.length > 0) {
+      // Tag filter (early exit)
+      if (hasTagFilter) {
         const songTags = song.flow_tags || song.tags || [];
-        tagMatch = songTags.length > 0 && searchTagNames.every(searchTag =>
+        if (songTags.length === 0 || !searchTagNames.every(searchTag =>
           songTags.some(tag => stripNiqqud(tag.name.toLowerCase()).includes(searchTag))
-        );
+        )) continue;
       }
 
-      return textMatch && tagMatch;
-    }).map(song => {
-      // Assign priority based on what matched (lower number = higher priority)
-      const query = stripNiqqud(textQuery.toLowerCase());
-
-      // If no text query, all songs have same priority
+      // Text filter + priority in one pass
       if (!query) {
-        return { ...song, searchPriority: 1 };
+        results.push({ ...song, searchPriority: 1 });
+        continue;
       }
 
       const titleMatch = stripNiqqud(song.title.toLowerCase()).includes(query);
-      const strippedContent = stripNiqqud(stripChords(song.content || '').toLowerCase());
-      const contentMatch = strippedContent.includes(query);
+      if (titleMatch) { results.push({ ...song, searchPriority: 1 }); continue; }
+
+      // Check content before authors — content match (priority 2) ranks higher than author match (priority 3)
+      const contentMatch = stripNiqqud(stripChords(song.content || '').toLowerCase()).includes(query);
+      if (contentMatch) { results.push({ ...song, searchPriority: 2 }); continue; }
+
       const authorsMatch = song.authors && stripNiqqud(song.authors.toLowerCase()).includes(query);
+      if (authorsMatch) { results.push({ ...song, searchPriority: 3 }); continue; }
+    }
 
-      let priority;
-      if (titleMatch) {
-        priority = 1;
-      } else if (contentMatch) {
-        priority = 2;
-      } else if (authorsMatch) {
-        priority = 3;
-      } else {
-        priority = 4;
-      }
-
-      return { ...song, searchPriority: priority };
-    }).sort((a, b) => a.searchPriority - b.searchPriority);
+    return results.sort((a, b) => a.searchPriority - b.searchPriority);
   }, [songs, textQuery, searchTagNames]);
 
   const handleSongClick = (song) => {
-    // Close any open modal first
     setShowKeySelectorModal(false);
-
-    // Toggle: if clicking the same song, close it; otherwise open the new song
     if (selectedSong?.id === song.id) {
       setSelectedSong(null);
     } else {
-      // Update immediately for instant feedback
       setSelectedSong(song);
-      setFontSize(14); // Reset font size when selecting new song
-      setTransposition(0); // Reset transposition when selecting new song
+      setFontSize(14);
+      setTransposition(0);
     }
   };
 

@@ -35,8 +35,6 @@
 /* Card */
 .um-card {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
   box-shadow: var(--shadow-md);
@@ -296,7 +294,6 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;

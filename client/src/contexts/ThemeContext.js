@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../services/api';
 
@@ -116,26 +116,27 @@ export const ThemeProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Load theme preferences when user logs in
+  const themeFetchedRef = useRef(false);
   useEffect(() => {
     const loadThemePreferences = async () => {
       if (isAuthenticated && user && !user.isGuest) {
+        // Skip refetch if already loaded for this session
+        if (themeFetchedRef.current) { setLoading(false); return; }
         try {
           const response = await api.get('/users/theme/preferences');
           const userTheme = normalizeTheme(response.data);
           setTheme(userTheme);
-          // Cache in localStorage for instant loading next time
           localStorage.setItem('userTheme', JSON.stringify(userTheme));
+          themeFetchedRef.current = true;
         } catch (error) {
           console.error('Error loading theme preferences:', error);
-          // Use default theme if there's an error
           setTheme(defaultTheme);
           localStorage.setItem('userTheme', JSON.stringify(defaultTheme));
         }
       } else {
-        // Use Nature theme for guests (not authenticated)
         setTheme(guestTheme);
-        // Clear any cached user theme when logged out
         localStorage.removeItem('userTheme');
+        themeFetchedRef.current = false;
       }
       setLoading(false);
     };

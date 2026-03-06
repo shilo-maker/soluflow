@@ -648,8 +648,6 @@
   margin-top: 40px;
   padding: 20px;
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -837,8 +835,6 @@
 /* Controls Drawer */
 .controls-drawer {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px 20px 0 0;
   padding: 20px;

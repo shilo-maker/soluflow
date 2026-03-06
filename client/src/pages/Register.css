@@ -23,7 +23,6 @@
   cursor: pointer;
   margin-bottom: var(--spacing-lg);
   transition: all var(--transition-base);
-  backdrop-filter: blur(10px);
 }
 
 .btn-back-to-songs:hover {

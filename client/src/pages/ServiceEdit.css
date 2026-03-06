@@ -66,7 +66,6 @@
 /* Cards */
 .edit-card {
   background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 20px;
@@ -192,7 +191,6 @@
   box-sizing: border-box;
   transition: border-color 0.2s, box-shadow 0.2s;
   background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
 }
 
 .edit-search:focus {
@@ -228,7 +226,6 @@
 /* Available song item - library card style */
 .edit-available-item {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
   padding: 14px 18px;
@@ -303,7 +300,6 @@
 /* Inline song display (expanded preview with ChordProDisplay) */
 .edit-song-display-inline {
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 1rem;
   padding: 20px;

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Music, ListMusic, Settings, UserCog, LayoutDashboard, LogOut, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,6 +6,15 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme, GRADIENT_PRESETS } from '../../contexts/ThemeContext';
 import { getInitials, getAvatarColor } from '../../utils/imageUtils';
 import './Sidebar.css';
+
+// Prefetch route chunks on hover for instant navigation
+const routePrefetchMap = {
+  '/library': () => import('../../pages/Library'),
+  '/services': () => import('../../pages/ServicesList'),
+  '/users': () => import('../../pages/UserManagement'),
+  '/user/settings': () => import('../../pages/UserSettings'),
+};
+const prefetched = new Set();
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -48,6 +57,15 @@ const Sidebar = ({ isOpen, onClose }) => {
       onClose();
     }
   };
+
+  const handleNavHover = useCallback((path) => {
+    if (prefetched.has(path)) return;
+    const prefetchFn = routePrefetchMap[path];
+    if (prefetchFn) {
+      prefetched.add(path);
+      prefetchFn().catch(() => {}); // Silently prefetch chunk
+    }
+  }, []);
 
   // Build nav items based on user role
   const navItems = [
@@ -135,6 +153,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 key={item.to}
                 to={item.to}
                 onClick={handleNavClick}
+                onMouseEnter={() => handleNavHover(item.to)}
                 className={({ isActive }) =>
                   `sidebar-nav-item ${isActive ? 'sidebar-nav-item-active' : ''}`
                 }

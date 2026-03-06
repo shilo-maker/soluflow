@@ -35,8 +35,6 @@
 /* Card - matches SoluEvents .card class */
 .settings-card {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
   box-shadow: var(--shadow-md);
@@ -391,7 +389,6 @@
   padding: 6px 12px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
-  backdrop-filter: blur(4px);
 }
 
 .size-slider {
@@ -451,8 +448,6 @@
   margin-bottom: 20px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

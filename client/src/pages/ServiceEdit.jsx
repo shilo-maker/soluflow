@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,6 +40,7 @@ const ServiceEdit = () => {
   const [setlist, setSetlist] = useState([]);
   const [availableSongs, setAvailableSongs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [loadingSongs, setLoadingSongs] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
@@ -70,6 +71,12 @@ const ServiceEdit = () => {
 
   const fetchingRef = useRef(false);
   const originalSongsRef = useRef([]);
+
+  // Debounce search for available songs
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Load service data
   useEffect(() => {
@@ -311,27 +318,23 @@ const ServiceEdit = () => {
   };
 
   const filteredSongs = useMemo(() => {
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     const available = availableSongs.filter(song => !setlist.some(s => s.segment_type !== 'prayer' && s.id === song.id));
     if (!query) return available;
 
-    const titleMatches = [];
-    const authorMatches = [];
-    const contentMatches = [];
-
-    available.forEach(song => {
+    const results = [];
+    for (const song of available) {
       const titleMatch = song.title.toLowerCase().includes(query);
+      if (titleMatch) { results.push({ ...song, _priority: 1 }); continue; }
+
       const authorMatch = song.authors && song.authors.toLowerCase().includes(query);
-      const strippedContent = stripChords(song.content || '').toLowerCase();
-      const contentMatch = strippedContent.includes(query);
+      if (authorMatch) { results.push({ ...song, _priority: 2 }); continue; }
 
-      if (titleMatch) titleMatches.push(song);
-      else if (authorMatch) authorMatches.push(song);
-      else if (contentMatch) contentMatches.push(song);
-    });
-
-    return [...titleMatches, ...authorMatches, ...contentMatches];
-  }, [availableSongs, setlist, searchQuery]);
+      const contentMatch = stripChords(song.content || '').toLowerCase().includes(query);
+      if (contentMatch) { results.push({ ...song, _priority: 3 }); }
+    }
+    return results.sort((a, b) => a._priority - b._priority);
+  }, [availableSongs, setlist, debouncedSearchQuery]);
 
 
   const generatedTitle = useMemo(() => {
