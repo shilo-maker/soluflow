@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../services/api';
+import offlineQueue from '../utils/offlineQueue';
 
 const ThemeContext = createContext(null);
 
@@ -130,8 +131,16 @@ export const ThemeProvider = ({ children }) => {
           themeFetchedRef.current = true;
         } catch (error) {
           console.error('Error loading theme preferences:', error);
-          setTheme(defaultTheme);
-          localStorage.setItem('userTheme', JSON.stringify(defaultTheme));
+          // On network failure, keep the cached theme instead of resetting to defaults
+          const cachedTheme = localStorage.getItem('userTheme');
+          if (cachedTheme) {
+            try {
+              setTheme(normalizeTheme(JSON.parse(cachedTheme)));
+            } catch {
+              setTheme(defaultTheme);
+            }
+          }
+          // Don't overwrite localStorage — preserve the cached theme
         }
       } else {
         setTheme(guestTheme);
@@ -198,6 +207,15 @@ export const ThemeProvider = ({ children }) => {
       localStorage.setItem('userTheme', JSON.stringify(updatedTheme));
       return response.data;
     } catch (error) {
+      // Apply optimistically offline
+      const isOffline = !navigator.onLine || error?.error === 'No response from server';
+      if (isOffline) {
+        const normalized = normalizeTheme(newTheme);
+        setTheme(normalized);
+        localStorage.setItem('userTheme', JSON.stringify(normalized));
+        offlineQueue.enqueue({ method: 'PUT', url: '/users/theme/preferences', data: newTheme }).catch(() => {});
+        return newTheme;
+      }
       console.error('Error updating theme preferences:', error);
       throw error;
     }
@@ -209,6 +227,13 @@ export const ThemeProvider = ({ children }) => {
       setTheme(defaultTheme);
       localStorage.setItem('userTheme', JSON.stringify(defaultTheme));
     } catch (error) {
+      const isOffline = !navigator.onLine || error?.error === 'No response from server';
+      if (isOffline) {
+        setTheme(defaultTheme);
+        localStorage.setItem('userTheme', JSON.stringify(defaultTheme));
+        offlineQueue.enqueue({ method: 'PUT', url: '/users/theme/preferences', data: defaultTheme }).catch(() => {});
+        return;
+      }
       console.error('Error resetting theme:', error);
       throw error;
     }

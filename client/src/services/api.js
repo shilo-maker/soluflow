@@ -33,7 +33,11 @@ api.interceptors.response.use(
       // Server responded with error
       if (error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
-        // But only if we're not on a guest-accessible page or auth pages
+        // But NOT if we're offline (stale cached response), on a guest page, or doing auth
+        if (!navigator.onLine) {
+          return Promise.reject(error.response.data);
+        }
+
         const guestPages = ['/', '/open', '/services/code', '/services/edit', '/service/code', '/service/edit', '/song'];
         const authPages = ['/login', '/register', '/sso', '/create-for-soluplan'];
         const currentPath = window.location.pathname;
@@ -64,6 +68,11 @@ api.interceptors.response.use(
 
           // Dispatch custom event for WorkspaceContext to handle
           window.dispatchEvent(new CustomEvent('workspace-access-denied'));
+
+          // Don't attempt auto-switch when offline
+          if (!navigator.onLine) {
+            return Promise.reject(error.response.data);
+          }
 
           // Try to switch to personal workspace automatically
           try {

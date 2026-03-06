@@ -71,8 +71,14 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Auth check failed:', error);
 
-      // If we're offline and have a token, don't log out
-      if (!navigator.onLine && authService.getToken()) {
+      // If we have a token and the failure looks like a network issue, don't log out.
+      // navigator.onLine can be wrong, so also check the error shape.
+      const isNetworkFailure = !navigator.onLine ||
+        error?.error === 'No response from server' ||
+        error?.code === 'ERR_NETWORK' ||
+        error?.code === 'ECONNABORTED';
+
+      if (isNetworkFailure && authService.getToken()) {
         const cachedUser = localStorage.getItem('user');
         if (cachedUser) {
           try {
@@ -84,9 +90,14 @@ export const AuthProvider = ({ children }) => {
             // Continue to logout if parsing fails
           }
         }
+        // Even without cached user data, keep them "logged in" with a stub
+        setUser({ id: 'offline', username: 'Offline User' });
+        setIsAuthenticated(true);
+        setLoading(false);
+        return;
       }
 
-      // Token is invalid or expired (when online)
+      // Token is invalid or expired (confirmed by server while online)
       authService.logout();
       setUser(null);
       setIsAuthenticated(false);

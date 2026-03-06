@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme, GRADIENT_PRESETS } from '../contexts/ThemeContext';
 import api from '../services/api';
+import offlineQueue from '../utils/offlineQueue';
 import { compressAvatar, getInitials, getAvatarColor } from '../utils/imageUtils';
 import AvatarCropModal from '../components/AvatarCropModal';
 import './UserSettings.css';
@@ -46,11 +47,18 @@ const UserSettings = () => {
     setNameSaving(true);
     setNameMsg(null);
     try {
-      const response = await api.put('/auth/preferences', { name_he: nameHe, name_en: nameEn });
+      await api.put('/auth/preferences', { name_he: nameHe, name_en: nameEn });
       if (updateUser) updateUser({ name_he: nameHe, name_en: nameEn });
       setNameMsg({ type: 'success', text: t('userSettings.nameSaved') });
     } catch (error) {
-      setNameMsg({ type: 'error', text: error.response?.data?.error || t('userSettings.errorMessage') });
+      const isOffline = !navigator.onLine || error?.error === 'No response from server';
+      if (isOffline) {
+        if (updateUser) updateUser({ name_he: nameHe, name_en: nameEn });
+        offlineQueue.enqueue({ method: 'PUT', url: '/auth/preferences', data: { name_he: nameHe, name_en: nameEn } }).catch(() => {});
+        setNameMsg({ type: 'success', text: t('userSettings.nameSaved') + ' (offline)' });
+      } else {
+        setNameMsg({ type: 'error', text: error.response?.data?.error || t('userSettings.errorMessage') });
+      }
     } finally {
       setNameSaving(false);
     }
@@ -70,11 +78,8 @@ const UserSettings = () => {
     setSelectedLanguage(lang);
     setProfileMsg(null);
     try {
-      const response = await api.put('/auth/preferences', { language: lang });
-      await setLanguage(lang);
-      if (updateUser) {
-        updateUser({ language: lang, ...response.data.preferences });
-      }
+      await setLanguage(lang); // LanguageContext handles API + offline queue
+      if (updateUser) updateUser({ language: lang });
       setProfileMsg({ type: 'success', text: t('userSettings.successMessage') });
     } catch (error) {
       setProfileMsg({ type: 'error', text: error.response?.data?.error || t('userSettings.errorMessage') });

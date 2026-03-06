@@ -117,14 +117,17 @@ class OfflineQueue {
             case 'POST':
               response = await api.post(op.url, op.data);
               // Handle offline-created services with embedded setlist
-              if (op.url === '/services' && op.data?.setlist?.length > 0 && response?.data) {
+              if (op.url === '/services' && response?.data) {
                 const newService = response.data.service || response.data;
                 if (newService?.id) {
-                  for (const item of op.data.setlist) {
-                    try {
-                      await api.post(`/services/${newService.id}/songs`, item);
-                    } catch (e) {
-                      console.warn('Failed to add setlist item during sync:', e);
+                  // Process embedded setlist if present
+                  if (op.data?.setlist?.length > 0) {
+                    for (const item of op.data.setlist) {
+                      try {
+                        await api.post(`/services/${newService.id}/songs`, item);
+                      } catch (e) {
+                        console.warn('Failed to add setlist item during sync:', e);
+                      }
                     }
                   }
                   // Clean up the offline temp service from IndexedDB
@@ -132,6 +135,14 @@ class OfflineQueue {
                     offlineStorage.deleteService(op.tempId).catch(() => {});
                     offlineStorage.saveService(newService).catch(() => {});
                   }
+                }
+              }
+              // Handle offline-created songs — clean up temp ID
+              if (op.url === '/songs' && op.tempId && response?.data) {
+                const newSong = response.data.song || response.data;
+                if (newSong?.id) {
+                  offlineStorage.deleteSong(op.tempId).catch(() => {});
+                  offlineStorage.saveSong(newSong).catch(() => {});
                 }
               }
               break;

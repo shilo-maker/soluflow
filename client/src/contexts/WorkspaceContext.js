@@ -116,7 +116,13 @@ export const WorkspaceProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const data = await workspaceService.switchWorkspace(workspaceId);
+      try {
+        await workspaceService.switchWorkspace(workspaceId);
+      } catch (err) {
+        // If offline, apply optimistically — queue the server call
+        const isOffline = !navigator.onLine || err?.error === 'No response from server';
+        if (!isOffline) throw err;
+      }
 
       // Update workspaces list to reflect new active workspace
       const updated = workspaces.map(ws => ({
@@ -135,7 +141,7 @@ export const WorkspaceProvider = ({ children }) => {
       dataCache.invalidate('songs:');
       dataCache.invalidate('services:');
 
-      return data;
+      return newActive;
     } catch (err) {
       console.error('Failed to switch workspace:', err);
       setError(err.message || 'Failed to switch workspace');

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../services/api';
+import offlineQueue from '../utils/offlineQueue';
 import enTranslations from '../locales/en.json';
 import heTranslations from '../locales/he.json';
 
@@ -69,14 +70,24 @@ export const LanguageProvider = ({ children }) => {
 
       // Update on server if user is logged in
       if (user && !user.isGuest) {
-        await api.put('/auth/preferences', { language: newLanguage });
+        try {
+          await api.put('/auth/preferences', { language: newLanguage });
+        } catch (err) {
+          // If offline, queue the update but keep the local change
+          const isOffline = !navigator.onLine || err?.error === 'No response from server';
+          if (isOffline) {
+            offlineQueue.enqueue({ method: 'PUT', url: '/auth/preferences', data: { language: newLanguage } }).catch(() => {});
+          } else {
+            throw err; // Real server error — will be caught below
+          }
+        }
       } else {
         // For guests, save to localStorage
         localStorage.setItem('guestLanguage', newLanguage);
       }
     } catch (error) {
       console.error('Failed to update language:', error);
-      // Revert on error
+      // Revert on error (only for real server errors, not offline)
       const oldLanguage = user?.language || localStorage.getItem('guestLanguage') || 'he';
       setLanguageState(oldLanguage);
       setIsRTL(oldLanguage === 'he');
