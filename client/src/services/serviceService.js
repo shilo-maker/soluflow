@@ -1,6 +1,7 @@
 import api from './api';
 import offlineStorage from '../utils/offlineStorage';
 import dataCache from '../utils/dataCache';
+import offlineQueue from '../utils/offlineQueue';
 
 // Normalize service_songs (snake_case nested objects from API) into flat song objects
 // that the frontend expects (title, content, key, etc. at top level)
@@ -124,53 +125,163 @@ const serviceService = {
 
   // Create new service
   createService: async (serviceData) => {
-    const response = await api.post('/services', serviceData);
-    dataCache.invalidate('services:');
-    return response.data.service || response.data;
+    try {
+      const response = await api.post('/services', serviceData);
+      dataCache.invalidate('services:');
+      const service = response.data.service || response.data;
+      offlineStorage.saveService(service).catch(() => {});
+      return service;
+    } catch (error) {
+      if (!navigator.onLine) {
+        // Create optimistic local service
+        const tempId = `offline_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        const localService = {
+          ...serviceData,
+          id: tempId,
+          _offline: true,
+          _pendingSync: true,
+          created_at: new Date().toISOString()
+        };
+        await offlineStorage.saveService(localService);
+        await offlineQueue.enqueue({
+          method: 'POST',
+          url: '/services',
+          data: serviceData,
+          tempId
+        });
+        dataCache.invalidate('services:');
+        return localService;
+      }
+      throw error;
+    }
   },
 
   // Update service
   updateService: async (id, serviceData) => {
-    const response = await api.put(`/services/${id}`, serviceData);
-    dataCache.invalidate('services:');
-    return response.data.service || response.data;
+    try {
+      const response = await api.put(`/services/${id}`, serviceData);
+      dataCache.invalidate('services:');
+      const service = response.data.service || response.data;
+      offlineStorage.saveService(service).catch(() => {});
+      return service;
+    } catch (error) {
+      if (!navigator.onLine) {
+        // Apply optimistic update to IndexedDB
+        const existing = await offlineStorage.getService(id).catch(() => null);
+        const updated = { ...existing, ...serviceData, id, _pendingSync: true };
+        await offlineStorage.saveService(updated);
+        await offlineQueue.enqueue({
+          method: 'PUT',
+          url: `/services/${id}`,
+          data: serviceData
+        });
+        dataCache.invalidate('services:');
+        return updated;
+      }
+      throw error;
+    }
   },
 
   // Delete service
   deleteService: async (id) => {
-    const response = await api.delete(`/services/${id}`);
-    dataCache.invalidate('services:');
-    return response.data;
+    try {
+      const response = await api.delete(`/services/${id}`);
+      dataCache.invalidate('services:');
+      offlineStorage.deleteService(id).catch(() => {});
+      return response.data;
+    } catch (error) {
+      if (!navigator.onLine) {
+        await offlineStorage.deleteService(id).catch(() => {});
+        await offlineQueue.enqueue({
+          method: 'DELETE',
+          url: `/services/${id}`
+        });
+        dataCache.invalidate('services:');
+        return { success: true };
+      }
+      throw error;
+    }
   },
 
   // Add song to service (set list)
   addSongToService: async (serviceId, songData) => {
-    const response = await api.post(`/services/${serviceId}/songs`, songData);
-    dataCache.invalidate(`services:${serviceId}`);
-    return response.data;
+    try {
+      const response = await api.post(`/services/${serviceId}/songs`, songData);
+      dataCache.invalidate(`services:${serviceId}`);
+      return response.data;
+    } catch (error) {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          method: 'POST',
+          url: `/services/${serviceId}/songs`,
+          data: songData
+        });
+        dataCache.invalidate(`services:${serviceId}`);
+        return { success: true, _offline: true };
+      }
+      throw error;
+    }
   },
 
   // Update song in service (position, notes, etc.)
   updateServiceSong: async (serviceId, songId, updates) => {
-    const response = await api.put(`/services/${serviceId}/songs/${songId}`, updates);
-    dataCache.invalidate(`services:${serviceId}`);
-    return response.data;
+    try {
+      const response = await api.put(`/services/${serviceId}/songs/${songId}`, updates);
+      dataCache.invalidate(`services:${serviceId}`);
+      return response.data;
+    } catch (error) {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          method: 'PUT',
+          url: `/services/${serviceId}/songs/${songId}`,
+          data: updates
+        });
+        dataCache.invalidate(`services:${serviceId}`);
+        return { success: true, _offline: true };
+      }
+      throw error;
+    }
   },
 
   // Remove song from service
   removeSongFromService: async (serviceId, songId) => {
-    const response = await api.delete(`/services/${serviceId}/songs/${songId}`);
-    dataCache.invalidate(`services:${serviceId}`);
-    return response.data;
+    try {
+      const response = await api.delete(`/services/${serviceId}/songs/${songId}`);
+      dataCache.invalidate(`services:${serviceId}`);
+      return response.data;
+    } catch (error) {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          method: 'DELETE',
+          url: `/services/${serviceId}/songs/${songId}`
+        });
+        dataCache.invalidate(`services:${serviceId}`);
+        return { success: true, _offline: true };
+      }
+      throw error;
+    }
   },
 
   // Update song transposition in service (uses general update endpoint)
   updateSongTransposition: async (serviceId, songId, transposition) => {
-    const response = await api.put(`/services/${serviceId}/songs/${songId}`, {
-      transposition
-    });
-    dataCache.invalidate(`services:${serviceId}`);
-    return response.data;
+    try {
+      const response = await api.put(`/services/${serviceId}/songs/${songId}`, {
+        transposition
+      });
+      dataCache.invalidate(`services:${serviceId}`);
+      return response.data;
+    } catch (error) {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          method: 'PUT',
+          url: `/services/${serviceId}/songs/${songId}`,
+          data: { transposition }
+        });
+        dataCache.invalidate(`services:${serviceId}`);
+        return { success: true, _offline: true };
+      }
+      throw error;
+    }
   },
 
   // Get share link for service

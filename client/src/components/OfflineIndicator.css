@@ -45,6 +45,20 @@
   color: white;
 }
 
+.offline-indicator.syncing {
+  background-color: #2196F3;
+  color: white;
+}
+
+.offline-indicator.syncing .offline-indicator-icon {
+  animation: spin-icon 1s linear infinite;
+}
+
+@keyframes spin-icon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .offline-indicator.online {
   background-color: var(--color-success);
   color: white;
@@ -74,6 +88,14 @@
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.offline-indicator-badge {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {

@@ -426,12 +426,17 @@ const ServiceEdit = () => {
       }
 
       // Refresh original songs ref so subsequent saves diff correctly
-      const refreshed = await serviceService.getServiceById(id);
-      const refreshedSongs = refreshed.songs || [];
-      setSetlist(refreshedSongs);
-      originalSongsRef.current = refreshedSongs;
+      if (navigator.onLine) {
+        const refreshed = await serviceService.getServiceById(id);
+        const refreshedSongs = refreshed.songs || [];
+        setSetlist(refreshedSongs);
+        originalSongsRef.current = refreshedSongs;
+      } else {
+        // Offline: treat current setlist as the new baseline
+        originalSongsRef.current = [...setlist];
+      }
 
-      setToastMessage('Service updated successfully!');
+      setToastMessage(navigator.onLine ? 'Service updated successfully!' : 'Saved offline — will sync when online');
       setToastType('success');
       setShowToast(true);
       setSaved(true);

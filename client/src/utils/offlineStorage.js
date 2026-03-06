@@ -2,7 +2,7 @@
 // Provides persistent storage for songs and services when offline
 
 const DB_NAME = 'SoluFlowOfflineDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const SONGS_STORE = 'songs';
 const SERVICES_STORE = 'services';
 
@@ -47,6 +47,15 @@ class OfflineStorage {
           const servicesStore = db.createObjectStore(SERVICES_STORE, { keyPath: 'id' });
           servicesStore.createIndex('code', 'code', { unique: false });
           servicesStore.createIndex('date', 'date', { unique: false });
+        }
+
+        // v2: pending operations store (used by offlineQueue)
+        if (!db.objectStoreNames.contains('pending_ops')) {
+          const pendingStore = db.createObjectStore('pending_ops', {
+            keyPath: 'id',
+            autoIncrement: true
+          });
+          pendingStore.createIndex('timestamp', 'timestamp', { unique: false });
         }
       };
     });

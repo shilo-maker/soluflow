@@ -145,6 +145,19 @@ const ServicesList = () => {
     return () => document.removeEventListener('click', handler);
   }, []);
 
+  // Refresh services after offline sync completes
+  useEffect(() => {
+    const handleSyncComplete = async () => {
+      if (!user) return;
+      try {
+        const data = await serviceService.getAllServices(activeWorkspace?.id);
+        setServices(data.map(enrichService));
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('offline-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('offline-sync-complete', handleSyncComplete);
+  }, [user, activeWorkspace?.id, enrichService]);
+
   const showToastMsg = (msg, type = 'success') => {
     setToastMessage(msg);
     setToastType(type);
@@ -194,8 +207,13 @@ const ServicesList = () => {
           }
         }
 
-        // Navigate to new service detail page
-        navigate(`/services/${newService.id}`);
+        // Navigate to new service detail page (skip for offline temp IDs)
+        if (newService._offline) {
+          setServices(prev => [...prev, enrichService(newService)]);
+          showToastMsg('Service saved offline — will sync when online');
+        } else {
+          navigate(`/services/${newService.id}`);
+        }
       }
       // Modal closes itself via onClose after onSave completes
     } catch (err) {
