@@ -10,6 +10,7 @@ import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
 import { stripChords, getTransposeDisplay, transposeChord, convertKeyToFlat } from '../utils/transpose';
 import PrayerItemModal from '../components/PrayerItemModal';
+import BibleRefPicker from '../components/BibleRefPicker';
 import Toast from '../components/Toast';
 import './ServiceEdit.css';
 
@@ -45,6 +46,14 @@ const ServiceEdit = () => {
   const [listView, setListView] = useState('setlist');
   const [isPrayerModalOpen, setIsPrayerModalOpen] = useState(false);
   const [editingPrayerItem, setEditingPrayerItem] = useState(null);
+
+  // Inline prayer form state
+  const [prayerTitle, setPrayerTitle] = useState('');
+  const [prayerTitleTranslation, setPrayerTitleTranslation] = useState('');
+  const [sameVerseForAll, setSameVerseForAll] = useState(false);
+  const [sharedBibleRef, setSharedBibleRef] = useState('');
+  const [prayerPoints, setPrayerPoints] = useState([{ subtitle: '', subtitle_translation: '', description: '', description_translation: '', bible_ref: '' }]);
+  const [prayerError, setPrayerError] = useState('');
 
   // Available songs preview state
   const [previewAvailableSong, setPreviewAvailableSong] = useState(null);
@@ -162,10 +171,76 @@ const ServiceEdit = () => {
     setEditingPrayerItem(null);
   };
 
+  const resetPrayerForm = (data = {}) => {
+    setPrayerTitle(data.title || '');
+    setPrayerTitleTranslation(data.title_translation || '');
+    setSameVerseForAll(data.same_verse_for_all || false);
+    setSharedBibleRef(data.shared_bible_ref || '');
+    setPrayerPoints(
+      data.prayer_points && data.prayer_points.length > 0
+        ? data.prayer_points.map(p => ({ ...p }))
+        : [{ subtitle: '', subtitle_translation: '', description: '', description_translation: '', bible_ref: '' }]
+    );
+    setPrayerError('');
+  };
+
   const handleEditPrayer = (item, e) => {
     e.stopPropagation();
     setEditingPrayerItem(item);
-    setIsPrayerModalOpen(true);
+    let data = {};
+    try {
+      data = typeof item.segment_content === 'string'
+        ? JSON.parse(item.segment_content)
+        : (item.segment_content || {});
+    } catch { data = {}; }
+    resetPrayerForm({ ...data, title: data.title || item.segment_title || item.title || '' });
+    setListView('prayer');
+  };
+
+  const handleSavePrayerInline = () => {
+    if (!prayerTitle.trim()) {
+      setPrayerError(t('prayer.titleRequired'));
+      return;
+    }
+    const prayerData = {
+      title: prayerTitle.trim(),
+      title_translation: prayerTitleTranslation.trim(),
+      same_verse_for_all: sameVerseForAll,
+      shared_bible_ref: sameVerseForAll ? sharedBibleRef : '',
+      prayer_points: prayerPoints.map(p => ({
+        subtitle: (p.subtitle || '').trim(),
+        subtitle_translation: (p.subtitle_translation || '').trim(),
+        description: (p.description || '').trim(),
+        description_translation: (p.description_translation || '').trim(),
+        bible_ref: sameVerseForAll ? '' : (p.bible_ref || '')
+      }))
+    };
+    const itemId = editingPrayerItem?.id || editingPrayerItem?.prayer_temp_id || `prayer_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const prayerItem = {
+      id: itemId,
+      prayer_temp_id: itemId,
+      segment_type: 'prayer',
+      song_id: null,
+      segment_title: prayerTitle.trim(),
+      segment_content: JSON.stringify(prayerData),
+      title: prayerTitle.trim()
+    };
+
+    if (editingPrayerItem) {
+      setSetlist(prev => {
+        const idx = prev.findIndex(s => s.id === editingPrayerItem.id && s.segment_type === 'prayer');
+        if (idx === -1) return [...prev, prayerItem];
+        const next = [...prev];
+        next[idx] = prayerItem;
+        return next;
+      });
+    } else {
+      setSetlist(prev => [...prev, prayerItem]);
+    }
+    setEditingPrayerItem(null);
+    setSaved(false);
+    resetPrayerForm();
+    setListView('setlist');
   };
 
   const handleSelectSong = (index) => {
@@ -458,8 +533,14 @@ const ServiceEdit = () => {
               </button>
               <button
                 type="button"
-                className="edit-tab edit-tab-prayer"
-                onClick={() => { setEditingPrayerItem(null); setIsPrayerModalOpen(true); }}
+                className={`edit-tab edit-tab-prayer ${listView === 'prayer' ? 'active-prayer' : ''}`}
+                onClick={() => {
+                  if (listView !== 'prayer') {
+                    setEditingPrayerItem(null);
+                    resetPrayerForm();
+                  }
+                  setListView('prayer');
+                }}
               >
                 + {t('prayer.addPrayer')}
               </button>
@@ -587,7 +668,7 @@ const ServiceEdit = () => {
                 )}
               </div>
             </div>
-          ) : (
+          ) : listView === 'setlist' ? (
             <div className="edit-setlist-view">
               <div className="edit-setlist-controls">
                 <button
@@ -728,7 +809,143 @@ const ServiceEdit = () => {
                 <div className="edit-hint">{t('serviceEdit.reorderHint')}</div>
               )}
             </div>
-          )}
+          ) : listView === 'prayer' ? (
+            <div className="edit-prayer-form">
+              {prayerError && <div className="edit-error">{prayerError}</div>}
+
+              <div className="edit-field">
+                <label>{t('prayer.prayerTitle')} *</label>
+                <input
+                  type="text"
+                  value={prayerTitle}
+                  onChange={(e) => { setPrayerTitle(e.target.value); if (prayerError) setPrayerError(''); }}
+                  placeholder={t('prayer.prayerTitle')}
+                />
+              </div>
+
+              <div className="edit-field">
+                <label>{t('prayer.titleTranslation')}</label>
+                <input
+                  type="text"
+                  value={prayerTitleTranslation}
+                  onChange={(e) => setPrayerTitleTranslation(e.target.value)}
+                  placeholder={t('prayer.titleTranslationPlaceholder')}
+                />
+              </div>
+
+              <div className="edit-prayer-checkbox">
+                <input
+                  type="checkbox"
+                  id="sameVerseForAll"
+                  checked={sameVerseForAll}
+                  onChange={(e) => setSameVerseForAll(e.target.checked)}
+                />
+                <label htmlFor="sameVerseForAll">{t('prayer.sameVerseForAll')}</label>
+              </div>
+
+              {sameVerseForAll && (
+                <div className="edit-field">
+                  <label>{t('prayer.sharedBibleRef')}</label>
+                  <BibleRefPicker
+                    value={sharedBibleRef}
+                    onChange={(formatted) => setSharedBibleRef(formatted)}
+                  />
+                </div>
+              )}
+
+              <div className="edit-prayer-points-header">
+                <span className="edit-prayer-points-label">{t('prayer.prayerPoints')}</span>
+                <button
+                  type="button"
+                  className="edit-btn-add-point"
+                  onClick={() => setPrayerPoints(prev => [...prev, { subtitle: '', subtitle_translation: '', description: '', description_translation: '', bible_ref: '' }])}
+                >
+                  + {t('prayer.addPoint')}
+                </button>
+              </div>
+
+              {prayerPoints.map((point, idx) => (
+                <div key={idx} className="edit-prayer-point">
+                  <div className="edit-prayer-point-header">
+                    <span className="edit-prayer-point-number">#{idx + 1}</span>
+                    {prayerPoints.length > 1 && (
+                      <button
+                        type="button"
+                        className="edit-btn-remove-point"
+                        onClick={() => setPrayerPoints(prev => prev.filter((_, i) => i !== idx))}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <div className="edit-field">
+                    <label>{t('prayer.pointTitle')}</label>
+                    <input
+                      type="text"
+                      value={point.subtitle}
+                      onChange={(e) => setPrayerPoints(prev => prev.map((p, i) => i === idx ? { ...p, subtitle: e.target.value } : p))}
+                      placeholder={t('prayer.pointTitle')}
+                    />
+                  </div>
+                  <div className="edit-field">
+                    <label>{t('prayer.pointTitleTranslation')}</label>
+                    <input
+                      type="text"
+                      value={point.subtitle_translation}
+                      onChange={(e) => setPrayerPoints(prev => prev.map((p, i) => i === idx ? { ...p, subtitle_translation: e.target.value } : p))}
+                      placeholder={t('prayer.pointTitleTranslationPlaceholder')}
+                    />
+                  </div>
+                  <div className="edit-field">
+                    <label>{t('prayer.description')}</label>
+                    <textarea
+                      value={point.description}
+                      onChange={(e) => setPrayerPoints(prev => prev.map((p, i) => i === idx ? { ...p, description: e.target.value } : p))}
+                      placeholder={t('prayer.description')}
+                      rows={2}
+                      className="edit-textarea"
+                    />
+                  </div>
+                  <div className="edit-field">
+                    <label>{t('prayer.descriptionTranslation')}</label>
+                    <textarea
+                      value={point.description_translation}
+                      onChange={(e) => setPrayerPoints(prev => prev.map((p, i) => i === idx ? { ...p, description_translation: e.target.value } : p))}
+                      placeholder={t('prayer.descriptionTranslationPlaceholder')}
+                      rows={2}
+                      className="edit-textarea"
+                    />
+                  </div>
+                  {!sameVerseForAll && (
+                    <div className="edit-field">
+                      <label>{t('prayer.bibleReference')}</label>
+                      <BibleRefPicker
+                        value={point.bible_ref}
+                        onChange={(formatted) => setPrayerPoints(prev => prev.map((p, i) => i === idx ? { ...p, bible_ref: formatted } : p))}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div className="edit-prayer-actions">
+                <button
+                  type="button"
+                  className="edit-btn-cancel"
+                  onClick={() => { resetPrayerForm(); setEditingPrayerItem(null); setListView('setlist'); }}
+                >
+                  {t('prayer.cancel')}
+                </button>
+                <button
+                  type="button"
+                  className="edit-btn-save-prayer"
+                  onClick={handleSavePrayerInline}
+                >
+                  {editingPrayerItem ? t('prayer.save') : t('prayer.addPrayer')}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Save Bar */}

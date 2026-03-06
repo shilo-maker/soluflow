@@ -142,7 +142,7 @@ const PrayerItemModal = ({ isOpen, onClose, onSave, existingItem }) => {
                 type="text"
                 value={titleTranslation}
                 onChange={(e) => setTitleTranslation(e.target.value)}
-                placeholder={t('prayer.titleTranslation')}
+                placeholder={t('prayer.titleTranslationPlaceholder')}
               />
             </div>
           </div>
@@ -209,7 +209,7 @@ const PrayerItemModal = ({ isOpen, onClose, onSave, existingItem }) => {
                     type="text"
                     value={point.subtitle_translation}
                     onChange={(e) => handlePointChange(index, 'subtitle_translation', e.target.value)}
-                    placeholder={t('prayer.pointTitleTranslation')}
+                    placeholder={t('prayer.pointTitleTranslationPlaceholder')}
                   />
                 </div>
               </div>
@@ -230,7 +230,7 @@ const PrayerItemModal = ({ isOpen, onClose, onSave, existingItem }) => {
                   <textarea
                     value={point.description_translation}
                     onChange={(e) => handlePointChange(index, 'description_translation', e.target.value)}
-                    placeholder={t('prayer.descriptionTranslation')}
+                    placeholder={t('prayer.descriptionTranslationPlaceholder')}
                     rows={2}
                   />
                 </div>

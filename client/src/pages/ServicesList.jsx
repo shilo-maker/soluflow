@@ -155,16 +155,8 @@ const ServicesList = () => {
 
   const handleNewService = () => { setModalService(null); setIsModalOpen(true); };
 
-  const handleEditService = async (service) => {
-    try {
-      const details = await serviceService.getServiceById(service.id);
-      setEditSetlist(details?.songs || []);
-    } catch (err) {
-      console.error('Error fetching service details for edit:', err);
-      setEditSetlist([]);
-    }
-    setModalService(service);
-    setIsModalOpen(true);
+  const handleEditService = (service) => {
+    navigate(`/services/${service.id}/edit`);
   };
 
   const handleSaveService = async (formData, setlist = null) => {

@@ -217,6 +217,10 @@
   position: relative;
 }
 
+.service-card:has(.service-card-dropdown) {
+  z-index: var(--z-dropdown);
+}
+
 .service-card-dropdown {
   position: absolute;
   right: 0;
@@ -557,7 +561,7 @@
 
 @media (max-width: 768px) {
   .services-list-page {
-    padding: 70px 14px 30px 14px;
+    padding: 0;
   }
 
   .services-list-header h1 {

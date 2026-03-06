@@ -400,7 +400,10 @@
     "save": "Save Prayer",
     "cancel": "Cancel",
     "titleRequired": "Prayer title is required",
-    "prayer": "Prayer"
+    "prayer": "Prayer",
+    "titleTranslationPlaceholder": "Title translation",
+    "pointTitleTranslationPlaceholder": "Point title translation",
+    "descriptionTranslationPlaceholder": "Description translation"
   },
   "bibleRef": {
     "book": "Book",

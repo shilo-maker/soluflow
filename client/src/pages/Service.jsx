@@ -1081,11 +1081,6 @@ const Service = () => {
                         {t('service.edit')}
                       </button>
                     )}
-                    {currentSetList.length > 0 && selectedService.canEdit && (
-                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleEditSetlist(); }}>
-                        {t('service.editSetlist')}
-                      </button>
-                    )}
                     {selectedService.isCreator && (
                       <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleShareService(selectedService); }}>
                         {t('service.share')}
