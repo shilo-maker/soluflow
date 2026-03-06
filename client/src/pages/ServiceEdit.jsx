@@ -754,7 +754,7 @@ const ServiceEdit = () => {
               className="edit-btn-go-to-service"
               onClick={() => navigate(`/services/${id}`)}
             >
-              {t('serviceEdit.goToService') || 'לאסיפה'}
+              {t('serviceEdit.goToService')}
             </button>
           )}
         </div>

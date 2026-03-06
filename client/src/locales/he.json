@@ -379,7 +379,8 @@
     "saving": "שומר...",
     "dateRequired": "תאריך ושעה נדרשים",
     "venueRequired": "מיקום נדרש",
-    "confirmClose": "האם אתה בטוח? שינויים שלא נשמרו יאבדו."
+    "confirmClose": "האם אתה בטוח? שינויים שלא נשמרו יאבדו.",
+    "goToService": "לאסיפה"
   },
   "prayer": {
     "addPrayer": "הוסף תפילה",
