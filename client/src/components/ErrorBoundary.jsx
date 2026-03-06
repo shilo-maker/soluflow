@@ -7,26 +7,32 @@ class ErrorBoundary extends React.Component {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      isOffline: !navigator.onLine
     };
   }
 
   static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI
-    return { hasError: true };
+    return { hasError: true, isOffline: !navigator.onLine };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error details for debugging
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
+    this.setState({ error, errorInfo });
+  }
 
-    this.setState({
-      error,
-      errorInfo
-    });
+  componentDidMount() {
+    this._handleOnline = () => {
+      if (this.state.hasError && this.state.isOffline) {
+        // Auto-retry when coming back online after a chunk-load failure
+        this.setState({ hasError: false, error: null, errorInfo: null, isOffline: false });
+      }
+    };
+    window.addEventListener('online', this._handleOnline);
+  }
 
-    // You can also log the error to an error reporting service here
-    // Example: logErrorToService(error, errorInfo);
+  componentWillUnmount() {
+    window.removeEventListener('online', this._handleOnline);
   }
 
   handleReload = () => {
@@ -37,8 +43,40 @@ class ErrorBoundary extends React.Component {
     window.location.href = '/';
   };
 
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
+  };
+
   render() {
     if (this.state.hasError) {
+      const isChunkError = this.state.error?.name === 'ChunkLoadError' ||
+        this.state.error?.message?.includes('Loading chunk') ||
+        this.state.error?.message?.includes('dynamically imported module');
+      const isOffline = !navigator.onLine;
+
+      if (isOffline && isChunkError) {
+        return (
+          <div className="error-boundary">
+            <div className="error-boundary-container">
+              <div className="error-icon">📡</div>
+              <h1>You're offline</h1>
+              <p className="error-message">
+                This page hasn't been cached yet. It will load automatically when you're back online,
+                or navigate to a page you've visited before.
+              </p>
+              <div className="error-actions">
+                <button className="btn-primary" onClick={this.handleGoHome}>
+                  Go to Home
+                </button>
+                <button className="btn-secondary" onClick={this.handleRetry}>
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="error-boundary">
           <div className="error-boundary-container">

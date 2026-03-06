@@ -11,30 +11,42 @@ import FullscreenButton from './components/FullscreenButton';
 import OfflineIndicator from './components/OfflineIndicator';
 import './App.css';
 
-// Lazy load pages for code splitting
-const ServicesList = lazy(() => import('./pages/ServicesList'));
-const Service = lazy(() => import('./pages/Service'));
-const ServiceEdit = lazy(() => import('./pages/ServiceEdit'));
-const GuestServiceView = lazy(() => import('./pages/GuestServiceView'));
-const GuestEditView = lazy(() => import('./pages/GuestEditView'));
-const SharedSongView = lazy(() => import('./pages/SharedSongView'));
-const GuestLanding = lazy(() => import('./pages/GuestLanding'));
-const Library = lazy(() => import('./pages/Library'));
-const SongView = lazy(() => import('./pages/SongView'));
-const UserManagement = lazy(() => import('./pages/UserManagement'));
-const UserSettings = lazy(() => import('./pages/UserSettings'));
-const WorkspaceManagement = lazy(() => import('./pages/WorkspaceManagement'));
-const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
-const MemberInviteResponse = lazy(() => import('./pages/MemberInviteResponse'));
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const SongReports = lazy(() => import('./pages/SongReports'));
-const SSOCallback = lazy(() => import('./pages/SSOCallback'));
-const SolucastRedirect = lazy(() => import('./pages/SolucastRedirect'));
-const CreateForSoluPlan = lazy(() => import('./pages/CreateForSoluPlan'));
+// Retry wrapper for lazy imports — retries up to 3 times with backoff before giving up
+function retryImport(importFn, retries = 3, delay = 1000) {
+  return importFn().catch((err) => {
+    if (retries <= 0) throw err;
+    return new Promise(resolve => setTimeout(resolve, delay))
+      .then(() => retryImport(importFn, retries - 1, delay * 2));
+  });
+}
+function retryLazy(importFn) {
+  return lazy(() => retryImport(importFn));
+}
+
+// Lazy load pages with retry for offline resilience
+const ServicesList = retryLazy(() => import('./pages/ServicesList'));
+const Service = retryLazy(() => import('./pages/Service'));
+const ServiceEdit = retryLazy(() => import('./pages/ServiceEdit'));
+const GuestServiceView = retryLazy(() => import('./pages/GuestServiceView'));
+const GuestEditView = retryLazy(() => import('./pages/GuestEditView'));
+const SharedSongView = retryLazy(() => import('./pages/SharedSongView'));
+const GuestLanding = retryLazy(() => import('./pages/GuestLanding'));
+const Library = retryLazy(() => import('./pages/Library'));
+const SongView = retryLazy(() => import('./pages/SongView'));
+const UserManagement = retryLazy(() => import('./pages/UserManagement'));
+const UserSettings = retryLazy(() => import('./pages/UserSettings'));
+const WorkspaceManagement = retryLazy(() => import('./pages/WorkspaceManagement'));
+const AcceptInvite = retryLazy(() => import('./pages/AcceptInvite'));
+const MemberInviteResponse = retryLazy(() => import('./pages/MemberInviteResponse'));
+const Login = retryLazy(() => import('./pages/Login'));
+const Register = retryLazy(() => import('./pages/Register'));
+const VerifyEmail = retryLazy(() => import('./pages/VerifyEmail'));
+const ForgotPassword = retryLazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = retryLazy(() => import('./pages/ResetPassword'));
+const SongReports = retryLazy(() => import('./pages/SongReports'));
+const SSOCallback = retryLazy(() => import('./pages/SSOCallback'));
+const SolucastRedirect = retryLazy(() => import('./pages/SolucastRedirect'));
+const CreateForSoluPlan = retryLazy(() => import('./pages/CreateForSoluPlan'));
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => (

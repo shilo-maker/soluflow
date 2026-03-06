@@ -135,7 +135,8 @@ const UserSettings = () => {
     try {
       const base64 = await compressAvatar(cropFile, 128, 0.6, croppedAreaPixels);
       const response = await api.put('/auth/profile', { avatar_url: base64 });
-      if (updateUser) updateUser({ avatar_url: response.data.avatar_url });
+      const savedUrl = response.data?.user?.avatar_url ?? response.data?.avatar_url ?? base64;
+      if (updateUser) updateUser({ avatar_url: savedUrl });
       setAvatarMsg({ type: 'success', text: t('userSettings.avatarUpdated') || 'Profile photo updated' });
     } catch (error) {
       setAvatarMsg({ type: 'error', text: error.response?.data?.error || 'Failed to update photo' });
@@ -156,7 +157,7 @@ const UserSettings = () => {
     setAvatarMsg(null);
     try {
       const response = await api.put('/auth/profile', { avatar_url: null });
-      if (updateUser) updateUser({ avatar_url: response.data.avatar_url });
+      if (updateUser) updateUser({ avatar_url: response.data?.user?.avatar_url ?? null });
       setAvatarMsg({ type: 'success', text: t('userSettings.avatarRemoved') || 'Profile photo removed' });
     } catch (error) {
       setAvatarMsg({ type: 'error', text: error.response?.data?.error || 'Failed to remove photo' });

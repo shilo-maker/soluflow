@@ -42,7 +42,7 @@ class OfflineQueue {
 
     // If we're back online and not currently syncing, trigger processing
     if (navigator.onLine && !this.syncing) {
-      this.processQueue();
+      this.processQueue().catch(() => {});
     }
   }
 
@@ -78,6 +78,20 @@ class OfflineQueue {
     } catch {
       return [];
     }
+  }
+
+  // Increment retry count for an operation
+  async _incrementRetries(op) {
+    try {
+      const db = await this.ensureDb();
+      const tx = db.transaction([PENDING_STORE], 'readwrite');
+      const store = tx.objectStore(PENDING_STORE);
+      await new Promise((resolve, reject) => {
+        const req = store.put({ ...op, retries: (op.retries || 0) + 1 });
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch { /* best effort */ }
   }
 
   // Remove a completed operation
@@ -201,8 +215,17 @@ class OfflineQueue {
                 if (op.url === '/services') offlineStorage.deleteService(op.tempId).catch(() => {});
               }
               await this.dequeue(op.id);
+            } else if ((op.retries || 0) >= 5) {
+              // Max retries reached (likely permanent 5xx) -- discard to unblock queue
+              console.warn('Max retries reached, discarding operation:', op);
+              if (op.tempId) {
+                if (op.url === '/songs') offlineStorage.deleteSong(op.tempId).catch(() => {});
+                if (op.url === '/services') offlineStorage.deleteService(op.tempId).catch(() => {});
+              }
+              await this.dequeue(op.id);
             } else {
-              // Network error -- stop processing, will retry next time
+              // Network/server error -- increment retry count and stop for now
+              await this._incrementRetries(op);
               hadNetworkError = true;
               break;
             }

@@ -73,11 +73,19 @@ class OfflineStorage {
   async ensureDb() {
     await this.initPromise;
     // Re-initialize if DB was closed (e.g., by onversionchange in another tab)
-    if (!this.initFailed && !this.db) {
-      this.initPromise = this.init().catch((err) => {
-        console.warn('IndexedDB re-initialization failed:', err.message);
-        this.initFailed = true;
-      });
+    if (!this.db) {
+      // Reset initFailed so we can retry (may have been a transient error)
+      this.initFailed = false;
+      // Reuse existing re-init promise if one is already in progress (prevent race)
+      if (!this._reinitializing) {
+        this._reinitializing = true;
+        this.initPromise = this.init().catch((err) => {
+          console.warn('IndexedDB re-initialization failed:', err.message);
+          this.initFailed = true;
+        }).finally(() => {
+          this._reinitializing = false;
+        });
+      }
       await this.initPromise;
     }
     if (this.initFailed || !this.db) {

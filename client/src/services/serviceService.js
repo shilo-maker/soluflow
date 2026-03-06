@@ -110,6 +110,16 @@ const serviceService = {
       const offlineService = await offlineStorage.getService(id);
       if (offlineService) {
         console.debug('Returning service from offline storage');
+        // Normalize: handle both API-cached (service_songs) and offline-created (setlist) shapes
+        if (offlineService.service_songs || offlineService.serviceSongs) {
+          return normalizeServiceSongs(offlineService);
+        }
+        // For offline-created services, setlist may be under 'setlist' key
+        if (!offlineService.songs && offlineService.setlist) {
+          offlineService.songs = offlineService.setlist;
+          delete offlineService.setlist;
+        }
+        if (!offlineService.songs) offlineService.songs = [];
         return offlineService;
       }
       throw error;
@@ -146,9 +156,12 @@ const serviceService = {
       if (isNetworkError(error)) {
         // Create optimistic local service
         const tempId = `offline_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        // Store setlist as 'songs' for consistent offline reading
+        const { setlist, ...restData } = serviceData;
         const localService = {
-          ...serviceData,
+          ...restData,
           id: tempId,
+          songs: setlist || [],
           _offline: true,
           _pendingSync: true,
           created_at: new Date().toISOString()

@@ -61,6 +61,7 @@ export const LanguageProvider = ({ children }) => {
       return;
     }
 
+    const previousLanguage = language; // capture before state update for revert
     try {
       // Update local state immediately for better UX
       setLanguageState(newLanguage);
@@ -88,11 +89,11 @@ export const LanguageProvider = ({ children }) => {
     } catch (error) {
       console.error('Failed to update language:', error);
       // Revert on error (only for real server errors, not offline)
-      const oldLanguage = user?.language || localStorage.getItem('guestLanguage') || 'he';
-      setLanguageState(oldLanguage);
-      setIsRTL(oldLanguage === 'he');
-      document.documentElement.dir = oldLanguage === 'he' ? 'rtl' : 'ltr';
-      document.documentElement.lang = oldLanguage;
+      setLanguageState(previousLanguage);
+      setIsRTL(previousLanguage === 'he');
+      document.documentElement.dir = previousLanguage === 'he' ? 'rtl' : 'ltr';
+      document.documentElement.lang = previousLanguage;
+      localStorage.setItem('guestLanguage', previousLanguage);
       throw error;
     }
   }, [user]);
