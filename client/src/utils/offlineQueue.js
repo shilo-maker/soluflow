@@ -1,69 +1,23 @@
 // Offline Queue - stores pending API mutations in IndexedDB and syncs when online
 // Operations are processed in FIFO order when connectivity returns
+// Shares IndexedDB connection with offlineStorage to avoid upgrade race conditions
 
-const DB_NAME = 'SoluFlowOfflineDB';
-const DB_VERSION = 2; // Bump from 1 to add pending_ops store
+import offlineStorage from './offlineStorage';
+
 const PENDING_STORE = 'pending_ops';
 
 class OfflineQueue {
   constructor() {
-    this.db = null;
     this.syncing = false;
     this.listeners = new Set();
-    this.initPromise = this.init();
 
     // Auto-sync when coming back online
     window.addEventListener('online', () => this.processQueue());
   }
 
-  async init() {
-    return new Promise((resolve, reject) => {
-      if (typeof indexedDB === 'undefined') {
-        reject(new Error('IndexedDB not supported'));
-        return;
-      }
-
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onerror = () => reject(request.error);
-
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve(this.db);
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-
-        // Preserve existing stores from v1
-        if (!db.objectStoreNames.contains('songs')) {
-          const songsStore = db.createObjectStore('songs', { keyPath: 'id' });
-          songsStore.createIndex('title', 'title', { unique: false });
-          songsStore.createIndex('workspace_id', 'workspace_id', { unique: false });
-        }
-
-        if (!db.objectStoreNames.contains('services')) {
-          const servicesStore = db.createObjectStore('services', { keyPath: 'id' });
-          servicesStore.createIndex('code', 'code', { unique: false });
-          servicesStore.createIndex('date', 'date', { unique: false });
-        }
-
-        // New store for pending operations
-        if (!db.objectStoreNames.contains(PENDING_STORE)) {
-          const pendingStore = db.createObjectStore(PENDING_STORE, {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          pendingStore.createIndex('timestamp', 'timestamp', { unique: false });
-        }
-      };
-    });
-  }
-
   async ensureDb() {
-    await this.initPromise;
-    if (!this.db) throw new Error('IndexedDB not available');
-    return this.db;
+    // Reuse the shared DB connection from offlineStorage
+    return offlineStorage.ensureDb();
   }
 
   // Add a pending operation to the queue
@@ -158,9 +112,28 @@ class OfflineQueue {
 
       for (const op of ops) {
         try {
+          let response;
           switch (op.method) {
             case 'POST':
-              await api.post(op.url, op.data);
+              response = await api.post(op.url, op.data);
+              // Handle offline-created services with embedded setlist
+              if (op.url === '/services' && op.data?.setlist?.length > 0 && response?.data) {
+                const newService = response.data.service || response.data;
+                if (newService?.id) {
+                  for (const item of op.data.setlist) {
+                    try {
+                      await api.post(`/services/${newService.id}/songs`, item);
+                    } catch (e) {
+                      console.warn('Failed to add setlist item during sync:', e);
+                    }
+                  }
+                  // Clean up the offline temp service from IndexedDB
+                  if (op.tempId) {
+                    offlineStorage.deleteService(op.tempId).catch(() => {});
+                    offlineStorage.saveService(newService).catch(() => {});
+                  }
+                }
+              }
               break;
             case 'PUT':
               await api.put(op.url, op.data);
@@ -174,8 +147,13 @@ class OfflineQueue {
           await this.dequeue(op.id);
         } catch (err) {
           console.error('Failed to sync operation:', op, err);
-          // If server explicitly rejects (4xx), remove from queue to avoid infinite retry
-          if (err.status >= 400 && err.status < 500) {
+          // Check if this is a server rejection (4xx) vs network error
+          // api.js interceptor rejects with response.data for server errors,
+          // or { error: '...' } for network errors. Check multiple shapes.
+          const status = err?.response?.status || err?.status;
+          const isClientError = (status >= 400 && status < 500) ||
+            err?.error === 'Not Found' || err?.error === 'Access denied';
+          if (isClientError) {
             console.warn('Server rejected operation, removing from queue:', op);
             await this.dequeue(op.id);
           } else {

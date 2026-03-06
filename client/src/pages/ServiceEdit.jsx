@@ -418,7 +418,7 @@ const ServiceEdit = () => {
             position: i,
             segment_type: 'song'
           };
-          if (item._editTransposition) {
+          if (item._editTransposition !== undefined) {
             addData.transposition = item._editTransposition;
           }
           await serviceService.addSongToService(id, addData);

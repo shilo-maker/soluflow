@@ -188,30 +188,44 @@ const ServicesList = () => {
           leader_id: user.id,
           created_by: user.id
         };
-        const newService = enrichService(await serviceService.createService(serviceData));
-
+        // Include setlist in serviceData so offline create captures it in one queued operation
         if (setlist && setlist.length > 0) {
-          for (let i = 0; i < setlist.length; i++) {
-            const item = setlist[i];
+          serviceData.setlist = setlist.map((item, i) => {
             if (item.segment_type === 'prayer') {
-              await serviceService.addSongToService(newService.id, {
+              return {
                 song_id: null, position: i, segment_type: 'prayer',
                 segment_title: item.segment_title || item.title,
                 segment_content: item.segment_content
-              });
-            } else {
-              await serviceService.addSongToService(newService.id, {
-                song_id: item.id, position: i, segment_type: 'song'
-              });
+              };
             }
-          }
+            return { song_id: item.id, position: i, segment_type: 'song' };
+          });
         }
 
-        // Navigate to new service detail page (skip for offline temp IDs)
+        const newService = enrichService(await serviceService.createService(serviceData));
+
+        // For offline-created services, skip setlist API calls (setlist is in the queued create data)
         if (newService._offline) {
           setServices(prev => [...prev, enrichService(newService)]);
           showToastMsg('Service saved offline — will sync when online');
         } else {
+          // Online: add setlist items individually
+          if (setlist && setlist.length > 0) {
+            for (let i = 0; i < setlist.length; i++) {
+              const item = setlist[i];
+              if (item.segment_type === 'prayer') {
+                await serviceService.addSongToService(newService.id, {
+                  song_id: null, position: i, segment_type: 'prayer',
+                  segment_title: item.segment_title || item.title,
+                  segment_content: item.segment_content
+                });
+              } else {
+                await serviceService.addSongToService(newService.id, {
+                  song_id: item.id, position: i, segment_type: 'song'
+                });
+              }
+            }
+          }
           navigate(`/services/${newService.id}`);
         }
       }

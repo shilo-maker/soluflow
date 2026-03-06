@@ -123,9 +123,6 @@ const OfflineIndicator = () => {
             {showExpanded && (
               <span className="offline-indicator-text">{getStatusText()}</span>
             )}
-            {showExpanded && pendingCount > 0 && !syncing && (
-              <span className="offline-indicator-badge">{pendingCount}</span>
-            )}
           </>
         )}
       </div>

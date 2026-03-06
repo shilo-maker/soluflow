@@ -3,6 +3,15 @@ import offlineStorage from '../utils/offlineStorage';
 import dataCache from '../utils/dataCache';
 import offlineQueue from '../utils/offlineQueue';
 
+// Check if an error is a network/connectivity failure (not a server rejection)
+function isNetworkError(error) {
+  if (!navigator.onLine) return true;
+  // api.js interceptor rejects with { error: 'No response from server' } for network failures
+  if (error?.error === 'No response from server') return true;
+  if (error?.code === 'ERR_NETWORK' || error?.code === 'ECONNABORTED') return true;
+  return false;
+}
+
 // Normalize service_songs (snake_case nested objects from API) into flat song objects
 // that the frontend expects (title, content, key, etc. at top level)
 function normalizeServiceSongs(service) {
@@ -65,7 +74,7 @@ const serviceService = {
       return services;
     } catch (error) {
       // Fallback to IndexedDB on network failure
-      console.warn('Network error, trying offline storage:', error.message);
+      console.warn('Network error, trying offline storage:', error.message || error.error);
       const offlineServices = await offlineStorage.getAllServices();
       if (offlineServices && offlineServices.length > 0) {
         console.debug('Returning services from offline storage');
@@ -95,7 +104,7 @@ const serviceService = {
       return service;
     } catch (error) {
       // Fallback to IndexedDB on network failure
-      console.warn('Network error, trying offline storage:', error.message);
+      console.warn('Network error, trying offline storage:', error.message || error.error);
       const offlineService = await offlineStorage.getService(id);
       if (offlineService) {
         console.debug('Returning service from offline storage');
@@ -132,7 +141,7 @@ const serviceService = {
       offlineStorage.saveService(service).catch(() => {});
       return service;
     } catch (error) {
-      if (!navigator.onLine) {
+      if (isNetworkError(error)) {
         // Create optimistic local service
         const tempId = `offline_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
         const localService = {
@@ -165,7 +174,7 @@ const serviceService = {
       offlineStorage.saveService(service).catch(() => {});
       return service;
     } catch (error) {
-      if (!navigator.onLine) {
+      if (isNetworkError(error)) {
         // Apply optimistic update to IndexedDB
         const existing = await offlineStorage.getService(id).catch(() => null);
         const updated = { ...existing, ...serviceData, id, _pendingSync: true };
@@ -190,7 +199,7 @@ const serviceService = {
       offlineStorage.deleteService(id).catch(() => {});
       return response.data;
     } catch (error) {
-      if (!navigator.onLine) {
+      if (isNetworkError(error)) {
         await offlineStorage.deleteService(id).catch(() => {});
         await offlineQueue.enqueue({
           method: 'DELETE',
@@ -210,7 +219,7 @@ const serviceService = {
       dataCache.invalidate(`services:${serviceId}`);
       return response.data;
     } catch (error) {
-      if (!navigator.onLine) {
+      if (isNetworkError(error)) {
         await offlineQueue.enqueue({
           method: 'POST',
           url: `/services/${serviceId}/songs`,
@@ -230,7 +239,7 @@ const serviceService = {
       dataCache.invalidate(`services:${serviceId}`);
       return response.data;
     } catch (error) {
-      if (!navigator.onLine) {
+      if (isNetworkError(error)) {
         await offlineQueue.enqueue({
           method: 'PUT',
           url: `/services/${serviceId}/songs/${songId}`,
@@ -250,7 +259,7 @@ const serviceService = {
       dataCache.invalidate(`services:${serviceId}`);
       return response.data;
     } catch (error) {
-      if (!navigator.onLine) {
+      if (isNetworkError(error)) {
         await offlineQueue.enqueue({
           method: 'DELETE',
           url: `/services/${serviceId}/songs/${songId}`
@@ -271,7 +280,7 @@ const serviceService = {
       dataCache.invalidate(`services:${serviceId}`);
       return response.data;
     } catch (error) {
-      if (!navigator.onLine) {
+      if (isNetworkError(error)) {
         await offlineQueue.enqueue({
           method: 'PUT',
           url: `/services/${serviceId}/songs/${songId}`,

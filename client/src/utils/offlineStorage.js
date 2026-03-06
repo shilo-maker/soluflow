@@ -29,8 +29,17 @@ class OfflineStorage {
         reject(request.error);
       };
 
+      request.onblocked = () => {
+        console.warn('IndexedDB upgrade blocked by another connection');
+      };
+
       request.onsuccess = () => {
         this.db = request.result;
+        // Allow other tabs to upgrade by closing on version change
+        this.db.onversionchange = () => {
+          this.db.close();
+          this.db = null;
+        };
         resolve(this.db);
       };
 
