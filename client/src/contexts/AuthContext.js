@@ -17,30 +17,6 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const checkingRef = React.useRef(false);
 
-  // On mount: pick up cross-app token from URL (SoluPlan → SoluFlow SSO),
-  // then run the normal auth check.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get('token');
-    if (tokenParam) {
-      // Store the token and clean it from the URL for security
-      localStorage.setItem('token', tokenParam);
-      params.delete('token');
-      const remaining = params.toString();
-      const clean = window.location.pathname + (remaining ? `?${remaining}` : '') + window.location.hash;
-      window.history.replaceState({}, '', clean);
-    }
-    checkAuth();
-
-    // Re-validate token when coming back online (replaces stub user with real data)
-    const handleOnline = () => {
-      const token = authService.getToken();
-      if (token) checkAuth();
-    };
-    window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
-  }, [checkAuth]);
-
   // Helper: load cached user from localStorage or return a stub
   const loadCachedUser = useCallback(() => {
     const cachedUser = localStorage.getItem('user');
@@ -108,6 +84,30 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, [loadCachedUser]);
+
+  // On mount: pick up cross-app token from URL (SoluPlan → SoluFlow SSO),
+  // then run the normal auth check.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get('token');
+    if (tokenParam) {
+      // Store the token and clean it from the URL for security
+      localStorage.setItem('token', tokenParam);
+      params.delete('token');
+      const remaining = params.toString();
+      const clean = window.location.pathname + (remaining ? `?${remaining}` : '') + window.location.hash;
+      window.history.replaceState({}, '', clean);
+    }
+    checkAuth();
+
+    // Re-validate token when coming back online (replaces stub user with real data)
+    const handleOnline = () => {
+      const token = authService.getToken();
+      if (token) checkAuth();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [checkAuth]);
 
   const login = useCallback(async (email, password) => {
     try {
