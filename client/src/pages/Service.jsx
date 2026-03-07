@@ -15,6 +15,7 @@ import PassLeadershipModal from '../components/PassLeadershipModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
 import { transposeChord, convertKeyToFlat } from '../utils/transpose';
+import { BIBLE_BOOKS } from '../components/BibleRefPicker';
 import { generateMultiSongPDF, generateMultiSongPDFBlob } from '../utils/pdfGenerator';
 import { ArrowLeft, MoreVertical, Calendar, MapPin } from 'lucide-react';
 import io from 'socket.io-client';
@@ -33,6 +34,49 @@ const getPreviewContent = (content) => {
   return lines.slice(0, 20).join('\n') + '\n...';
 };
 
+// Convert a number to Hebrew gematria letters (e.g. 1→א׳, 15→ט״ו, 119→קי״ט)
+const toHebrewNumeral = (n) => {
+  if (!n || n <= 0) return String(n);
+  const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+  const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+  const hundreds = ['', 'ק', 'ר', 'ש', 'ת'];
+  // Special cases: 15=ט״ו, 16=ט״ז
+  let parts = [];
+  let remaining = n;
+  if (remaining >= 100) { parts.push(hundreds[Math.floor(remaining / 100)]); remaining %= 100; }
+  if (remaining === 15) { parts.push('ט', 'ו'); remaining = 0; }
+  else if (remaining === 16) { parts.push('ט', 'ז'); remaining = 0; }
+  else {
+    if (remaining >= 10) { parts.push(tens[Math.floor(remaining / 10)]); remaining %= 10; }
+    if (remaining > 0) { parts.push(ones[remaining]); }
+  }
+  if (parts.length >= 2) {
+    return parts.slice(0, -1).join('') + '״' + parts[parts.length - 1];
+  }
+  return parts[0] + '׳';
+};
+
+// Translate a stored bible reference (e.g. "Genesis 1:5") to the current language
+const translateBibleRef = (ref, t, isHebrew) => {
+  if (!ref) return '';
+  for (const book of BIBLE_BOOKS) {
+    if (ref.startsWith(book.name)) {
+      const rest = ref.slice(book.name.length); // e.g. " 1:5-10"
+      const translated = t(book.tKey);
+      const bookName = (translated && translated !== book.tKey) ? translated : book.name;
+      if (!isHebrew) return bookName + rest;
+      // Convert chapter number to Hebrew letters
+      const match = rest.match(/^\s+(\d+)(.*)/);
+      if (match) {
+        const chapter = toHebrewNumeral(parseInt(match[1]));
+        return bookName + ' ' + chapter + match[2];
+      }
+      return bookName + rest;
+    }
+  }
+  return ref;
+};
+
 const parsePrayerContent = (segmentContent) => {
   if (!segmentContent) return {};
   try {
@@ -47,7 +91,7 @@ const Service = () => {
   const location = useLocation();
   const { id } = useParams();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { activeWorkspace } = useWorkspace();
   const { theme } = useTheme();
   const currentPreset = GRADIENT_PRESETS[theme.gradientPreset] || GRADIENT_PRESETS.warm;
@@ -847,26 +891,24 @@ const Service = () => {
     setIsDragging(false);
   };
 
-  // Swipe between song tabs with follow-finger animation
+  // Swipe between song tabs
   const [swipeOffset, setSwipeOffset] = useState(0);
-  const [swipeTransition, setSwipeTransition] = useState(false);
+  const [slideAnim, setSlideAnim] = useState(''); // CSS enter animation class
   const swipeRef = useRef({ startX: 0, startY: 0, locked: null, swiping: false });
   const songDisplayRef = useRef(null);
-  // Refs to keep swipe handlers current without re-attaching listeners
-  const swipeTransitionRef = useRef(false);
+  const swipingRef = useRef(false); // true while a swipe animation is in progress
   const selectedSongIndexRef = useRef(0);
   const currentSetListLengthRef = useRef(0);
-  useEffect(() => { swipeTransitionRef.current = swipeTransition; }, [swipeTransition]);
   useEffect(() => { selectedSongIndexRef.current = selectedSongIndex; }, [selectedSongIndex]);
   useEffect(() => { currentSetListLengthRef.current = currentSetList.length; }, [currentSetList.length]);
 
   const handleSwipeTouchStart = (e) => {
-    if (swipeTransitionRef.current) return;
+    if (swipingRef.current) return;
     swipeRef.current = { startX: e.touches[0].clientX, startY: e.touches[0].clientY, locked: null, swiping: false };
   };
 
   const handleSwipeTouchMove = (e) => {
-    if (swipeTransitionRef.current) return;
+    if (swipingRef.current) return;
     const dx = e.touches[0].clientX - swipeRef.current.startX;
     const dy = e.touches[0].clientY - swipeRef.current.startY;
 
@@ -884,8 +926,10 @@ const Service = () => {
     const directedDx = isRtl ? -dx : dx;
 
     // Add resistance at boundaries
-    const atStart = selectedSongIndexRef.current === 0 && directedDx > 0;
-    const atEnd = selectedSongIndexRef.current === currentSetListLengthRef.current - 1 && directedDx < 0;
+    const idx = selectedSongIndexRef.current;
+    const len = currentSetListLengthRef.current;
+    const atStart = idx === 0 && directedDx > 0;
+    const atEnd = idx === len - 1 && directedDx < 0;
     const dampened = (atStart || atEnd) ? dx * 0.2 : dx;
 
     setSwipeOffset(dampened);
@@ -902,32 +946,24 @@ const Service = () => {
     const threshold = 60;
     const goNext = isRtl ? dx > threshold : dx < -threshold;
     const goPrev = isRtl ? dx < -threshold : dx > threshold;
-    const width = songDisplayRef.current?.offsetWidth || 400;
     const idx = selectedSongIndexRef.current;
     const len = currentSetListLengthRef.current;
 
     if (goNext && idx < len - 1) {
-      // Animate out then switch
-      setSwipeTransition(true);
-      setSwipeOffset(isRtl ? width : -width);
-      setTimeout(() => {
-        setSwipeTransition(false);
-        setSwipeOffset(0);
-        handleSelectSong(idx + 1);
-      }, 250);
+      swipingRef.current = true;
+      setSwipeOffset(0);
+      setSlideAnim(isRtl ? 'slide-from-left' : 'slide-from-right');
+      handleSelectSong(idx + 1);
+      setTimeout(() => { setSlideAnim(''); swipingRef.current = false; }, 300);
     } else if (goPrev && idx > 0) {
-      setSwipeTransition(true);
-      setSwipeOffset(isRtl ? -width : width);
-      setTimeout(() => {
-        setSwipeTransition(false);
-        setSwipeOffset(0);
-        handleSelectSong(idx - 1);
-      }, 250);
+      swipingRef.current = true;
+      setSwipeOffset(0);
+      setSlideAnim(isRtl ? 'slide-from-right' : 'slide-from-left');
+      handleSelectSong(idx - 1);
+      setTimeout(() => { setSlideAnim(''); swipingRef.current = false; }, 300);
     } else {
       // Snap back
-      setSwipeTransition(true);
       setSwipeOffset(0);
-      setTimeout(() => setSwipeTransition(false), 250);
     }
   };
 
@@ -1015,6 +1051,71 @@ const Service = () => {
       const d = new Date(dateStr + 'T00:00:00');
       return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     } catch { return dateStr; }
+  };
+
+  // Render song or prayer content
+  const renderSongContent = () => {
+    if (!currentSong) return null;
+    const animClass = slideAnim ? ` ${slideAnim}` : '';
+    const style = {
+      transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
+      opacity: swipeOffset ? 1 - Math.min(Math.abs(swipeOffset) / 600, 0.3) : undefined,
+    };
+
+    if (currentSong.segment_type === 'prayer') {
+      return (
+        <div className={`song-display prayer-display${animClass}`} style={style}>
+          <div className="song-header">
+            <div className="song-info">
+              <div className="song-title-row">
+                <h2 className="song-title">🙏 {currentSong.title || currentSong.segment_title}</h2>
+              </div>
+            </div>
+          </div>
+          <div className="prayer-content-display" style={{ fontSize: `${fontSize}px` }}>
+            {parsedPrayerData?.same_verse_for_all && parsedPrayerData.shared_bible_ref && (
+              <div className="prayer-shared-verse">
+                📖 {translateBibleRef(parsedPrayerData.shared_bible_ref, t, language === 'he')}
+              </div>
+            )}
+            {(parsedPrayerData?.prayer_points || []).map((point, idx) => (
+              <div key={idx} className="prayer-point-display">
+                {point.subtitle && (
+                  <div className="prayer-point-subtitle">
+                    <strong>{idx + 1}. {point.subtitle}</strong>
+                  </div>
+                )}
+                {point.description && (
+                  <div className="prayer-point-description">
+                    {point.description}
+                  </div>
+                )}
+                {!parsedPrayerData?.same_verse_for_all && point.bible_ref && (
+                  <div className="prayer-point-verse">📖 {translateBibleRef(point.bible_ref, t, language === 'he')}</div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="prayer-zoom-bar">
+            <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
+            <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className={`song-display${animClass}`} style={style}>
+        <ChordProDisplay
+          content={currentSong.content}
+          dir={hasHebrew(currentSong.content) ? 'rtl' : 'ltr'}
+          fontSize={fontSize}
+          transposition={transposition}
+          songKey={currentSong.key}
+          isLyricsOnly={isLyricsOnly}
+          forcedColumnCount={columnMode}
+        />
+      </div>
+    );
   };
 
   return (
@@ -1166,88 +1267,9 @@ const Service = () => {
 
       {/* Current Service Display */}
       {selectedService && !loading && currentSetList.length > 0 ? (
-        <>
-          {/* Song/Prayer Display */}
-          {currentSong && currentSong.segment_type === 'prayer' ? (
-            <div
-              className="song-display prayer-display"
-              ref={songDisplayRef}
-              style={{
-                transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
-                transition: swipeTransition ? 'transform 0.25s ease-out' : undefined,
-                opacity: swipeTransition ? 0.6 : 1 - Math.min(Math.abs(swipeOffset) / 600, 0.3),
-              }}
-            >
-              <div className="song-header">
-                <div className="song-info">
-                  <div className="song-title-row">
-                    <h2 className="song-title">🙏 {currentSong.title || currentSong.segment_title}</h2>
-                  </div>
-                  {parsedPrayerData?.title_translation && (
-                    <p className="song-authors prayer-translation">{parsedPrayerData.title_translation}</p>
-                  )}
-                </div>
-                <div className="song-meta">
-                  <div className="zoom-controls-service">
-                    <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomOut(); }}>A-</button>
-                    <button className="btn-zoom-service" onClick={(e) => { e.stopPropagation(); zoomIn(); }}>A+</button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="prayer-content-display" style={{ fontSize: `${fontSize}px` }}>
-                {parsedPrayerData?.same_verse_for_all && parsedPrayerData.shared_bible_ref && (
-                  <div className="prayer-shared-verse">
-                    📖 {parsedPrayerData.shared_bible_ref}
-                  </div>
-                )}
-                {(parsedPrayerData?.prayer_points || []).map((point, idx) => (
-                  <div key={idx} className="prayer-point-display">
-                    {point.subtitle && (
-                      <div className="prayer-point-subtitle">
-                        <strong>{idx + 1}. {point.subtitle}</strong>
-                        {point.subtitle_translation && (
-                          <span className="prayer-point-subtitle-translation"> — {point.subtitle_translation}</span>
-                        )}
-                      </div>
-                    )}
-                    {point.description && (
-                      <div className="prayer-point-description">
-                        {point.description}
-                        {point.description_translation && (
-                          <div className="prayer-point-description-translation">{point.description_translation}</div>
-                        )}
-                      </div>
-                    )}
-                    {!parsedPrayerData?.same_verse_for_all && point.bible_ref && (
-                      <div className="prayer-point-verse">📖 {point.bible_ref}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : currentSong && (
-            <div
-              className="song-display"
-              ref={songDisplayRef}
-              style={{
-                transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
-                transition: swipeTransition ? 'transform 0.25s ease-out' : undefined,
-                opacity: swipeTransition ? 0.6 : 1 - Math.min(Math.abs(swipeOffset) / 600, 0.3),
-              }}
-            >
-              <ChordProDisplay
-                content={currentSong.content}
-                dir={hasHebrew(currentSong.content) ? 'rtl' : 'ltr'}
-                fontSize={fontSize}
-                transposition={transposition}
-                songKey={currentSong.key}
-                isLyricsOnly={isLyricsOnly}
-                forcedColumnCount={columnMode}
-              />
-            </div>
-          )}
-        </>
+        <div className="swipe-container" ref={songDisplayRef}>
+          {renderSongContent()}
+        </div>
       ) : selectedService && !loading ? (
         <div>
           <div className="empty-service">

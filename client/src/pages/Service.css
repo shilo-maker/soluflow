@@ -770,6 +770,26 @@
   font-size: 0.9em;
 }
 
+/* Fixed zoom bar at bottom for prayer items */
+.prayer-zoom-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: var(--z-navigation, 100);
+}
+
+.prayer-zoom-bar .btn-zoom-service {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .song-title-row {
   display: flex;
   align-items: center;
@@ -796,6 +816,30 @@
 .listen-link:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(var(--color-success-rgb), 0.4);
+}
+
+/* Swipe container */
+.swipe-container {
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes slideFromRight {
+  from { transform: translateX(60%); opacity: 0.3; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideFromLeft {
+  from { transform: translateX(-60%); opacity: 0.3; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.slide-from-right {
+  animation: slideFromRight 0.25s ease-out;
+}
+
+.slide-from-left {
+  animation: slideFromLeft 0.25s ease-out;
 }
 
 .song-display {
