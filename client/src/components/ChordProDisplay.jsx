@@ -166,7 +166,7 @@ const ChordProDisplay = React.memo(({
 
   const parseChordPro = (text) => {
     if (!text) return [];
-    const lines = text.split('\n');
+    const lines = text.trimStart().split('\n');
     const parsed = [];
 
     lines.forEach((line, index) => {

@@ -112,6 +112,8 @@ const Service = () => {
   const [serviceDetails, setServiceDetails] = useState(null);
   const [selectedSongIndex, setSelectedSongIndex] = useState(0);
   const [fontSize, setFontSize] = useState(14);
+  const [autoFittedFontSize, setAutoFittedFontSize] = useState(null);
+  const [autoColumnMode, setAutoColumnMode] = useState(null); // auto-calculated: null=single, 2=compact
   const [transposition, setTransposition] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -129,6 +131,14 @@ const Service = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [showControlsDrawer, setShowControlsDrawer] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+
+  // Toggle body class for focus mode (hides app header from outside this component)
+  useEffect(() => {
+    document.body.classList.toggle('service-focus-mode', headerCollapsed);
+    return () => document.body.classList.remove('service-focus-mode');
+  }, [headerCollapsed]);
+
   const [isLyricsOnly, setIsLyricsOnly] = useState(false);
   const [columnMode, setColumnMode] = useState(null); // null = auto, 1 = single, 2 = two columns
   const drawerTouchStartY = useRef(null);
@@ -536,16 +546,101 @@ const Service = () => {
     return parsePrayerContent(currentSong.segment_content);
   }, [currentSong]);
 
+  // Auto-fit: calculate optimal font size from content line count and screen size
+  // Pure calculation — no DOM measurement
+  const calculateAutoFitFont = useMemo(() => {
+    if (!currentSong || currentSong.segment_type === 'prayer' || !currentSong.content) return null;
+    if (columnMode !== null) return null;
+
+    const content = currentSong.content.trimStart();
+    const lines = content.split('\n');
+
+    // Count line types and estimate height in "em" units
+    let totalEms = 0;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed === '') {
+        totalEms += 0.8;
+      } else if (trimmed.match(/^\[([^\]]+)\]$/) || trimmed.match(/^{c(?:omment)?[:\s]+/i)) {
+        totalEms += 2.2; // section header
+      } else if (line.includes('[') && !trimmed.match(/^\[([^\]]+)\]$/)) {
+        totalEms += isLyricsOnly ? 1.6 : 2.8; // chord-line
+      } else if (trimmed.match(/^{/)) {
+        continue; // skip directives
+      } else {
+        totalEms += 1.6; // plain lyrics
+      }
+    }
+
+    if (totalEms <= 0) return null;
+
+    // Available height: viewport minus fixed header areas
+    // App header (~56px) + service gradient (~110px) + tabs (~50px) + padding (~10px)
+    const headerOffset = headerCollapsed ? 56 : 226;
+    const availableHeight = window.innerHeight - headerOffset;
+
+    if (availableHeight <= 0) return null;
+
+    const MIN_FONT = 6;
+    const MAX_FONT = 32;
+    const idealFont = Math.floor(availableHeight / totalEms);
+    return Math.min(Math.max(idealFont, MIN_FONT), MAX_FONT);
+  }, [currentSong, columnMode, isLyricsOnly, headerCollapsed]);
+
+  // Apply auto-fit estimate, then verify against actual DOM and shrink if needed
+  useEffect(() => {
+    setAutoFittedFontSize(calculateAutoFitFont);
+    setAutoColumnMode(null);
+  }, [calculateAutoFitFont]);
+
+  // Second pass: after rendering with estimated font, check if content overflows and shrink
+  useEffect(() => {
+    if (autoFittedFontSize === null) return;
+    if (!currentSong || currentSong.segment_type === 'prayer') return;
+
+    const checkOverflow = () => {
+      const container = songDisplayRef.current;
+      const el = container?.querySelector('.chordpro-display');
+      if (!el) return;
+
+      const availableHeight = window.innerHeight - el.getBoundingClientRect().top;
+      if (availableHeight <= 0) return;
+
+      // If content overflows, shrink font until it fits
+      if (el.scrollHeight > availableHeight) {
+        let font = autoFittedFontSize;
+        el.style.fontSize = `${font}px`;
+        while (font > 6 && el.scrollHeight > availableHeight) {
+          font--;
+          el.style.fontSize = `${font}px`;
+        }
+        el.style.fontSize = '';
+        if (font !== autoFittedFontSize) {
+          setAutoFittedFontSize(font);
+        }
+      }
+    };
+
+    // Run after React has painted the estimated font
+    const frameId = requestAnimationFrame(checkOverflow);
+    return () => cancelAnimationFrame(frameId);
+  }, [autoFittedFontSize, currentSong]);
+
+  // Effective font size: auto-fitted or manual
+  const effectiveFontSize = autoFittedFontSize !== null ? autoFittedFontSize : fontSize;
+  // Effective column mode: manual override > auto-fit > default
+  const effectiveColumnMode = columnMode !== null ? columnMode : autoColumnMode;
+
   const zoomIn = () => {
+    setAutoFittedFontSize(null); // disable auto-fit when user manually adjusts
     const newFontSize = Math.min(fontSize + 2, 24);
     setFontSize(newFontSize);
-    // Font size is a personal preference - not synced with followers
   };
 
   const zoomOut = () => {
+    setAutoFittedFontSize(null); // disable auto-fit when user manually adjusts
     const newFontSize = Math.max(fontSize - 2, 10);
     setFontSize(newFontSize);
-    // Font size is a personal preference - not synced with followers
   };
 
   const transposeUp = () => {
@@ -1108,11 +1203,12 @@ const Service = () => {
         <ChordProDisplay
           content={currentSong.content}
           dir={hasHebrew(currentSong.content) ? 'rtl' : 'ltr'}
-          fontSize={fontSize}
+          fontSize={effectiveFontSize}
           transposition={transposition}
           songKey={currentSong.key}
           isLyricsOnly={isLyricsOnly}
-          forcedColumnCount={columnMode}
+          forcedColumnCount={1}
+          disableColumnCalculation={true}
         />
       </div>
     );
@@ -1278,6 +1374,13 @@ const Service = () => {
         </div>
       ) : null}
 
+      {/* Focus mode exit indicator */}
+      {headerCollapsed && (
+        <button className="focus-mode-exit" onClick={() => setHeaderCollapsed(false)}>
+          ביטול מצב פוקוס ✕
+        </button>
+      )}
+
       {/* Service Modal (Create/Edit) */}
       <ServiceEditModal
         service={modalService}
@@ -1350,66 +1453,80 @@ const Service = () => {
               >
                 <div className="drawer-handle" onClick={() => setShowControlsDrawer(false)} />
 
+                {/* Focus mode toggle */}
                 <div className="drawer-section">
-                  <label className="drawer-label">Key / Transpose</label>
-                  <div className="transpose-controls-drawer">
-                    <button className="btn-drawer btn-transpose" onClick={transposeDown}>−</button>
-                    <span
-                      className="transpose-display-drawer"
-                      onClick={() => { setShowControlsDrawer(false); setShowKeySelectorModal(true); }}
-                    >
-                      {convertKeyToFlat(transposeChord(currentSong.key, transposition))}
-                      {transposition !== 0 && (
-                        <span className="transpose-offset">
-                          {transposition > 0 ? '+' : ''}{transposition}
+                  <button
+                    className={`btn-drawer-toggle full-width ${headerCollapsed ? 'active' : ''}`}
+                    onClick={() => { setHeaderCollapsed(prev => !prev); setShowControlsDrawer(false); }}
+                  >
+                    {headerCollapsed ? 'הצג כותרת' : 'מצב פוקוס'}
+                  </button>
+                </div>
+
+                {currentSong.segment_type !== 'prayer' && (
+                  <>
+                    <div className="drawer-section">
+                      <label className="drawer-label">Key / Transpose</label>
+                      <div className="transpose-controls-drawer">
+                        <button className="btn-drawer btn-transpose" onClick={transposeDown}>−</button>
+                        <span
+                          className="transpose-display-drawer"
+                          onClick={() => { setShowControlsDrawer(false); setShowKeySelectorModal(true); }}
+                        >
+                          {convertKeyToFlat(transposeChord(currentSong.key, transposition))}
+                          {transposition !== 0 && (
+                            <span className="transpose-offset">
+                              {transposition > 0 ? '+' : ''}{transposition}
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                    <button className="btn-drawer btn-transpose" onClick={transposeUp}>+</button>
-                  </div>
-                </div>
+                        <button className="btn-drawer btn-transpose" onClick={transposeUp}>+</button>
+                      </div>
+                    </div>
 
-                <div className="drawer-section">
-                  <label className="drawer-label">Display</label>
-                  <div className="drawer-row">
-                    <button
-                      className={`btn-drawer-toggle ${!isLyricsOnly ? 'active' : ''}`}
-                      onClick={() => setIsLyricsOnly(false)}
-                    >
-                      Chords
-                    </button>
-                    <button
-                      className={`btn-drawer-toggle ${isLyricsOnly ? 'active' : ''}`}
-                      onClick={() => setIsLyricsOnly(true)}
-                    >
-                      Lyrics Only
-                    </button>
-                  </div>
-                </div>
+                    <div className="drawer-section">
+                      <label className="drawer-label">Display</label>
+                      <div className="drawer-row">
+                        <button
+                          className={`btn-drawer-toggle ${!isLyricsOnly ? 'active' : ''}`}
+                          onClick={() => setIsLyricsOnly(false)}
+                        >
+                          Chords
+                        </button>
+                        <button
+                          className={`btn-drawer-toggle ${isLyricsOnly ? 'active' : ''}`}
+                          onClick={() => setIsLyricsOnly(true)}
+                        >
+                          Lyrics Only
+                        </button>
+                      </div>
+                    </div>
 
-                <div className="drawer-section">
-                  <label className="drawer-label">Layout</label>
-                  <div className="drawer-row">
-                    <button
-                      className={`btn-drawer-toggle ${columnMode === null ? 'active' : ''}`}
-                      onClick={() => setColumnMode(null)}
-                    >
-                      Auto
-                    </button>
-                    <button
-                      className={`btn-drawer-toggle ${columnMode === 1 ? 'active' : ''}`}
-                      onClick={() => setColumnMode(1)}
-                    >
-                      Single
-                    </button>
-                    <button
-                      className={`btn-drawer-toggle ${columnMode === 2 ? 'active' : ''}`}
-                      onClick={() => setColumnMode(2)}
-                    >
-                      Compact
-                    </button>
-                  </div>
-                </div>
+                    <div className="drawer-section">
+                      <label className="drawer-label">Layout</label>
+                      <div className="drawer-row">
+                        <button
+                          className={`btn-drawer-toggle ${columnMode === null ? 'active' : ''}`}
+                          onClick={() => setColumnMode(null)}
+                        >
+                          Auto
+                        </button>
+                        <button
+                          className={`btn-drawer-toggle ${columnMode === 1 ? 'active' : ''}`}
+                          onClick={() => setColumnMode(1)}
+                        >
+                          Single
+                        </button>
+                        <button
+                          className={`btn-drawer-toggle ${columnMode === 2 ? 'active' : ''}`}
+                          onClick={() => setColumnMode(2)}
+                        >
+                          Compact
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="drawer-section">
                   <label className="drawer-label">Text Size</label>
@@ -1417,7 +1534,7 @@ const Service = () => {
                     <button className="btn-drawer btn-zoom" onClick={zoomOut}>
                       <span className="zoom-a-small">A</span>
                     </button>
-                    <span className="zoom-display">{fontSize}px</span>
+                    <span className="zoom-display">{effectiveFontSize}px</span>
                     <button className="btn-drawer btn-zoom" onClick={zoomIn}>
                       <span className="zoom-a-large">A</span>
                     </button>

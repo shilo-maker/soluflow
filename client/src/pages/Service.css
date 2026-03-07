@@ -45,6 +45,39 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   padding: 20px 24px;
   margin-bottom: 0;
+  transition: padding 0.2s ease;
+}
+
+/* Focus mode — hide app header + service header */
+body.service-focus-mode .app-header,
+body.service-focus-mode .service-header-gradient {
+  display: none;
+}
+
+.focus-mode-exit {
+  position: fixed;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(200, 40, 40, 0.85);
+  color: white;
+  border: none;
+  padding: 4px 16px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 100;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.focus-mode-exit:hover {
+  opacity: 1;
+}
+
+.btn-drawer-toggle.full-width {
+  width: 100%;
 }
 
 /* Animated waves */
