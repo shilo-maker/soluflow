@@ -860,7 +860,7 @@ const ServiceNew = () => {
             className="edit-btn-save"
             disabled={saving}
           >
-            {saving ? t('serviceEdit.saving') : t('service.createService')}
+            {saving ? t('serviceEdit.saving') : t('home.createService')}
           </button>
         </div>
       </form>
