@@ -852,14 +852,21 @@ const Service = () => {
   const [swipeTransition, setSwipeTransition] = useState(false);
   const swipeRef = useRef({ startX: 0, startY: 0, locked: null, swiping: false });
   const songDisplayRef = useRef(null);
+  // Refs to keep swipe handlers current without re-attaching listeners
+  const swipeTransitionRef = useRef(false);
+  const selectedSongIndexRef = useRef(0);
+  const currentSetListLengthRef = useRef(0);
+  useEffect(() => { swipeTransitionRef.current = swipeTransition; }, [swipeTransition]);
+  useEffect(() => { selectedSongIndexRef.current = selectedSongIndex; }, [selectedSongIndex]);
+  useEffect(() => { currentSetListLengthRef.current = currentSetList.length; }, [currentSetList.length]);
 
   const handleSwipeTouchStart = (e) => {
-    if (swipeTransition) return;
+    if (swipeTransitionRef.current) return;
     swipeRef.current = { startX: e.touches[0].clientX, startY: e.touches[0].clientY, locked: null, swiping: false };
   };
 
   const handleSwipeTouchMove = (e) => {
-    if (swipeTransition) return;
+    if (swipeTransitionRef.current) return;
     const dx = e.touches[0].clientX - swipeRef.current.startX;
     const dy = e.touches[0].clientY - swipeRef.current.startY;
 
@@ -877,8 +884,8 @@ const Service = () => {
     const directedDx = isRtl ? -dx : dx;
 
     // Add resistance at boundaries
-    const atStart = selectedSongIndex === 0 && directedDx > 0;
-    const atEnd = selectedSongIndex === currentSetList.length - 1 && directedDx < 0;
+    const atStart = selectedSongIndexRef.current === 0 && directedDx > 0;
+    const atEnd = selectedSongIndexRef.current === currentSetListLengthRef.current - 1 && directedDx < 0;
     const dampened = (atStart || atEnd) ? dx * 0.2 : dx;
 
     setSwipeOffset(dampened);
@@ -896,23 +903,25 @@ const Service = () => {
     const goNext = isRtl ? dx > threshold : dx < -threshold;
     const goPrev = isRtl ? dx < -threshold : dx > threshold;
     const width = songDisplayRef.current?.offsetWidth || 400;
+    const idx = selectedSongIndexRef.current;
+    const len = currentSetListLengthRef.current;
 
-    if (goNext && selectedSongIndex < currentSetList.length - 1) {
+    if (goNext && idx < len - 1) {
       // Animate out then switch
       setSwipeTransition(true);
       setSwipeOffset(isRtl ? width : -width);
       setTimeout(() => {
         setSwipeTransition(false);
         setSwipeOffset(0);
-        handleSelectSong(selectedSongIndex + 1);
+        handleSelectSong(idx + 1);
       }, 250);
-    } else if (goPrev && selectedSongIndex > 0) {
+    } else if (goPrev && idx > 0) {
       setSwipeTransition(true);
       setSwipeOffset(isRtl ? -width : width);
       setTimeout(() => {
         setSwipeTransition(false);
         setSwipeOffset(0);
-        handleSelectSong(selectedSongIndex - 1);
+        handleSelectSong(idx - 1);
       }, 250);
     } else {
       // Snap back
@@ -921,6 +930,20 @@ const Service = () => {
       setTimeout(() => setSwipeTransition(false), 250);
     }
   };
+
+  // Attach touch listeners as non-passive so preventDefault() works for horizontal swipe
+  useEffect(() => {
+    const el = songDisplayRef.current;
+    if (!el) return;
+    el.addEventListener('touchstart', handleSwipeTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleSwipeTouchMove, { passive: false });
+    el.addEventListener('touchend', handleSwipeTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', handleSwipeTouchStart);
+      el.removeEventListener('touchmove', handleSwipeTouchMove);
+      el.removeEventListener('touchend', handleSwipeTouchEnd);
+    };
+  }); // Re-attach when songDisplayRef element changes (prayer vs song)
 
   // Handle song selection (with leader broadcasting)
   const handleSelectSong = (index) => {
@@ -1149,9 +1172,6 @@ const Service = () => {
             <div
               className="song-display prayer-display"
               ref={songDisplayRef}
-              onTouchStart={handleSwipeTouchStart}
-              onTouchMove={handleSwipeTouchMove}
-              onTouchEnd={handleSwipeTouchEnd}
               style={{
                 transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
                 transition: swipeTransition ? 'transform 0.25s ease-out' : undefined,
@@ -1210,9 +1230,6 @@ const Service = () => {
             <div
               className="song-display"
               ref={songDisplayRef}
-              onTouchStart={handleSwipeTouchStart}
-              onTouchMove={handleSwipeTouchMove}
-              onTouchEnd={handleSwipeTouchEnd}
               style={{
                 transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
                 transition: swipeTransition ? 'transform 0.25s ease-out' : undefined,
