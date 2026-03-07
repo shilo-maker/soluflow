@@ -273,7 +273,7 @@
   box-shadow: 0 4px 12px rgba(var(--color-success-rgb), 0.4);
 }
 
-.song-display {
+.guest-service-page .song-display {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
@@ -286,7 +286,7 @@
   overflow-x: hidden;
 }
 
-.song-display:hover {
+.guest-service-page .song-display:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
@@ -492,7 +492,7 @@
     font-size: 13px;
   }
 
-  .song-display {
+  .guest-service-page .song-display {
     padding: 15px;
   }
 
