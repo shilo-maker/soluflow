@@ -132,7 +132,7 @@ const ShareModal = ({ service, isOpen, onClose }) => {
     }
   };
 
-  const getSolucastLink = () => `${window.location.origin}/open/${shareCode}`;
+  const getSolucastLink = () => `https://solucast.app/open/${shareCode}`;
 
   const handleCopySolucastLink = async () => {
     try {
@@ -219,8 +219,16 @@ const ShareModal = ({ service, isOpen, onClose }) => {
               </div>
 
               <div className="share-section">
-                <label className="share-label">🖥️ SoluCast Desktop Link</label>
-                <div className="share-link-display">
+                <label className="share-label">🖥️ SoluCast</label>
+                <a
+                  href={getSolucastLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-open-solucast"
+                >
+                  פתח SoluCast
+                </a>
+                <div className="share-link-display" style={{ marginTop: 8 }}>
                   <input
                     type="text"
                     className="share-link-input"
