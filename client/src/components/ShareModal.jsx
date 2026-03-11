@@ -5,6 +5,7 @@ import './ShareModal.css';
 
 const ShareModal = ({ service, isOpen, onClose }) => {
   const [shareCode, setShareCode] = useState('');
+  const [solucastShareCode, setSolucastShareCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -64,6 +65,9 @@ const ShareModal = ({ service, isOpen, onClose }) => {
       setError('');
       const data = await serviceService.getShareLink(service.id);
       setShareCode(data.code);
+      if (data.solucast_share_code || data.solucastShareCode) {
+        setSolucastShareCode(data.solucast_share_code || data.solucastShareCode);
+      }
     } catch (err) {
       console.error('Error getting share link:', err);
       setError('Failed to generate share link');
@@ -132,7 +136,7 @@ const ShareModal = ({ service, isOpen, onClose }) => {
     }
   };
 
-  const getSolucastLink = () => `https://solucast.app/open/${shareCode}`;
+  const getSolucastLink = () => solucastShareCode ? `https://solucast.app/open/${solucastShareCode}` : '';
 
   const handleCopySolucastLink = async () => {
     try {
@@ -218,6 +222,7 @@ const ShareModal = ({ service, isOpen, onClose }) => {
                 </div>
               </div>
 
+              {solucastShareCode && (
               <div className="share-section">
                 <label className="share-label">🖥️ SoluCast</label>
                 <a
@@ -246,6 +251,7 @@ const ShareModal = ({ service, isOpen, onClose }) => {
                 </div>
                 <p className="share-hint">Opens this service directly in the SoluCast desktop app</p>
               </div>
+              )}
 
               <div className="share-section qr-section">
                 <label className="share-label">QR Code</label>
