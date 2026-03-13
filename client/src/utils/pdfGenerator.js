@@ -1,7 +1,7 @@
 import html2pdf from 'html2pdf.js';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { transpose, transposeChord } from './transpose';
+import { transpose, transposeChord, convertKeyToFlat } from './transpose';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
 import A4PDFView from '../components/A4PDFView';
@@ -220,7 +220,7 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
             <div class="toc-title">Songs:</div>
             ${songs.map((song, index) => {
               const metaInfo = [];
-              if (song.key) metaInfo.push(`Key: ${song.key}`);
+              if (song.key) metaInfo.push(`Key: ${convertKeyToFlat(song.key)}`);
               if (song.bpm) metaInfo.push(`BPM: ${song.bpm}`);
               const metaString = metaInfo.length > 0 ? metaInfo.join(' | ') : '';
 
@@ -246,7 +246,7 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
           <div class="song-title">${i + 1}. ${song.title}</div>
           ${song.authors ? `<div class="song-meta">By: ${song.authors}</div>` : ''}
           <div class="song-meta">
-            ${song.key ? `Key: ${song.key}` : ''}
+            ${song.key ? `Key: ${convertKeyToFlat(song.key)}` : ''}
             ${song.bpm ? ` | BPM: ${song.bpm}` : ''}
             ${song.timeSig ? ` | Time: ${song.timeSig}` : ''}
           </div>
@@ -463,7 +463,7 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
         if (song.key) {
           const transposedKey = song.transposition || song.serviceSongTransposition || 0;
           const finalKey = transposedKey !== 0 ? transposeChord(song.key, transposedKey) : song.key;
-          metaInfo.push(finalKey);
+          metaInfo.push(convertKeyToFlat(finalKey));
         }
         if (song.bpm) metaInfo.push(`${song.bpm} BPM`);
 
@@ -912,7 +912,7 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
         if (song.key) {
           const transposedKey = song.transposition || song.serviceSongTransposition || 0;
           const finalKey = transposedKey !== 0 ? transposeChord(song.key, transposedKey) : song.key;
-          metaInfo.push(finalKey);
+          metaInfo.push(convertKeyToFlat(finalKey));
         }
         if (song.bpm) metaInfo.push(`${song.bpm} BPM`);
 
