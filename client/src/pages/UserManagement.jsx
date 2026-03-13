@@ -89,7 +89,11 @@ const UserManagement = () => {
 
   const getRoleLabel = (role) => {
     if (!isHe) return role;
-    const map = { admin: 'מנהל', planner: 'מתכנן', leader: 'מוביל', member: 'חבר' };
+    if (isHe) {
+      const map = { admin: 'מנהל', planner: 'חבר', leader: 'מוביל', member: 'חבר' };
+      return map[role] || role;
+    }
+    const map = { admin: 'Manager', planner: 'Member', leader: 'Leader', member: 'Member' };
     return map[role] || role;
   };
 
@@ -241,8 +245,7 @@ const UserEditModal = ({ editUser, isHe, onClose, onSave }) => {
             <select name="role" value={formData.role} onChange={handleChange}>
               <option value="member">{isHe ? 'חבר' : 'Member'}</option>
               <option value="leader">{isHe ? 'מוביל' : 'Leader'}</option>
-              <option value="planner">{isHe ? 'מתכנן' : 'Planner'}</option>
-              <option value="admin">{isHe ? 'מנהל' : 'Admin'}</option>
+              <option value="admin">{isHe ? 'מנהל' : 'Manager'}</option>
             </select>
           </div>
 

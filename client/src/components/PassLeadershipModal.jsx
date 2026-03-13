@@ -109,8 +109,7 @@ const PassLeadershipModal = ({ service, isOpen, onClose, onLeaderChanged }) => {
                           )}
                         </div>
                         <div className="member-role">
-                          {member.role === 'admin' ? '👑 Admin' :
-                           member.role === 'planner' ? '📋 Planner' :
+                          {member.role === 'admin' ? '👑 Manager' :
                            '👤 Member'}
                         </div>
                       </div>

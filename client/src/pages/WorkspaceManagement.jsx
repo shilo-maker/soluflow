@@ -7,7 +7,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getInitials, getAvatarColor } from '../utils/imageUtils';
 import workspaceService from '../services/workspaceService';
 
-const ROLE_OPTIONS = ['admin', 'planner', 'leader', 'member'];
+const ROLE_OPTIONS = ['admin', 'leader', 'member'];
+const ROLE_DISPLAY = { admin: { en: 'Manager', he: 'מנהל' }, planner: { en: 'Member', he: 'חבר' }, leader: { en: 'Leader', he: 'מוביל' }, member: { en: 'Member', he: 'חבר' } };
+const getRoleLabel = (role, lang) => ROLE_DISPLAY[role]?.[lang === 'he' ? 'he' : 'en'] || role;
 
 // ─── Inline style objects ────────────────────────────────────────────────────
 
@@ -164,7 +166,7 @@ function MemberAvatar({ src, name, size = 32 }) {
 const WorkspaceManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { activeWorkspace, leaveWorkspace, deleteWorkspace: deleteWs, loadWorkspaces } = useWorkspace();
 
   // State
@@ -210,7 +212,7 @@ const WorkspaceManagement = () => {
   const wsId = activeWorkspace?.id;
   const isOrg = activeWorkspace?.workspace_type === 'organization';
   const isOrgAdmin = isOrg && workspaceDetails?.role === 'admin';
-  const canManage = isOrg && (workspaceDetails?.role === 'admin' || workspaceDetails?.role === 'planner');
+  const canManage = isOrg && (workspaceDetails?.role === 'admin');
 
   // ── Data loading ──
 
@@ -499,7 +501,7 @@ const WorkspaceManagement = () => {
               onChange={(e) => setInviteRole(e.target.value)}
               style={{ ...s.roleSelect, fontSize: '14px', padding: '8px 12px' }}
             >
-              {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{getRoleLabel(r, language)}</option>)}
             </select>
           </div>
 
@@ -593,7 +595,7 @@ const WorkspaceManagement = () => {
                         disabled={isCurrentUser || roleUpdatePending}
                         style={{ ...s.roleSelect, ...(isCurrentUser || roleUpdatePending ? s.disabled : {}) }}
                       >
-                        {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                        {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{getRoleLabel(r, language)}</option>)}
                       </select>
                       {!isCurrentUser && (
                         <button
@@ -609,7 +611,7 @@ const WorkspaceManagement = () => {
                       )}
                     </>
                   ) : (
-                    <span style={s.roleBadge}>{member.role || 'member'}</span>
+                    <span style={s.roleBadge}>{getRoleLabel(member.role || 'member', language)}</span>
                   )}
                 </div>
               </div>
@@ -642,7 +644,7 @@ const WorkspaceManagement = () => {
                       </div>
                     </div>
                     <div style={s.memberRight}>
-                      <span style={s.roleBadge}>{inv.role}</span>
+                      <span style={s.roleBadge}>{getRoleLabel(inv.role, language)}</span>
                       {isOrgAdmin && (
                         <button
                           onClick={() => handleRevokeMemberInvite(inv.id)}

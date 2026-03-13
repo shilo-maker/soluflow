@@ -383,7 +383,7 @@ export default function WorkspaceSwitcher() {
                       {ws.role === 'admin' ? <Settings size={14} /> : <Users size={14} />}
                     </span>
                   )}
-                  {ws.workspace_type === 'organization' && (ws.role === 'admin' || ws.role === 'planner') && (
+                  {ws.workspace_type === 'organization' && ws.role === 'admin' && (
                     <span
                       role="button"
                       tabIndex={0}
