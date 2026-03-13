@@ -368,6 +368,11 @@ const ServicesList = () => {
                   }}>Remove</button>
                 ) : (
                   <>
+                    {service.canEdit && (
+                      <button className="menu-item" onClick={(e) => {
+                        e.stopPropagation(); setOpenMenuId(null); navigate(`/services/${service.id}/edit`);
+                      }}>{t('service.edit')}</button>
+                    )}
                     {service.isCreator && (
                       <button className="menu-item" onClick={(e) => {
                         e.stopPropagation(); setOpenMenuId(null); handleShareService(service);
