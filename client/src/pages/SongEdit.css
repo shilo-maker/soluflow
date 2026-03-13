@@ -93,12 +93,34 @@
   border-color: #9ca3af;
 }
 
-/* Editor helpers */
+/* Content card title - no bottom margin */
+.se-content-card-title {
+  margin-bottom: 0 !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+/* Editor helpers - sticky toolbar */
 .se-editor-helpers {
-  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: sticky;
+  top: 64px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(8px);
+  padding: 12px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Content area below sticky helpers */
+.se-content-area {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 0 0 16px 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .se-chord-helper {
@@ -209,10 +231,12 @@
   line-height: 1.6;
   color: #1f2937;
   background: white;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   min-height: 300px;
   box-sizing: border-box;
   direction: rtl;
+  field-sizing: content;
 }
 
 .se-lyrics-textarea:focus {
@@ -225,6 +249,23 @@
   margin-top: 8px;
   font-size: 12px;
   color: #9ca3af;
+}
+
+/* Workspace checkboxes (create mode) */
+.se-workspace-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.se-workspace-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
 }
 
 /* Mobile responsiveness */

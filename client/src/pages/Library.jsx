@@ -5,7 +5,6 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import songService from '../services/songService';
 import ChordProDisplay from '../components/ChordProDisplay';
-import SongEditModal from '../components/SongEditModal';
 import SongShareModal from '../components/SongShareModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import AddToServiceModal from '../components/AddToServiceModal';
@@ -91,8 +90,6 @@ const Library = () => {
   const [selectedSong, setSelectedSong] = useState(null);
   const [fontSize, setFontSize] = useState(14);
   const [transposition, setTransposition] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalSong, setModalSong] = useState(null); // null = create mode, song object = edit mode
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -310,8 +307,7 @@ const Library = () => {
   };
 
   const handleAddSong = () => {
-    setModalSong(null); // null indicates create mode
-    setIsModalOpen(true);
+    navigate('/song/new');
   };
 
   const handleEditSong = () => {
@@ -320,77 +316,6 @@ const Library = () => {
     }
   };
 
-  const handleSaveSong = async (formData) => {
-    try {
-      // Map field names to match backend expectations
-      const songData = {
-        title: formData.title,
-        authors: formData.authors,
-        key: formData.key,
-        bpm: formData.bpm ? parseInt(formData.bpm) : null,
-        time_signature: formData.timeSig,
-        content: formData.content,
-        listen_url: formData.listen_url,
-        workspace_id: activeWorkspace?.id
-      };
-
-      // Include workspace_ids if provided
-      if (formData.workspace_ids) {
-        songData.workspace_ids = formData.workspace_ids;
-      }
-
-      // Include tag_ids if provided
-      if (formData.tag_ids) {
-        songData.tag_ids = formData.tag_ids;
-      }
-
-      if (modalSong) {
-        // Edit mode - update existing song
-        const updatedSong = await songService.updateSong(modalSong.id, songData);
-
-        // Update the songs list with the edited song
-        setSongs(prev => prev.map(song =>
-          song.id === updatedSong.id ? updatedSong : song
-        ));
-
-        // Update the selected song if it's currently displayed
-        if (selectedSong?.id === updatedSong.id) {
-          setSelectedSong(updatedSong);
-        }
-
-        // Show success toast
-        setToastMessage('Song updated successfully!');
-        setShowToast(true);
-      } else {
-        // Create mode - add new song
-        const newSong = await songService.createSong(songData);
-
-        // Add the new song to the list
-        setSongs(prev => [...prev, newSong].sort((a, b) =>
-          a.title.localeCompare(b.title)
-        ));
-
-        // Show success toast with workspace info
-        if (formData.workspace_ids && formData.workspace_ids.length > 0) {
-          setToastMessage(`Song created and made visible in ${formData.workspace_ids.length} workspace(s)!`);
-        } else {
-          setToastMessage('Song created successfully!');
-        }
-        setShowToast(true);
-      }
-
-      setIsModalOpen(false);
-      setModalSong(null);
-    } catch (err) {
-      console.error('Error saving song:', err);
-      throw new Error(getFriendlyErrorMessage(err));
-    }
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setModalSong(null);
-  };
 
   const handleCloseToast = () => {
     setShowToast(false);
@@ -743,14 +668,6 @@ const Library = () => {
         )}
       </div>
       )}
-
-      {/* Song Modal (Create/Edit) */}
-      <SongEditModal
-        song={modalSong}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSave={handleSaveSong}
-      />
 
       {/* Song Share Modal */}
       <SongShareModal

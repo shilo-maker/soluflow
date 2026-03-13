@@ -12,9 +12,10 @@
 /* Fixed search section - sticks below the sticky header */
 .search-section-fixed {
   position: sticky;
-  top: 0;
+  top: 64px;
   z-index: var(--z-sticky);
   padding: 10px 0;
+  background: var(--color-background, #f7fafc);
 }
 
 .search-section-inner {

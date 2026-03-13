@@ -53,13 +53,15 @@ const stripDirectives = (content) => {
 const SongEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { activeWorkspace } = useWorkspace();
+  const { workspaces, activeWorkspace } = useWorkspace();
   const { t } = useLanguage();
   const { user } = useAuth();
   const { theme } = useTheme();
   const currentPreset = GRADIENT_PRESETS[theme.gradientPreset] || GRADIENT_PRESETS.warm;
 
-  const [loading, setLoading] = useState(true);
+  const isEditMode = !!id;
+
+  const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [song, setSong] = useState(null);
@@ -76,14 +78,26 @@ const SongEdit = () => {
     content: ''
   });
   const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedWorkspaces, setSelectedWorkspaces] = useState([]);
   const [chordInput, setChordInput] = useState('');
+  const [detailsCollapsed, setDetailsCollapsed] = useState(isEditMode);
   const contentTextareaRef = useRef(null);
 
-  // Check if admin editing a public song
-  const isAdminEditingPublic = user?.role === 'admin' && song?.is_public;
-
-  // Load song data
+  // Auto-resize textarea to fit content
   useEffect(() => {
+    const textarea = contentTextareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  }, [formData.content]);
+
+  // Check if admin editing a public song
+  const isAdminEditingPublic = isEditMode && user?.role === 'admin' && song?.is_public;
+
+  // Load song data (edit mode only)
+  useEffect(() => {
+    if (!isEditMode) return;
     const fetchSong = async () => {
       try {
         setLoading(true);
@@ -108,6 +122,12 @@ const SongEdit = () => {
     };
     fetchSong();
   }, [id]);
+
+  const handleWorkspaceToggle = (workspaceId) => {
+    setSelectedWorkspaces(prev =>
+      prev.includes(workspaceId) ? prev.filter(wid => wid !== workspaceId) : [...prev, workspaceId]
+    );
+  };
 
   // Get suggested chords based on selected key
   const getSuggestedChords = () => {
@@ -145,9 +165,11 @@ const SongEdit = () => {
     setFormData(prev => ({ ...prev, content: newContent }));
     setChordInput('');
     setTimeout(() => {
-      textarea.focus();
+      const scrollY = window.scrollY;
+      textarea.focus({ preventScroll: true });
       const newPosition = start + chord.length;
       textarea.setSelectionRange(newPosition, newPosition);
+      window.scrollTo(0, scrollY);
     }, 0);
   };
 
@@ -161,9 +183,11 @@ const SongEdit = () => {
     const newContent = formData.content.substring(0, start) + section + formData.content.substring(start);
     setFormData(prev => ({ ...prev, content: newContent }));
     setTimeout(() => {
-      textarea.focus();
+      const scrollY = window.scrollY;
+      textarea.focus({ preventScroll: true });
       const newPosition = start + section.length;
       textarea.setSelectionRange(newPosition, newPosition);
+      window.scrollTo(0, scrollY);
     }, 0);
   };
 
@@ -225,10 +249,19 @@ const SongEdit = () => {
       tag_ids: selectedTags.map(t => t.id)
     };
 
+    if (!isEditMode && selectedWorkspaces.length > 0) {
+      songData.workspace_ids = selectedWorkspaces;
+    }
+
     setSaving(true);
     try {
-      await songService.updateSong(id, songData);
-      navigate(`/song/${id}`);
+      if (isEditMode) {
+        await songService.updateSong(id, songData);
+        navigate(`/song/${id}`);
+      } else {
+        const newSong = await songService.createSong(songData);
+        navigate(`/song/${newSong.id}`);
+      }
     } catch (err) {
       console.error('Error saving song:', err);
       setError(err.response?.data?.error || err.message || t('songEdit.errorSaveFailed'));
@@ -241,20 +274,23 @@ const SongEdit = () => {
     return <div className="song-edit-page"><div className="edit-loading">{t('common.loading')}</div></div>;
   }
 
-  if (!song) {
+  if (isEditMode && !song) {
     return <div className="song-edit-page"><div className="edit-loading">{t('songEdit.errorSaveFailed')}</div></div>;
   }
 
   return (
     <div className="song-edit-page">
       {/* Header */}
-      <div className="edit-header-gradient" style={{ background: currentPreset.gradient }}>
+      <div
+        className="edit-header-gradient"
+        style={{ background: `linear-gradient(135deg, ${currentPreset.colors[0]} 0%, ${currentPreset.colors[1]} 25%, ${currentPreset.colors[2]} 50%, ${currentPreset.colors[3]} 75%, ${currentPreset.colors[4]} 100%)` }}
+      >
         <div className="edit-header-content">
-          <button className="edit-header-back" onClick={() => navigate(`/song/${id}`)}>
-            <ArrowLeft size={24} />
+          <button className="edit-header-back" onClick={() => navigate(isEditMode ? `/song/${id}` : '/library')}>
+            <ArrowLeft size={20} />
           </button>
           <div className="edit-header-info">
-            <h1 className="edit-header-title">{t('songEdit.titleEdit')}</h1>
+            <h1 className="edit-header-title">{isEditMode ? t('songEdit.titleEdit') : t('songEdit.titleAdd')}</h1>
             {formData.title && (
               <span className="edit-header-subtitle">{formData.title}</span>
             )}
@@ -266,111 +302,153 @@ const SongEdit = () => {
       <form onSubmit={handleSubmit} className="edit-form">
         {error && <div className="edit-error">{error}</div>}
 
-        {/* Song Details Card */}
+        {/* Song Details Card - Collapsible */}
         <div className="edit-card">
-          <h2 className="edit-card-title">{t('songEdit.fieldTitle')}</h2>
+          <h2
+            className="edit-card-title edit-card-title-collapsible"
+            onClick={() => setDetailsCollapsed(!detailsCollapsed)}
+          >
+            <span className={`collapse-arrow ${detailsCollapsed ? 'collapsed' : ''}`}>▼</span>
+            {t('serviceEdit.serviceDetails')}
+            {detailsCollapsed && formData.title && (
+              <span className="edit-card-title-preview">
+                {formData.title}{formData.authors ? ` · ${formData.authors}` : ''}{formData.key ? ` · ${formData.key}` : ''}
+              </span>
+            )}
+          </h2>
 
-          <div className="edit-field">
-            <label htmlFor="title">{t('songEdit.fieldTitle')} <span className="se-required">{t('songEdit.required')}</span> <span className="se-char-count">({formData.title.length}/200)</span></label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              maxLength={200}
-            />
-          </div>
-
-          <div className="edit-field">
-            <label htmlFor="authors">{t('songEdit.fieldAuthors')} <span className="se-char-count">({formData.authors.length}/200)</span></label>
-            <input
-              type="text"
-              id="authors"
-              name="authors"
-              value={formData.authors}
-              onChange={handleChange}
-              placeholder={t('songEdit.placeholderAuthors')}
-              maxLength={200}
-            />
-          </div>
-
-          <div className="edit-field">
-            <label htmlFor="listen_url">{t('songEdit.fieldListenUrl')}</label>
-            <input
-              type="url"
-              id="listen_url"
-              name="listen_url"
-              value={formData.listen_url}
-              onChange={handleChange}
-              placeholder={t('songEdit.placeholderListenUrl')}
-            />
-          </div>
-
-          {/* Tags */}
-          <TagInput
-            songId={song.id}
-            songTags={selectedTags}
-            isPublicSong={song.is_public}
-            songOwnerId={song.created_by_id}
-            onChange={setSelectedTags}
-          />
-
-          <div className="se-row-three">
-            <div className="edit-field">
-              <label htmlFor="key">{t('songEdit.fieldKey')} <span className="se-required">{t('songEdit.required')}</span></label>
-              <div className="se-key-row">
-                <select
-                  id="key"
-                  name="key"
-                  value={formData.key}
+          {!detailsCollapsed && (
+            <>
+              <div className="edit-field">
+                <label htmlFor="title">{t('songEdit.fieldTitle')} <span className="se-required">{t('songEdit.required')}</span> <span className="se-char-count">({formData.title.length}/200)</span></label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
                   onChange={handleChange}
                   required
-                >
-                  <option value="">{t('songEdit.selectKey')}</option>
-                  {COMMON_KEYS.map(key => (
-                    <option key={key} value={key}>{key}</option>
-                  ))}
-                </select>
-                {isAdminEditingPublic && formData.key && (
-                  <div className="se-transpose-btns">
-                    <button type="button" className="se-btn-transpose" onClick={() => handlePermanentTranspose(-1)} title={t('songEdit.transposeDown') || 'Transpose down'}>−</button>
-                    <button type="button" className="se-btn-transpose" onClick={() => handlePermanentTranspose(1)} title={t('songEdit.transposeUp') || 'Transpose up'}>+</button>
-                  </div>
-                )}
+                  maxLength={200}
+                />
               </div>
-            </div>
 
-            <div className="edit-field">
-              <label htmlFor="bpm">{t('songEdit.fieldBpm')}</label>
-              <input
-                type="number"
-                id="bpm"
-                name="bpm"
-                value={formData.bpm}
-                onChange={handleChange}
-                placeholder={t('songEdit.placeholderBpm')}
-                min="20"
-                max="300"
-              />
-            </div>
+              <div className="edit-field">
+                <label htmlFor="authors">{t('songEdit.fieldAuthors')} <span className="se-char-count">({formData.authors.length}/200)</span></label>
+                <input
+                  type="text"
+                  id="authors"
+                  name="authors"
+                  value={formData.authors}
+                  onChange={handleChange}
+                  placeholder={t('songEdit.placeholderAuthors')}
+                  maxLength={200}
+                />
+              </div>
 
-            <div className="edit-field">
-              <label htmlFor="timeSig">{t('songEdit.fieldTimeSig')}</label>
-              <select id="timeSig" name="timeSig" value={formData.timeSig} onChange={handleChange}>
-                <option value="4/4">4/4</option>
-                <option value="6/8">6/8</option>
-              </select>
-            </div>
-          </div>
+              <div className="edit-field">
+                <label htmlFor="listen_url">{t('songEdit.fieldListenUrl')}</label>
+                <input
+                  type="url"
+                  id="listen_url"
+                  name="listen_url"
+                  value={formData.listen_url}
+                  onChange={handleChange}
+                  placeholder={t('songEdit.placeholderListenUrl')}
+                />
+              </div>
+
+              {/* Tags - edit mode only */}
+              {isEditMode && song && (
+                <TagInput
+                  songId={song.id}
+                  songTags={selectedTags}
+                  isPublicSong={song.is_public}
+                  songOwnerId={song.created_by_id}
+                  onChange={setSelectedTags}
+                />
+              )}
+
+              {/* Workspace Selection - create mode only */}
+              {!isEditMode && workspaces && workspaces.length > 1 && (
+                <div className="edit-field">
+                  <label>{t('songEdit.workspaceSelection')}</label>
+                  <div className="se-workspace-checkboxes">
+                    {workspaces
+                      .filter(ws => ws.id !== activeWorkspace?.id)
+                      .map(workspace => (
+                        <label key={workspace.id} className="se-workspace-label">
+                          <input
+                            type="checkbox"
+                            checked={selectedWorkspaces.includes(workspace.id)}
+                            onChange={() => handleWorkspaceToggle(workspace.id)}
+                          />
+                          <span>{workspace.name}</span>
+                        </label>
+                      ))}
+                  </div>
+                  <div className="se-editor-hint">
+                    {t('songEdit.workspaceHint').replace('{workspace}', activeWorkspace?.name || '')}
+                  </div>
+                </div>
+              )}
+
+              <div className="se-row-three">
+                <div className="edit-field">
+                  <label htmlFor="key">{t('songEdit.fieldKey')} <span className="se-required">{t('songEdit.required')}</span></label>
+                  <div className="se-key-row">
+                    <select
+                      id="key"
+                      name="key"
+                      value={formData.key}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">{t('songEdit.selectKey')}</option>
+                      {COMMON_KEYS.map(key => (
+                        <option key={key} value={key}>{key}</option>
+                      ))}
+                    </select>
+                    {isAdminEditingPublic && formData.key && (
+                      <div className="se-transpose-btns">
+                        <button type="button" className="se-btn-transpose" onClick={() => handlePermanentTranspose(-1)} title={t('songEdit.transposeDown') || 'Transpose down'}>−</button>
+                        <button type="button" className="se-btn-transpose" onClick={() => handlePermanentTranspose(1)} title={t('songEdit.transposeUp') || 'Transpose up'}>+</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="edit-field">
+                  <label htmlFor="bpm">{t('songEdit.fieldBpm')}</label>
+                  <input
+                    type="number"
+                    id="bpm"
+                    name="bpm"
+                    value={formData.bpm}
+                    onChange={handleChange}
+                    placeholder={t('songEdit.placeholderBpm')}
+                    min="20"
+                    max="300"
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label htmlFor="timeSig">{t('songEdit.fieldTimeSig')}</label>
+                  <select id="timeSig" name="timeSig" value={formData.timeSig} onChange={handleChange}>
+                    <option value="4/4">4/4</option>
+                    <option value="6/8">6/8</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Content Card */}
-        <div className="edit-card">
+        {/* Content Section */}
+        <div className="edit-card se-content-card-title">
           <h2 className="edit-card-title">{t('songEdit.fieldContent')} <span className="se-required">{t('songEdit.required')}</span></h2>
+        </div>
 
-          <div className="se-editor-helpers">
+        <div className="se-editor-helpers">
             <div className="se-chord-helper">
               <div className="se-chord-input-row">
                 <input
@@ -410,8 +488,9 @@ const SongEdit = () => {
               <button type="button" className="se-btn-section" onClick={() => insertSection('Intro')}>{t('songEdit.btnIntro')}</button>
               <button type="button" className="se-btn-section" onClick={() => insertSection('Outro')}>{t('songEdit.btnOutro')}</button>
             </div>
-          </div>
+        </div>
 
+        <div className="se-content-area">
           <textarea
             ref={contentTextareaRef}
             id="content"
@@ -428,11 +507,11 @@ const SongEdit = () => {
 
         {/* Save Bar */}
         <div className="edit-save-bar">
-          <button type="button" className="edit-btn-cancel" onClick={() => navigate(`/song/${id}`)} disabled={saving}>
+          <button type="button" className="edit-btn-cancel" onClick={() => navigate(isEditMode ? `/song/${id}` : '/library')} disabled={saving}>
             {t('songEdit.btnCancel')}
           </button>
           <button type="submit" className="edit-btn-save" disabled={saving}>
-            {saving ? t('songEdit.btnSaving') : t('songEdit.btnSave')}
+            {saving ? t('songEdit.btnSaving') : (isEditMode ? t('songEdit.btnSave') : t('songEdit.btnCreate'))}
           </button>
         </div>
       </form>

@@ -170,6 +170,7 @@ function AppContent() {
 
               {/* Song view - accessible when logged in */}
               <Route path="/song/:id" element={<SongView />} />
+              <Route path="/song/new" element={<PrivateRoute><SongEdit /></PrivateRoute>} />
               <Route path="/song/:id/edit" element={<PrivateRoute><SongEdit /></PrivateRoute>} />
 
               {/* Protected routes */}
