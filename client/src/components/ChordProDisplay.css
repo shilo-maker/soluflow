@@ -64,7 +64,7 @@
   page-break-inside: avoid;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-wrap: anywhere; /* Allow breaking but prefer natural break points */
+  overflow-wrap: break-word; /* Only break within words as a last resort */
   word-break: keep-all; /* Prevent breaking within words (important for Hebrew) */
 }
 

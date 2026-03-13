@@ -561,13 +561,18 @@ const ChordProDisplay = React.memo(({
                 // Ensure segment is at least as wide as its chord to prevent overlap in narrow columns
                 const chordMinWidth = `${segment.chord.length * 0.75}em`;
 
+                // Separate word joiner from visual connector (hyphens)
+                // Word joiner must be OUTSIDE the inline-block to prevent line breaks between segments
+                const hasWordJoiner = connector.includes('\u2060');
+                const visualConnector = connector.replace(/\u2060/g, '');
+
                 return (
                   <React.Fragment key={i}>
                     {needsLineBreak && <span className="chord-line-break"></span>}
                     <span className={`chord-segment${spacingClass}`} style={{ minWidth: chordMinWidth }}>
                       <span className="chord">{segment.chord}</span>
-                      <span className="text-segment">{segment.text || '\u200B'}{connector}</span>
-                    </span>
+                      <span className="text-segment">{segment.text || '\u200B'}{visualConnector}</span>
+                    </span>{hasWordJoiner && '\u2060'}
                   </React.Fragment>
                 );
               }
