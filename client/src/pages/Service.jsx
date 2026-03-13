@@ -113,7 +113,7 @@ const Service = () => {
   const [selectedService, setSelectedService] = useState(null);
   const [serviceDetails, setServiceDetails] = useState(null);
   const [selectedSongIndex, setSelectedSongIndex] = useState(0);
-  const [fontSize, setFontSize] = useState(14);
+  const [fontSize, setFontSize] = useState(window.innerWidth <= 480 ? 16 : 14);
   const [autoFittedFontSize, setAutoFittedFontSize] = useState(null);
   const [autoColumnMode, setAutoColumnMode] = useState(null); // auto-calculated: null=single, 2=compact
   const [transposition, setTransposition] = useState(0);
@@ -635,6 +635,9 @@ const Service = () => {
 
     if (availableHeight <= 0) return null;
 
+    // Disable auto-fit on mobile phones — use fixed 16px instead
+    if (window.innerWidth <= 480) return null;
+
     const MIN_FONT = 6;
     const MAX_FONT = 32;
     const idealFont = Math.floor(availableHeight / totalEms);
@@ -679,6 +682,36 @@ const Service = () => {
     const frameId = requestAnimationFrame(checkOverflow);
     return () => cancelAnimationFrame(frameId);
   }, [autoFittedFontSize, currentSong]);
+
+  // Mobile: auto-switch to 2 columns if content overflows at current font size
+  useEffect(() => {
+    if (window.innerWidth > 480) return; // only on mobile phones
+    if (columnMode !== null) return; // user set manual column mode
+    if (!currentSong || currentSong.segment_type === 'prayer' || !currentSong.content) {
+      setAutoColumnMode(null);
+      return;
+    }
+
+    // Only check overflow when in single-column mode to avoid toggle loop
+    // (switching to 2 cols makes it fit, which would switch back to 1)
+    if (autoColumnMode !== null) return;
+
+    const checkMobileOverflow = () => {
+      const container = songDisplayRef.current;
+      const el = container?.querySelector('.chordpro-display');
+      if (!el) return;
+
+      const availableHeight = window.innerHeight - el.getBoundingClientRect().top;
+      if (availableHeight <= 0) return;
+
+      if (el.scrollHeight > availableHeight) {
+        setAutoColumnMode(2);
+      }
+    };
+
+    const frameId = requestAnimationFrame(checkMobileOverflow);
+    return () => cancelAnimationFrame(frameId);
+  }, [currentSong, fontSize, columnMode, autoColumnMode]);
 
   // Effective font size: auto-fitted or manual
   const effectiveFontSize = autoFittedFontSize !== null ? autoFittedFontSize : fontSize;
@@ -1298,8 +1331,8 @@ const Service = () => {
           transposition={transposition}
           songKey={currentSong.key}
           isLyricsOnly={isLyricsOnly}
-          forcedColumnCount={1}
-          disableColumnCalculation={true}
+          forcedColumnCount={effectiveColumnMode || 1}
+          disableColumnCalculation={!effectiveColumnMode}
         />
       </div>
     );
