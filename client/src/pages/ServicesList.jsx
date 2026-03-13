@@ -20,7 +20,7 @@ const stripNiqqud = (text) => {
 const ServicesList = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { workspaces, activeWorkspace } = useWorkspace();
 
   const [services, setServices] = useState([]);
@@ -323,7 +323,8 @@ const ServicesList = () => {
     if (!dateStr) return '';
     try {
       const d = new Date(dateStr + 'T00:00:00');
-      return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      const locale = language === 'he' ? 'he-IL' : 'en-US';
+      return d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
     } catch { return dateStr; }
   };
 

@@ -166,8 +166,9 @@ const GuestLanding = () => {
     // Filter by tags if any #tagname patterns were found
     let tagMatch = true;
     if (searchTagNames.length > 0) {
-      tagMatch = song.tags && searchTagNames.every(searchTag =>
-        song.tags.some(tag => stripNiqqud(tag.name.toLowerCase()).includes(searchTag))
+      const songTags = song.flow_tags || song.tags || [];
+      tagMatch = songTags.length > 0 && searchTagNames.every(searchTag =>
+        songTags.some(tag => stripNiqqud(tag.name.toLowerCase()).includes(searchTag))
       );
     }
 
