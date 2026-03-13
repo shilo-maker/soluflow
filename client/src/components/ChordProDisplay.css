@@ -68,6 +68,13 @@
   word-break: keep-all; /* Prevent breaking within words (important for Hebrew) */
 }
 
+/* Wrap same-word chord segments to prevent mid-word line breaks */
+.word-group {
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
 .chord-segment {
   position: relative;
   display: inline-block;

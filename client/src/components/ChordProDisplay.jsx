@@ -493,89 +493,89 @@ const ChordProDisplay = React.memo(({
           trailingChordsStartIndex = -1;
         }
 
+        // Pre-process segments: compute spacing/connectors and group same-word segments
+        const processed = segments.map((segment, i) => {
+          if (segment.type === 'text') {
+            return { ...segment, index: i, wordBoundary: true };
+          }
+          const nextSegment = segments[i + 1];
+          let connector = '';
+          let spacingClass = '';
+          let sameWord = false; // true if this segment continues into next without a word break
+
+          if (nextSegment && nextSegment.type === 'chord-text') {
+            const currentText = segment.text || '';
+            const trimmedLength = currentText.trim().length;
+            const endsWithSpace = /\s$/.test(currentText);
+            const nextText = nextSegment.text || '';
+            const nextStartsWithSpace = /^\s/.test(nextText);
+            const chordLength = segment.chord.length;
+            const scaleFactor = fontSize / 16;
+            const chordWidth = chordLength * 12 * scaleFactor;
+            const baseCharsOnly = currentText.trim().replace(/[\u0591-\u05C7]/g, '');
+            const visualCharCount = baseCharsOnly.length;
+            const textWidth = visualCharCount * 10 * scaleFactor;
+
+            if (trimmedLength === 0 || /^[\s.,!?;:]+$/.test(currentText.trim())) {
+              spacingClass = ' chord-segment-wide';
+            } else if (!endsWithSpace && !nextStartsWithSpace) {
+              if (chordWidth >= textWidth - (8 * scaleFactor)) {
+                const gapNeeded = Math.max(0, chordWidth - textWidth) + (10 * scaleFactor);
+                const hyphenWidth = 6 * scaleFactor;
+                const hyphenCount = Math.max(2, Math.ceil(gapNeeded / hyphenWidth));
+                connector = '-'.repeat(Math.min(hyphenCount, 8));
+              }
+              sameWord = trimmedLength > 0;
+            } else if (chordWidth >= textWidth) {
+              spacingClass = ' chord-segment-spaced';
+            }
+          }
+
+          const chordMinWidth = `${segment.chord.length * 0.75}em`;
+          return { ...segment, index: i, spacingClass, connector, chordMinWidth, sameWord, wordBoundary: !sameWord };
+        });
+
+        // Group consecutive same-word chord segments into word groups
+        const wordGroups = [];
+        let currentGroup = [];
+        for (const seg of processed) {
+          currentGroup.push(seg);
+          if (seg.wordBoundary) {
+            wordGroups.push(currentGroup);
+            currentGroup = [];
+          }
+        }
+        if (currentGroup.length > 0) wordGroups.push(currentGroup);
+
         return (
           <div key={index} className="chord-lyric-line">
-            {segments.map((segment, i) => {
-              // Add line break before trailing chords without lyrics
-              const needsLineBreak = trailingChordsStartIndex !== -1 && i === trailingChordsStartIndex;
-
-              if (segment.type === 'text') {
-                return (
-                  <span key={i} className="text-segment">
-                    {segment.content}
-                  </span>
-                );
-              } else {
-                // chord-text segment
-                const nextSegment = segments[i + 1];
-                let connector = '';
-                let spacingClass = '';
-
-                if (nextSegment && nextSegment.type === 'chord-text') {
-                  const currentText = segment.text || '';
-                  const textLength = currentText.length;
-                  const trimmedLength = currentText.trim().length;
-                  const endsWithSpace = /\s$/.test(currentText);
-                  const nextText = nextSegment.text || '';
-                  const nextStartsWithSpace = /^\s/.test(nextText);
-
-                  // Determine spacing needed
-                  // Latin bold chords are ~1.3x wider per character than Hebrew text
-                  // So we compare chord pixel width (estimated) vs text pixel width
-                  const chordLength = segment.chord.length;
-
-                  // Scale pixel estimates based on font size (base estimates are for 16px)
-                  const scaleFactor = fontSize / 16;
-                  const chordWidth = chordLength * 12 * scaleFactor; // ~12px per bold chord char at 16px (wider than text)
-
-                  // Count only base characters (exclude Hebrew vowels/nikkud which don't add width)
-                  // Hebrew combining marks are in range U+0591 to U+05C7
-                  const baseCharsOnly = currentText.trim().replace(/[\u0591-\u05C7]/g, '');
-                  const visualCharCount = baseCharsOnly.length;
-                  const textWidth = visualCharCount * 10 * scaleFactor; // ~10px per base char at 16px
-
-                  if (trimmedLength === 0 || /^[\s.,!?;:]+$/.test(currentText.trim())) {
-                    // No real text - need wide spacing for chord
-                    spacingClass = ' chord-segment-wide';
-                  } else if (!endsWithSpace && !nextStartsWithSpace) {
-                    // Word is split across chord segments - check if we need hyphens
-                    // Only add hyphens if chord width is close to or exceeds text width
-                    if (chordWidth >= textWidth - (8 * scaleFactor)) {
-                      const gapNeeded = Math.max(0, chordWidth - textWidth) + (10 * scaleFactor); // min gap
-                      const hyphenWidth = 6 * scaleFactor;
-                      const hyphenCount = Math.max(2, Math.ceil(gapNeeded / hyphenWidth));
-                      connector = '-'.repeat(Math.min(hyphenCount, 8));
-                    }
-                  } else if (chordWidth >= textWidth) {
-                    // Text ends with space or next starts with space, but chord is still wider than text
-                    // Add padding class to prevent overlap
-                    spacingClass = ' chord-segment-spaced';
-                  }
-
-                  // Add word joiner to prevent line break between segments of the same word
-                  if (!endsWithSpace && !nextStartsWithSpace && trimmedLength > 0) {
-                    connector += '\u2060'; // Word Joiner - prevents line break
-                  }
+            {wordGroups.map((group, gi) => {
+              const rendered = group.map((seg) => {
+                const needsLineBreak = trailingChordsStartIndex !== -1 && seg.index === trailingChordsStartIndex;
+                if (seg.type === 'text') {
+                  return (
+                    <span key={seg.index} className="text-segment">
+                      {seg.content}
+                    </span>
+                  );
                 }
-
-                // Ensure segment is at least as wide as its chord to prevent overlap in narrow columns
-                const chordMinWidth = `${segment.chord.length * 0.75}em`;
-
-                // Separate word joiner from visual connector (hyphens)
-                // Word joiner must be OUTSIDE the inline-block to prevent line breaks between segments
-                const hasWordJoiner = connector.includes('\u2060');
-                const visualConnector = connector.replace(/\u2060/g, '');
-
                 return (
-                  <React.Fragment key={i}>
+                  <React.Fragment key={seg.index}>
                     {needsLineBreak && <span className="chord-line-break"></span>}
-                    <span className={`chord-segment${spacingClass}`} style={{ minWidth: chordMinWidth }}>
-                      <span className="chord">{segment.chord}</span>
-                      <span className="text-segment">{segment.text || '\u200B'}{visualConnector}</span>
-                    </span>{hasWordJoiner && '\u2060'}
+                    <span className={`chord-segment${seg.spacingClass}`} style={{ minWidth: seg.chordMinWidth }}>
+                      <span className="chord">{seg.chord}</span>
+                      <span className="text-segment">{seg.text || '\u200B'}{seg.connector}</span>
+                    </span>
                   </React.Fragment>
                 );
+              });
+
+              // If group has multiple chord segments (same word split by chords),
+              // wrap in a nowrap container to prevent mid-word line breaks
+              if (group.length > 1 && group.some(s => s.type === 'chord-text')) {
+                return <span key={gi} className="word-group">{rendered}</span>;
               }
+              return <React.Fragment key={gi}>{rendered}</React.Fragment>;
             })}
             {/* Add non-breaking space if line is empty to maintain height */}
             {segments.length === 0 && '\u00A0'}
