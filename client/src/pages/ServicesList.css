@@ -217,6 +217,8 @@
 
 .service-card:has(.service-card-dropdown) {
   z-index: var(--z-dropdown);
+  content-visibility: visible;
+  contain: none;
 }
 
 .service-card-dropdown {

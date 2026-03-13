@@ -38,9 +38,10 @@
 }
 
 .login-logo {
+  display: block;
   height: 160px;
   width: auto;
-  margin-bottom: var(--spacing-md);
+  margin: 0 auto var(--spacing-md) auto;
   border-radius: 24px;
 }
 

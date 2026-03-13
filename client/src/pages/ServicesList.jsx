@@ -367,20 +367,10 @@ const ServicesList = () => {
                   }}>Remove</button>
                 ) : (
                   <>
-                    {service.canEdit && (
-                      <button className="menu-item" onClick={(e) => {
-                        e.stopPropagation(); setOpenMenuId(null); handleEditService(service);
-                      }}>{t('service.edit')}</button>
-                    )}
                     {service.isCreator && (
                       <button className="menu-item" onClick={(e) => {
                         e.stopPropagation(); setOpenMenuId(null); handleShareService(service);
                       }}>{t('service.share')}</button>
-                    )}
-                    {service.isCreator && (
-                      <button className="menu-item" onClick={(e) => {
-                        e.stopPropagation(); setOpenMenuId(null); handleCopySolucastLink(service);
-                      }}>{t('service.solucastLink')}</button>
                     )}
                     <button className="menu-item" onClick={(e) => {
                       e.stopPropagation(); setOpenMenuId(null); handleDownloadPDF(service);
@@ -392,11 +382,6 @@ const ServicesList = () => {
                       <button className="menu-item" onClick={(e) => {
                         e.stopPropagation(); setOpenMenuId(null); handleMoveService(service);
                       }}>{t('service.move')}</button>
-                    )}
-                    {service.canEdit && (
-                      <button className="menu-item" onClick={(e) => {
-                        e.stopPropagation(); setOpenMenuId(null); handlePassLeadership(service);
-                      }}>{t('service.passLeadership')}</button>
                     )}
                     {service.canEdit && (
                       <button className="menu-item menu-item-delete" onClick={(e) => {
