@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import serviceService from '../services/serviceService';
 import { useLanguage } from '../contexts/LanguageContext';
 import './AddToServiceModal.css';
 
 const AddToServiceModal = ({ song, isOpen, onClose, onSuccess }) => {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -215,6 +217,16 @@ const AddToServiceModal = ({ song, isOpen, onClose, onSuccess }) => {
         </div>
 
         <div className="modal-footer">
+          <button
+            className="btn-create-new-service"
+            onClick={() => {
+              onClose();
+              navigate('/services/new', { state: { initialSong: song } });
+            }}
+            disabled={adding}
+          >
+            + {t('serviceEdit.createTitle')}
+          </button>
           <button className="btn-cancel" onClick={onClose} disabled={adding}>
             {t('common.cancel')}
           </button>

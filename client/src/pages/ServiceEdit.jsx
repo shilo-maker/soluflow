@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -71,6 +71,7 @@ const ServiceEdit = () => {
 
   const fetchingRef = useRef(false);
   const originalSongsRef = useRef([]);
+  const [detailsCollapsed, setDetailsCollapsed] = useState(true);
 
   // Debounce search for available songs
   useEffect(() => {
@@ -368,13 +369,11 @@ const ServiceEdit = () => {
 
       // Update setlist: diff against original songs
       const currentItems = originalSongsRef.current;
-      // Map original songs by serviceSongId for lookup
       const originalByServiceSongId = new Map();
       for (const s of currentItems) {
         if (s.serviceSongId) originalByServiceSongId.set(s.serviceSongId, s);
       }
 
-      // Determine which original service songs are retained in the new setlist
       const retainedServiceSongIds = new Set();
       for (const item of setlist) {
         if (item.serviceSongId && originalByServiceSongId.has(item.serviceSongId)) {
@@ -382,18 +381,15 @@ const ServiceEdit = () => {
         }
       }
 
-      // Remove items no longer in setlist
       for (const item of currentItems) {
         if (item.serviceSongId && !retainedServiceSongIds.has(item.serviceSongId)) {
           await serviceService.removeSongFromService(id, item.serviceSongId);
         }
       }
 
-      // Add new items and update positions
       for (let i = 0; i < setlist.length; i++) {
         const item = setlist[i];
         if (item.serviceSongId && retainedServiceSongIds.has(item.serviceSongId)) {
-          // Existing item — update position and optionally transposition
           const updateData = { position: i };
           if (item.segment_type === 'prayer') {
             updateData.segment_title = item.segment_title || item.title;
@@ -412,7 +408,6 @@ const ServiceEdit = () => {
             segment_content: item.segment_content
           });
         } else {
-          // New song from library
           const addData = {
             song_id: item.song_id || item.id,
             position: i,
@@ -432,7 +427,6 @@ const ServiceEdit = () => {
         setSetlist(refreshedSongs);
         originalSongsRef.current = refreshedSongs;
       } else {
-        // Offline: treat current setlist as the new baseline
         originalSongsRef.current = [...setlist];
       }
 
@@ -440,6 +434,7 @@ const ServiceEdit = () => {
       setToastType('success');
       setShowToast(true);
       setSaved(true);
+      navigate(`/services/${id}`);
     } catch (err) {
       console.error('Error saving service:', err);
       setError(err.message || 'Failed to save service');
@@ -484,39 +479,54 @@ const ServiceEdit = () => {
       <form onSubmit={handleSubmit} className="edit-form">
         {error && <div className="edit-error">{error}</div>}
 
-        {/* Service Details Card */}
+        {/* Service Details Card - Collapsible */}
         <div className="edit-card">
-          <h2 className="edit-card-title">{t('serviceEdit.serviceTitle')}</h2>
+          <h2
+            className="edit-card-title edit-card-title-collapsible"
+            onClick={() => setDetailsCollapsed(!detailsCollapsed)}
+          >
+            <span className={`collapse-arrow ${detailsCollapsed ? 'collapsed' : ''}`}>▼</span>
+            {t('serviceEdit.serviceDetails')}
+            {detailsCollapsed && (generatedTitle || formData.datetime) && (
+              <span className="edit-card-title-preview">
+                {generatedTitle}{formData.datetime?.split('T')[1] ? ` · ${formData.datetime.split('T')[1]}` : ''}
+              </span>
+            )}
+          </h2>
 
-          <div className="edit-field">
-            <label htmlFor="datetime">{t('serviceEdit.dateTime')}</label>
-            <input
-              type="datetime-local"
-              id="datetime"
-              name="datetime"
-              value={formData.datetime}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          {!detailsCollapsed && (
+            <>
+              <div className="edit-field">
+                <label htmlFor="datetime">{t('serviceEdit.dateTime')}</label>
+                <input
+                  type="datetime-local"
+                  id="datetime"
+                  name="datetime"
+                  value={formData.datetime}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
-          <div className="edit-field">
-            <label htmlFor="location">{t('serviceEdit.venue')}</label>
-            <input
-              type="text"
-              id="location"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder={t('serviceEdit.venuePlaceholder')}
-              required
-            />
-          </div>
+              <div className="edit-field">
+                <label htmlFor="location">{t('serviceEdit.venue')}</label>
+                <input
+                  type="text"
+                  id="location"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  placeholder={t('serviceEdit.venuePlaceholder')}
+                  required
+                />
+              </div>
 
-          {generatedTitle && (
-            <div className="edit-title-preview">
-              {generatedTitle}
-            </div>
+              {generatedTitle && (
+                <div className="edit-title-preview">
+                  {generatedTitle}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -723,9 +733,9 @@ const ServiceEdit = () => {
                           </div>
                           <div className="edit-song-meta">
                             {item.segment_type === 'prayer' ? t('prayer.prayer') : item.authors}
-                            {item.segment_type !== 'prayer' && getItemTransposition(item) !== 0 && (
+                            {item.segment_type !== 'prayer' && item.key && (
                               <span className="edit-transpose-badge">
-                                {' '}({convertKeyToFlat(transposeChord(item.key, getItemTransposition(item)))})
+                                {' '}({convertKeyToFlat(transposeChord(item.key, getItemTransposition(item)))}{getItemTransposition(item) !== 0 ? ` ${getItemTransposition(item) > 0 ? '+' : ''}${getItemTransposition(item)}` : ''})
                               </span>
                             )}
                           </div>

@@ -214,7 +214,7 @@ export const generateSetlistPDF = async (service, songs, options = {}) => {
       <body>
         <div class="title-page">
           <div class="service-title">${service.venue || service.title?.split(' ').slice(1).join(' ') || service.title || 'Setlist'}</div>
-          ${service.date ? `<div class="service-date">${new Date(service.date).toLocaleDateString()}</div>` : ''}
+          ${service.date ? `<div class="service-date">${new Date(service.date + 'T00:00:00').toLocaleDateString()}${service.time ? ' · ' + service.time : ''}</div>` : ''}
 
           <div class="toc">
             <div class="toc-title">Songs:</div>
@@ -386,13 +386,8 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
     filename = formattedDate;
 
     // Add time if available
-    const formattedTime = date.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    if (formattedTime !== '00:00') {
-      filename += ` - ${formattedTime}`;
+    if (service.time) {
+      filename += ` - ${service.time}`;
     }
   }
 
@@ -435,22 +430,14 @@ export const generateMultiSongPDF = async (service, songs, options = {}) => {
 
   // Format date and time for display
   let displayDate = '';
-  let displayTime = '';
+  let displayTime = service.time || '';
   if (service.date) {
-    const date = new Date(service.date);
+    const date = new Date(service.date + 'T00:00:00');
     displayDate = date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
     });
-    const time = date.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    if (time !== '00:00') {
-      displayTime = time;
-    }
   }
 
   // Build title page HTML
@@ -866,13 +853,8 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
     }).replace(/\//g, '-');
     filename = formattedDate;
 
-    const formattedTime = date.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    if (formattedTime !== '00:00') {
-      filename += ` - ${formattedTime}`;
+    if (service.time) {
+      filename += ` - ${service.time}`;
     }
   }
 
@@ -906,18 +888,7 @@ export const generateMultiSongPDFBlob = async (service, songs, options = {}) => 
   titlePageContainer.style.fontFamily = "'Heebo', Arial, sans-serif";
   document.body.appendChild(titlePageContainer);
 
-  let displayTime = '';
-  if (service.date) {
-    const date = new Date(service.date);
-    const time = date.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    if (time !== '00:00') {
-      displayTime = time;
-    }
-  }
+  let displayTime = service.time || '';
 
   titlePageContainer.innerHTML = `
     <div style="text-align: center;">

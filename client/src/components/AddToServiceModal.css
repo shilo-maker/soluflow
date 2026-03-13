@@ -59,7 +59,22 @@
   padding: 15px 20px;
   border-top: 1px solid #eee;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+}
+
+.btn-create-new-service {
+  padding: 8px 16px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-create-new-service:hover {
+  background: #4338ca;
 }
 
 .add-to-service-modal-overlay .btn-cancel {

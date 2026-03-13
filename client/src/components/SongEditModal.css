@@ -26,6 +26,7 @@
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -90,7 +91,7 @@
 }
 
 .song-edit-modal .form-row.three-cols {
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   width: 100%;
 }
 
@@ -486,4 +487,46 @@
     text-align: center;
     margin-bottom: 4px;
   }
+}
+
+/* Key select row with transpose buttons */
+.key-select-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.key-select-row select {
+  min-width: 0;
+  flex: 1;
+}
+
+.transpose-permanent-btns {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-transpose-perm {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  transition: background-color 0.15s, border-color 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-transpose-perm:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
 }

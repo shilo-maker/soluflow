@@ -1387,6 +1387,11 @@ const Service = () => {
                 </button>
                 {headerMenuOpen && (
                   <div className="header-dropdown-menu">
+                    {selectedService.canEdit && (
+                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleEditService(); }}>
+                        {t('service.edit')}
+                      </button>
+                    )}
                     <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleShareService(selectedService); }}>
                       {t('service.share')}
                     </button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -18,6 +18,7 @@ const hasHebrew = (text) => /[\u0590-\u05FF]/.test(text || '');
 
 const ServiceNew = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { t } = useLanguage();
   const { activeWorkspace } = useWorkspace();
@@ -33,14 +34,15 @@ const ServiceNew = () => {
     isPublic: true
   });
 
-  const [setlist, setSetlist] = useState([]);
+  const initialSong = location.state?.initialSong;
+  const [setlist, setSetlist] = useState(initialSong ? [initialSong] : []);
   const [availableSongs, setAvailableSongs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [loadingSongs, setLoadingSongs] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
-  const [listView, setListView] = useState('database');
+  const [listView, setListView] = useState(initialSong ? 'setlist' : 'database');
   const [editingPrayerItem, setEditingPrayerItem] = useState(null);
 
   // Inline prayer form state

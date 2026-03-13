@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { transposeChordPro, transposeChord, calculateTransposition } from '../utils/transpose';
 import TagInput from './TagInput';
 import './SongEditModal.css';
 
@@ -113,6 +114,15 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // When admin changes key dropdown on a public song, transpose content too
+    if (name === 'key' && isAdminEditingPublic && formData.key && value) {
+      const semitones = calculateTransposition(formData.key, value);
+      if (semitones !== 0) {
+        const newContent = transposeChordPro(formData.content, semitones);
+        setFormData(prev => ({ ...prev, key: value, content: newContent }));
+        return;
+      }
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -183,6 +193,30 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
       const newPosition = start + section.length;
       textarea.setSelectionRange(newPosition, newPosition);
     }, 0);
+  };
+
+  // Check if admin editing a public song
+  const isAdminEditingPublic = isEditMode && user?.role === 'admin' && song?.is_public;
+
+  // Permanently transpose all chords in content by given semitones
+  const handlePermanentTranspose = (semitones) => {
+    const currentKey = formData.key;
+    if (!currentKey) return;
+
+    // Transpose all [chord] in content
+    const newContent = transposeChordPro(formData.content, semitones);
+
+    // Transpose the key itself
+    const isMinor = currentKey.endsWith('m') && !currentKey.endsWith('maj');
+    const rootKey = isMinor ? currentKey.slice(0, -1) : currentKey;
+    const newRoot = transposeChord(rootKey, semitones);
+    const newKey = isMinor ? newRoot + 'm' : newRoot;
+
+    setFormData(prev => ({
+      ...prev,
+      content: newContent,
+      key: newKey
+    }));
   };
 
   const validateForm = () => {
@@ -348,19 +382,41 @@ const SongEditModal = ({ song, isOpen, onClose, onSave }) => {
           <div className="form-row three-cols">
             <div className="form-group">
               <label htmlFor="key">{t('songEdit.fieldKey')} {t('songEdit.required')}</label>
-              <select
-                id="key"
-                name="key"
-                value={formData.key}
-                onChange={handleChange}
-                required
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              >
-                <option value="">{t('songEdit.selectKey')}</option>
-                {COMMON_KEYS.map(key => (
-                  <option key={key} value={key}>{key}</option>
-                ))}
-              </select>
+              <div className="key-select-row">
+                <select
+                  id="key"
+                  name="key"
+                  value={formData.key}
+                  onChange={handleChange}
+                  required
+                  style={{ flex: 1, boxSizing: 'border-box' }}
+                >
+                  <option value="">{t('songEdit.selectKey')}</option>
+                  {COMMON_KEYS.map(key => (
+                    <option key={key} value={key}>{key}</option>
+                  ))}
+                </select>
+                {isAdminEditingPublic && formData.key && (
+                  <div className="transpose-permanent-btns">
+                    <button
+                      type="button"
+                      className="btn-transpose-perm"
+                      onClick={() => handlePermanentTranspose(-1)}
+                      title={t('songEdit.transposeDown') || 'Transpose down'}
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-transpose-perm"
+                      onClick={() => handlePermanentTranspose(1)}
+                      title={t('songEdit.transposeUp') || 'Transpose up'}
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="form-group">
