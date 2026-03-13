@@ -558,10 +558,13 @@ const ChordProDisplay = React.memo(({
                   }
                 }
 
+                // Ensure segment is at least as wide as its chord to prevent overlap in narrow columns
+                const chordMinWidth = `${segment.chord.length * 0.75}em`;
+
                 return (
                   <React.Fragment key={i}>
                     {needsLineBreak && <span className="chord-line-break"></span>}
-                    <span className={`chord-segment${spacingClass}`}>
+                    <span className={`chord-segment${spacingClass}`} style={{ minWidth: chordMinWidth }}>
                       <span className="chord">{segment.chord}</span>
                       <span className="text-segment">{segment.text || '\u200B'}{connector}</span>
                     </span>
