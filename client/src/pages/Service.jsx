@@ -14,6 +14,7 @@ import ShareModal from '../components/ShareModal';
 import PassLeadershipModal from '../components/PassLeadershipModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import Toast from '../components/Toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { transposeChord, convertKeyToFlat } from '../utils/transpose';
 import { BIBLE_BOOKS } from '../components/BibleRefPicker';
 import { generateMultiSongPDF, generateMultiSongPDFBlob } from '../utils/pdfGenerator';
@@ -92,7 +93,7 @@ const Service = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { t, language } = useLanguage();
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, workspaces } = useWorkspace();
   const { theme } = useTheme();
   const currentPreset = GRADIENT_PRESETS[theme.gradientPreset] || GRADIENT_PRESETS.warm;
 
@@ -106,6 +107,7 @@ const Service = () => {
   const previousServiceIdRef = useRef(null);
   const isFollowModeRef = useRef(false); // Ref to access current follow mode in socket handlers
   const transpositionSaveTimerRef = useRef(null); // Debounce timer for transposition saves
+  const fontSizeSaveTimerRef = useRef(null); // Debounce timer for font size saves
   const currentSongIdRef = useRef(null); // Track current song ID for socket handler validation
 
   const [selectedService, setSelectedService] = useState(null);
@@ -127,6 +129,8 @@ const Service = () => {
   const [serviceToShare, setServiceToShare] = useState(null);
   const [isPassLeadershipModalOpen, setIsPassLeadershipModalOpen] = useState(false);
   const [serviceToPassLeadership, setServiceToPassLeadership] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
@@ -305,6 +309,11 @@ const Service = () => {
     console.log('[Service] Song changed - Loading transposition for song', currentSong.id, ':', savedTransposition);
     setTransposition(savedTransposition);
 
+    // Load saved font size for this song (null = default 14)
+    const savedFontSize = currentSong.font_size || 14;
+    setFontSize(savedFontSize);
+    setAutoFittedFontSize(null); // reset auto-fit on song change
+
     // Broadcast to followers if user is leader (include songId for verification)
     if (isLeader && socketRef.current?.connected && socketConnected && selectedService) {
       socketRef.current.emit('leader-transpose', {
@@ -314,6 +323,51 @@ const Service = () => {
       });
     }
   }, [selectedSongIndex, selectedService, serviceDetails, isLeader, socketConnected]);
+
+  // Debounced font size save to database (mirrors transposition save pattern)
+  useEffect(() => {
+    if (fontSizeSaveTimerRef.current) {
+      clearTimeout(fontSizeSaveTimerRef.current);
+    }
+
+    if (!selectedService?.canEdit || !serviceDetails?.songs?.[selectedSongIndex]) {
+      return;
+    }
+
+    const currentSong = serviceDetails.songs[selectedSongIndex];
+    const currentFontSize = fontSize;
+    const currentSongId = currentSong.id;
+    const currentServiceId = selectedService.id;
+
+    // Skip if font size matches what's already saved (treat null as 14)
+    if ((currentSong.font_size || 14) === currentFontSize) {
+      return;
+    }
+
+    fontSizeSaveTimerRef.current = setTimeout(async () => {
+      try {
+        await serviceService.updateServiceSong(currentServiceId, currentSongId, { font_size: currentFontSize });
+        setServiceDetails(prev => {
+          if (!prev?.songs) return prev;
+          return {
+            ...prev,
+            songs: prev.songs.map(song =>
+              song.id === currentSongId ? { ...song, font_size: currentFontSize } : song
+            )
+          };
+        });
+        console.log(`[Service] Saved font_size ${currentFontSize} for song ${currentSongId}`);
+      } catch (error) {
+        console.error('[Service] Failed to save font_size:', error);
+      }
+    }, 800);
+
+    return () => {
+      if (fontSizeSaveTimerRef.current) {
+        clearTimeout(fontSizeSaveTimerRef.current);
+      }
+    };
+  }, [fontSize, selectedService, serviceDetails, selectedSongIndex]);
 
   // Socket.IO connection and real-time sync
   useEffect(() => {
@@ -823,6 +877,42 @@ const Service = () => {
     setIsShareModalOpen(true);
   };
 
+  const handleDeleteService = () => { setShowDeleteConfirm(true); };
+
+  const confirmDelete = async () => {
+    if (!selectedService) return;
+    try {
+      await serviceService.deleteService(selectedService.id);
+      showToastMsg('Service deleted successfully!');
+      navigate('/services', { replace: true });
+    } catch (err) {
+      console.error('Error deleting service:', err);
+      showToastMsg('Failed to delete service', 'error');
+    } finally {
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleMoveService = () => { setShowMoveDialog(true); };
+
+  const confirmMove = async (targetWorkspaceId) => {
+    if (!selectedService) return;
+    try {
+      const targetWorkspace = workspaces?.find(ws => ws.id === targetWorkspaceId);
+      await serviceService.moveToWorkspace(selectedService.id, targetWorkspaceId);
+      const message = targetWorkspace
+        ? `"${selectedService.title}" moved to "${targetWorkspace.name}"!`
+        : 'Service moved successfully!';
+      showToastMsg(message);
+      navigate('/services', { replace: true });
+    } catch (err) {
+      console.error('Error moving service:', err);
+      showToastMsg('Failed to move service', 'error');
+    } finally {
+      setShowMoveDialog(false);
+    }
+  };
+
   const handleCopySolucastLink = async (service) => {
     try {
       const data = await serviceService.getShareLink(service.id);
@@ -1144,7 +1234,8 @@ const Service = () => {
     if (!dateStr) return '';
     try {
       const d = new Date(dateStr + 'T00:00:00');
-      return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      const locale = language === 'he' ? 'he-IL' : 'en-US';
+      return d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     } catch { return dateStr; }
   };
 
@@ -1296,21 +1387,9 @@ const Service = () => {
                 </button>
                 {headerMenuOpen && (
                   <div className="header-dropdown-menu">
-                    {selectedService.canEdit && (
-                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleEditService(); }}>
-                        {t('service.edit')}
-                      </button>
-                    )}
-                    {selectedService.isCreator && (
-                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleShareService(selectedService); }}>
-                        {t('service.share')}
-                      </button>
-                    )}
-                    {selectedService.isCreator && (
-                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleCopySolucastLink(selectedService); }}>
-                        SoluCast Link
-                      </button>
-                    )}
+                    <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleShareService(selectedService); }}>
+                      {t('service.share')}
+                    </button>
                     {currentSetList.length > 0 && (
                       <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleDownloadPDF(); }}>
                         PDF
@@ -1318,12 +1397,17 @@ const Service = () => {
                     )}
                     {currentSetList.length > 0 && (
                       <button className="menu-item menu-item-whatsapp" onClick={() => { setHeaderMenuOpen(false); handleSharePDFWhatsApp(); }}>
-                        WhatsApp
+                        {t('service.whatsapp')}
+                      </button>
+                    )}
+                    {selectedService.isCreator && (
+                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handleMoveService(); }}>
+                        {t('service.move')}
                       </button>
                     )}
                     {selectedService.canEdit && (
-                      <button className="menu-item" onClick={() => { setHeaderMenuOpen(false); handlePassLeadership(selectedService); }}>
-                        {t('service.passLeadership')}
+                      <button className="menu-item menu-item-delete" onClick={() => { setHeaderMenuOpen(false); handleDeleteService(); }}>
+                        {t('service.delete')}
                       </button>
                     )}
                   </div>
@@ -1414,6 +1498,40 @@ const Service = () => {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
       />
+
+      {/* Delete Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Service"
+        message={`Are you sure you want to delete "${selectedService?.title || selectedService?.location || 'this service'}"? This action cannot be undone.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      {/* Move Dialog */}
+      {showMoveDialog && (
+        <div className="modal-overlay" onClick={() => setShowMoveDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Move "{selectedService?.title}" to Workspace</h2>
+            <p>Select a workspace to move this service to:</p>
+            <div className="workspace-list">
+              {workspaces
+                ?.filter(ws => ws.id !== activeWorkspace?.id)
+                .map(ws => (
+                  <button key={ws.id} className="workspace-option" onClick={() => confirmMove(ws.id)}>
+                    {ws.name}
+                  </button>
+                ))}
+              {(!workspaces || workspaces.filter(ws => ws.id !== activeWorkspace?.id).length === 0) && (
+                <p style={{ textAlign: 'center', color: '#999', fontStyle: 'italic' }}>No other workspaces available</p>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowMoveDialog(false)} className="btn-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pass Leadership Modal */}
       <PassLeadershipModal

@@ -24,6 +24,7 @@ function normalizeServiceSongs(service) {
       song_id: song.id || item.song_id || item.songId || null,
       position: item.position,
       transposition: item.transposition || 0,
+      font_size: item.font_size || item.fontSize || null,
       segment_type: item.segment_type || item.segmentType || 'song',
       segment_title: item.segment_title || item.segmentTitle,
       segment_content: item.segment_content || item.segmentContent,

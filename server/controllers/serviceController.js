@@ -714,7 +714,7 @@ const updateServiceSong = async (req, res) => {
       }
     }
 
-    const { position, notes, segment_title, segment_content, transposition } = req.body;
+    const { position, notes, segment_title, segment_content, transposition, font_size } = req.body;
 
     console.log(`[UPDATE] Song ${songId} in Service ${id}: position ${serviceSong.position} -> ${position}, transposition ${serviceSong.transposition} -> ${transposition}`);
 
@@ -723,7 +723,8 @@ const updateServiceSong = async (req, res) => {
       notes: notes !== undefined ? notes : serviceSong.notes,
       segment_title: segment_title !== undefined ? segment_title : serviceSong.segment_title,
       segment_content: segment_content !== undefined ? segment_content : serviceSong.segment_content,
-      transposition: transposition !== undefined ? transposition : serviceSong.transposition
+      transposition: transposition !== undefined ? transposition : serviceSong.transposition,
+      font_size: font_size !== undefined ? font_size : serviceSong.font_size
     });
 
     console.log(`[UPDATE] Song ${songId} saved with position: ${serviceSong.position}`);

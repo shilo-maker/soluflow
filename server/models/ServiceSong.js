@@ -55,6 +55,12 @@ const ServiceSong = sequelize.define('ServiceSong', {
     defaultValue: 0,
     allowNull: false,
     comment: 'Transposition value for this song in this service (-11 to +11)'
+  },
+  font_size: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Per-song font size set by service creator (null = default 14px)'
   }
 }, {
   tableName: 'service_songs',
