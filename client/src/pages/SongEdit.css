@@ -1,0 +1,240 @@
+/* SongEdit page — reuses ServiceEdit class names for shared styles
+   (edit-card, edit-field, edit-header-*, edit-save-bar, edit-btn-*)
+   Only song-edit-specific styles below, scoped with .song-edit-page or se- prefix */
+
+.song-edit-page {
+  max-width: 800px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: 100px;
+}
+
+/* Character count & required label */
+.se-char-count {
+  font-weight: 400;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.se-required {
+  color: #ef4444;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+/* Three column row for key/bpm/timeSig */
+.se-row-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.se-row-three .edit-field {
+  margin-bottom: 0;
+}
+
+.se-row-three select,
+.se-row-three input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 16px;
+  color: #1f2937;
+  background: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.se-row-three select:focus,
+.se-row-three input:focus {
+  outline: none;
+  border-color: var(--color-primary, #BC556F);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 188, 85, 111), 0.1);
+}
+
+/* Key row with transpose buttons */
+.se-key-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.se-key-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.se-transpose-btns {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.se-btn-transpose {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
+  background: white;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.se-btn-transpose:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+/* Editor helpers */
+.se-editor-helpers {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.se-chord-helper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.se-chord-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.se-chord-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.se-chord-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #BC556F);
+}
+
+.se-btn-insert {
+  padding: 10px 16px;
+  background: var(--color-primary, #BC556F);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.se-btn-insert:hover {
+  opacity: 0.9;
+}
+
+.se-suggested-chords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.se-helper-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.se-helper-label-muted {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.se-btn-chord {
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #374151;
+  font-weight: 500;
+}
+
+.se-btn-chord:hover {
+  background: #e5e7eb;
+}
+
+.se-section-helpers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.se-btn-section {
+  padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.se-btn-section:hover {
+  background: #f3f4f6;
+}
+
+/* Lyrics textarea */
+.se-lyrics-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: 'Courier New', monospace;
+  line-height: 1.6;
+  color: #1f2937;
+  background: white;
+  resize: vertical;
+  min-height: 300px;
+  box-sizing: border-box;
+  direction: rtl;
+}
+
+.se-lyrics-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #BC556F);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 188, 85, 111), 0.1);
+}
+
+.se-editor-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .se-row-three {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .se-chord-input-row {
+    flex-direction: column;
+  }
+}

@@ -10,7 +10,6 @@ import ChordProDisplay from '../components/ChordProDisplay';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import NotesModal from '../components/NotesModal';
-import SongEditModal from '../components/SongEditModal';
 import KeySelectorModal from '../components/KeySelectorModal';
 import ReportModal from '../components/ReportModal';
 import { transposeChord, convertKeyToFlat } from '../utils/transpose';
@@ -64,7 +63,6 @@ const SongView = () => {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notes, setNotes] = useState('');
   const [notesExpanded, setNotesExpanded] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showKeySelectorModal, setShowKeySelectorModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -857,22 +855,9 @@ const SongView = () => {
   };
 
   const handleEditSong = () => {
-    setIsEditModalOpen(true);
+    navigate(`/song/${id}/edit`);
   };
 
-  const handleSaveEditedSong = async (updatedSong) => {
-    try {
-      const saved = await songService.updateSong(id, updatedSong);
-      setSong(saved);
-      setIsEditModalOpen(false);
-      setToastMessage('Song updated successfully!');
-      setShowToast(true);
-    } catch (err) {
-      console.error('Error updating song:', err);
-      setToastMessage('Failed to update song. Please try again.');
-      setShowToast(true);
-    }
-  };
 
   const handleCloseToast = () => {
     setShowToast(false);
@@ -1437,14 +1422,6 @@ const SongView = () => {
           onClose={() => setShowNotesModal(false)}
         />
       )}
-
-      {/* Edit Song Modal */}
-      <SongEditModal
-        song={song}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSave={handleSaveEditedSong}
-      />
 
       {/* Key Selector Modal */}
       <KeySelectorModal

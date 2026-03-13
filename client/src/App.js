@@ -33,6 +33,7 @@ const SharedSongView = retryLazy(() => import('./pages/SharedSongView'));
 const GuestLanding = retryLazy(() => import('./pages/GuestLanding'));
 const Library = retryLazy(() => import('./pages/Library'));
 const SongView = retryLazy(() => import('./pages/SongView'));
+const SongEdit = retryLazy(() => import('./pages/SongEdit'));
 const UserManagement = retryLazy(() => import('./pages/UserManagement'));
 const UserSettings = retryLazy(() => import('./pages/UserSettings'));
 const WorkspaceManagement = retryLazy(() => import('./pages/WorkspaceManagement'));
@@ -62,6 +63,7 @@ const prefetchChunks = () => {
     () => import('./pages/GuestLanding'),
     () => import('./pages/Library'),
     () => import('./pages/SongView'),
+    () => import('./pages/SongEdit'),
     () => import('./pages/UserManagement'),
     () => import('./pages/UserSettings'),
     () => import('./pages/WorkspaceManagement'),
@@ -168,6 +170,7 @@ function AppContent() {
 
               {/* Song view - accessible when logged in */}
               <Route path="/song/:id" element={<SongView />} />
+              <Route path="/song/:id/edit" element={<PrivateRoute><SongEdit /></PrivateRoute>} />
 
               {/* Protected routes */}
               <Route path="/home" element={<Navigate to="/library" replace />} />

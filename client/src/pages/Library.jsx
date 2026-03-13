@@ -315,8 +315,9 @@ const Library = () => {
   };
 
   const handleEditSong = () => {
-    setModalSong(selectedSong);
-    setIsModalOpen(true);
+    if (selectedSong) {
+      navigate(`/song/${selectedSong.id}/edit`);
+    }
   };
 
   const handleSaveSong = async (formData) => {
