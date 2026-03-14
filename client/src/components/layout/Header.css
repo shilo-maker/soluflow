@@ -309,6 +309,14 @@
   font-weight: 700;
   color: white;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.app-card-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .app-card-info {

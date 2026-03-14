@@ -272,7 +272,7 @@ const Header = ({ user, showLogout = false, onLogout, onMenuToggle }) => {
                 <div className="app-switcher-dropdown" style={appMenuPos}>
                   {/* SoluFlow (current) */}
                   <div className="app-card app-card-active">
-                    <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #F9A470, #BC556F)' }}>SF</div>
+                    <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #F9A470, #BC556F)' }}><img src="/solu_flow_logo.png" alt="SoluFlow" className="app-card-logo" /></div>
                     <div className="app-card-info">
                       <div className="app-card-name">SoluFlow</div>
                       <div className="app-card-desc">{t('common.currentApp')}</div>
@@ -284,7 +284,7 @@ const Header = ({ user, showLogout = false, onLogout, onMenuToggle }) => {
                     onClick={handleOpenSoluCast}
                     disabled={ssoLoading}
                   >
-                    <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}>SC</div>
+                    <div className="app-card-icon" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' }}><img src="/solucast-logo.png" alt="SoluCast" className="app-card-logo" /></div>
                     <div className="app-card-info">
                       <div className={`app-card-name${ssoError ? ' app-card-error' : ''}`}>{ssoLoading ? 'Opening...' : ssoError ? ssoError : 'SoluCast'}</div>
                       <div className="app-card-desc">{t('common.presentation')}</div>
